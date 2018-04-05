@@ -1,7 +1,7 @@
 Overview
 ========
 
-LTL3TELA is a tool that translates LTL formulae to nondeterministic automata.
+LTL3sDBA is a tool that translates LTL formulae to semi-deterministic automata.
 
 Requirements
 ============
