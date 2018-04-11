@@ -41,8 +41,6 @@ bool o_ac_filter_fin;		// -t
 bool o_spot_simulation;		// -u
 bool o_spot_scc_filter;		// -z
 
-unsigned o_u_merge_level;	// -F
-unsigned o_g_merge_level;	// -G
 bool o_x_single_succ;		// -X
 
 int main(int argc, char* argv[])
@@ -75,15 +73,6 @@ int main(int argc, char* argv[])
 			<< "\t\t0\tno check\n"
 			<< "\t\t1\tltl2ba's simple check\n"
 			<< "\t\t2\tltl3ba's improved check (default)\n"
-			<< "\t-F[0|1|2|3]\toptimized treatment of mergeable U\n"
-			<< "\t\t0\tno merge\n"
-			<< "\t\t1\tmerge that minimizes NA\n"
-			<< "\t\t2\tmerge that minimizes SLAA (default)\n"
-			<< "\t\t3\tmerge states not containing looping alternating edge\n"
-			<< "\t-G[0|1|2]\toptimized treatment of G\n"
-			<< "\t\t0\tno merge\n"
-			<< "\t\t1\tmerge Gf if f is temporal formula\n"
-			<< "\t\t2\tmerge Gf is f is conjunction of temporal formulae (default)\n"
 			<< "\t-h, -?\tprint this help\n"
 			<< "\t-i[0|1]\tproduce SLAA with one initial state (default off)\n"
 			<< "\t-m[0|1]\tcheck formula for containment of some alpha-mergeable U (default off)\n"
@@ -121,8 +110,6 @@ int main(int argc, char* argv[])
 	o_spot_simulation = std::stoi(args["u"]);
 	o_spot_scc_filter = std::stoi(args["z"]);
 
-	o_u_merge_level = std::stoi(args["F"]);
-	o_g_merge_level = std::stoi(args["G"]);
 	o_x_single_succ = std::stoi(args["X"]);
 
 	unsigned int print_phase = std::stoi(args["p"]);
@@ -195,7 +182,7 @@ int main(int argc, char* argv[])
 		std::string what(e.what());
 
 		if (what == "Too many acceptance sets used.") {
-			std::cerr << "LTL3TELA is unable to set more than 32 acceptance marks.\n";
+			std::cerr << "LTL3sDBA is unable to set more than 32 acceptance marks.\n";
 			return 32;
 		}
 	}
