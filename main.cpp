@@ -18,6 +18,7 @@
 */
 
 #include <iostream>
+#include <fstream> //
 #include <spot/tl/parse.hh>
 #include <spot/tl/print.hh>
 #include <spot/tl/unabbrev.hh>
@@ -30,7 +31,7 @@
 #include <string>
 #include "utils.hpp"
 #include "alternating.hpp"
-#include "nondeterministic.hpp"
+#include "semideterministic.hpp"
 #include "automaton.hpp"
 
 bool o_single_init_state;	// -i
@@ -54,14 +55,14 @@ int main(int argc, char* argv[])
 	std::map<std::string, std::string> args = parse_arguments(argc, argv);
 
 	if (args.count("v") > 0) {
-		std::cout << "LTL3TELA " << version << "\n";
+		std::cout << "LTL3sDBA " << version << "\n";
 		return 0;
 	}
 
 	bool invalid_run = args.count("f") == 0;
 
 	if (invalid_run || args.count("h") > 0) {
-		std::cout << "LTL3TELA " << version << "\n\n"
+		std::cout << "LTL3sDBA " << version << "\n\n"
 			<< "usage: " << argv[0] << " [-flags] -f formula\n"
 			<< "available flags:\n"
 			<< "\t-a[0|2|3]\tact like\n"
@@ -82,7 +83,7 @@ int main(int argc, char* argv[])
 			<< "\t\tdot\tprint dot format\n"
 			<< "\t-p[1|2|3]\tphase of translation\n"
 			<< "\t\t1\tprint SLAA\n"
-			<< "\t\t2\tprint NA (default)\n"
+			<< "\t\t2\tprint NA with removed alternation\n"
 			<< "\t\t3\tprint both\n"
 			<< "\t-s[0|1]\tspot's formula simplifications (default on)\n"
 			<< "\t-t[0|1]\timproved construction of acceptance condition (default on)\n"
@@ -158,12 +159,13 @@ int main(int argc, char* argv[])
 			}
 
 			if (print_phase & 2) {
+
 				if (!o_spot_scc_filter && print_phase != 2) {
 					slaa->remove_unreachable_states();
 					slaa->remove_unnecessary_marks();
 				}
 
-				auto nwa_temp = make_nondeterministic(slaa);
+				auto nwa_temp = make_semideterministic(slaa);
 				if (!neg) {
 					// always assign the default value
 					nwa = nwa_temp;
@@ -174,6 +176,7 @@ int main(int argc, char* argv[])
 						nwa = nwa_temp;
 					}
 				}
+
 			}
 
 			delete slaa;
@@ -187,14 +190,31 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	//removing alternation and printing NA (eventually this could be changed into printing sDBA)
 	if (print_phase & 2) {
+
+        /* Version for parsing from a file, not used in the end
+	    spot::parsed_aut_ptr pa = parse_aut("vwaa.hoa", spot::make_bdd_dict());
+        if (pa->format_errors(std::cerr))
+            return 1;
+        if (pa->aborted)
+        {
+            std::cerr << "--ABORT-- read\n";
+            return 1;
+        }
+        auto aut = spot::remove_alternation(pa->aut);*/
+
+        auto aut = spot::remove_alternation(nwa);
+
 		if (args["o"] == "dot") {
-			spot::print_dot(std::cout, nwa);
+			spot::print_dot(std::cout, aut);
 		} else {
-			spot::print_hoa(std::cout, nwa);
+		    spot::print_hoa(std::cout, aut);
 			std::cout << '\n';
 		}
 	}
+
+
 
 	// do not call bdd_done(), we use libbddx
 

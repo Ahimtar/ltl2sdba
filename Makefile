@@ -15,7 +15,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with LTL3TELA.  If not, see <http://www.gnu.org/licenses/>.
 
-FILES = alternating.cpp nondeterministic.cpp automaton.cpp utils.cpp main.cpp
+FILES = alternating.cpp semideterministic.cpp automaton.cpp utils.cpp main.cpp
 
 ltl3tela: $(FILES)
 	g++ -std=c++14 -o ltl3tela $(FILES) -lspot -lbddx

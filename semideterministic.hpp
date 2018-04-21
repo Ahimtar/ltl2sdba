@@ -17,18 +17,20 @@
     along with LTL3TELA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef NONDETERMINISTIC_H
-#define NONDETERMINISTIC_H
+#ifndef SEMIDETERMINISTIC_H
+#define SEMIDETERMINISTIC_H
 #include <spot/tl/print.hh>
 #include <spot/twaalgos/cleanacc.hh>
 #include <spot/twaalgos/hoa.hh>
 #include <spot/twaalgos/postproc.hh>
 #include <spot/twaalgos/simulation.hh>
 #include <spot/twaalgos/sccfilter.hh>
+#include <spot/twaalgos/alternation.hh>
+#include <spot/parseaut/public.hh>
 #include "automaton.hpp"
 
-// turns the given SLAA into an equivalent nondeterministic
+// turns the given SLAA into an equivalent semideterministic
 // automaton in the Spot's structure
-spot::twa_graph_ptr make_nondeterministic(SLAA* slaa);
+spot::twa_graph_ptr make_semideterministic(SLAA *slaa);
 
 #endif

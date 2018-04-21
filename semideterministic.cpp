@@ -17,7 +17,7 @@
     along with LTL3TELA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "nondeterministic.hpp"
+#include "semideterministic.hpp"
 
 // Returns the id for a set of SLAA states
 // It creates a new state if not present
@@ -55,8 +55,9 @@ std::string set_to_str(std::set<unsigned> set) {
 	return name;
 }
 
-// Converts a given SLAA to NA
-spot::twa_graph_ptr make_nondeterministic(SLAA* slaa) {
+// Converts a given SLAA to sDBA; TBD
+spot::twa_graph_ptr make_semideterministic(SLAA *slaa) {
+
 	unsigned last_inserted = 0;
 
 	// create an empty automaton
@@ -355,5 +356,5 @@ spot::twa_graph_ptr make_nondeterministic(SLAA* slaa) {
 		spot::cleanup_acceptance_here(aut);
 	}
 
-	return aut;
+    return aut;
 }
