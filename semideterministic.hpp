@@ -29,8 +29,8 @@
 #include <spot/parseaut/public.hh>
 #include "automaton.hpp"
 
-// turns the given SLAA into an equivalent semideterministic
+// turns the given VWAA into an equivalent semideterministic
 // automaton in the Spot's structure
-spot::twa_graph_ptr make_semideterministic(SLAA *slaa);
+spot::twa_graph_ptr make_semideterministic(VWAA *vwaa);
 
 #endif

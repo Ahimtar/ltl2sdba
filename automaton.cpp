@@ -71,6 +71,7 @@ template<typename T> T Automaton<T>::state_name(unsigned state_id) {
 	return states[state_id];
 }
 
+// xz remove this?
 template<typename T> bool Automaton<T>::state_exists(T f) {
 	return find(states.begin(), states.end(), f) != states.end();
 }
@@ -100,7 +101,7 @@ template<typename T> void Automaton<T>::add_edge(unsigned from, bdd label, std::
 
 	// the domination of transitions
 	// we always do this for NA
-	if (o_slaa_determ || spot_id_to_slaa_set != nullptr) {
+	if (o_vwaa_determ || spot_id_to_vwaa_set != nullptr) {
 		std::set<unsigned> edges_to_add;
 		// we look at all other edges and check if the new edge dominates the other
 		// NOP in the increment part as we sometimes increment the iterator with erase
@@ -108,12 +109,12 @@ template<typename T> void Automaton<T>::add_edge(unsigned from, bdd label, std::
 			auto e_other = get_edge(*e_other_it);
 
 			int dom_level;
-			if (spot_id_to_slaa_set == nullptr) {
+			if (spot_id_to_vwaa_set == nullptr) {
 				dom_level = e_this->dominates(e_other, get_inf_marks());
 			} else {
 				dom_level = e_this->dominates(e_other,
-					(*spot_id_to_slaa_set)[state_name(*(e_this->get_targets().begin()))],
-					(*spot_id_to_slaa_set)[state_name(*(e_other->get_targets().begin()))],
+					(*spot_id_to_vwaa_set)[state_name(*(e_this->get_targets().begin()))],
+					(*spot_id_to_vwaa_set)[state_name(*(e_other->get_targets().begin()))],
 					get_inf_marks()
 				);
 			}
@@ -150,12 +151,12 @@ template<typename T> void Automaton<T>::add_edge(unsigned from, bdd label, std::
 		for (auto& e_other_id : state_edges[from]) {
 			auto e_other = get_edge(e_other_id);
 			int dom_level;
-			if (spot_id_to_slaa_set == nullptr) {
+			if (spot_id_to_vwaa_set == nullptr) {
 				dom_level = e_other->dominates(e_this, get_inf_marks());
 			} else {
 				dom_level = e_other->dominates(e_this,
-					(*spot_id_to_slaa_set)[state_name(*(e_other->get_targets().begin()))],
-					(*spot_id_to_slaa_set)[state_name(*(e_this->get_targets().begin()))],
+					(*spot_id_to_vwaa_set)[state_name(*(e_other->get_targets().begin()))],
+					(*spot_id_to_vwaa_set)[state_name(*(e_this->get_targets().begin()))],
 					get_inf_marks()
 				);
 			}
@@ -205,11 +206,11 @@ template<typename T> void Automaton<T>::remember_inf_mark(std::set<spot::acc_con
 	inf_marks.insert(marks.begin(), marks.end());
 }
 
-std::set<std::set<unsigned>> SLAA::get_init_sets() const {
+std::set<std::set<unsigned>> VWAA::get_init_sets() const {
 	return init_sets;
 }
 
-void SLAA::add_init_set(std::set<unsigned> init_set) {
+void VWAA::add_init_set(std::set<unsigned> init_set) {
 	init_sets.insert(init_set);
 }
 
@@ -278,7 +279,24 @@ template<typename T> std::set<unsigned> Automaton<T>::product(std::set<std::set<
 	return result;
 }
 
-void SLAA::build_acc() {
+
+/* returns a bdd of edges from a set
+spot::bdd_dict_ptr get_bdd_edges(std::set<std::set<unsigned>> edges_sets){
+    spot::bdd_dict_ptr dict = spot::make_bdd_dict();
+    spot::twa_graph_ptr aut = make_twa_graph(dict);
+    bdd p = bdd_ithvar(aut->register_ap(edges_sets));
+    if (!edges_sets.empty()) {
+        for(std::set<unsigned> e : edges_sets) {
+            //bdd p[e] = bdd_ithvar(aut->register_ap(e));
+
+        }
+    }
+    return dict;
+}  // xz https://spot.lrde.epita.fr/tut22.html */
+
+
+
+void VWAA::build_acc() {
 	// auto& ac = slaa->spot_aut->acc();
 	for (auto& ac : acc) {
 		// Fin(x)
@@ -306,7 +324,7 @@ void SLAA::build_acc() {
 	}
 }
 
-spot::formula SLAA::get_input_formula() const {
+spot::formula VWAA::get_input_formula() const {
 	return phi;
 }
 
@@ -377,7 +395,7 @@ template<typename T> void Automaton<T>::remove_unreachable_states() {
 }
 
 // removes all marks on non-loops
-void SLAA::remove_unnecessary_marks() {
+void VWAA::remove_unnecessary_marks() {
 	for (unsigned state_id = 0, states_count = states.size(); state_id < states_count; ++state_id) {
 		for (auto& edge_id : state_edges[state_id]) {
 			// check if this is not a loop
@@ -388,7 +406,7 @@ void SLAA::remove_unnecessary_marks() {
 	}
 }
 
-SLAA::ac_representation SLAA::mark_transformation(std::map<spot::acc_cond::mark_t::value_t, unsigned>& tgba_mark_owners) {
+VWAA::ac_representation VWAA::mark_transformation(std::map<spot::acc_cond::mark_t::value_t, unsigned>& tgba_mark_owners) {
 	// get a set of all Inf marks; also remember marks having escaping Inf
 	std::map<spot::acc_cond::mark_t::value_t, bool> inf_marks;
 	std::map<spot::acc_cond::mark_t::value_t, spot::acc_cond::mark_t::value_t> orig_sibling_of;
@@ -545,126 +563,126 @@ SLAA::ac_representation SLAA::mark_transformation(std::map<spot::acc_cond::mark_
 	return acr;
 }
 
-void SLAA::print_hoaf() {
-	bool sink_state_needed = false;
-	bool true_state_exists = false;
-	unsigned sink_state_id;
+void VWAA::print_hoaf() {
+    bool sink_state_needed = false;
+    bool true_state_exists = false;
+    unsigned sink_state_id;
 
-	unsigned state_counter = 0;
-	for (auto& edges_list : state_edges) {
-		if (states[state_counter].is_tt()) {
-			// we have a state for true: use this as a sink state
-			sink_state_id = state_counter;
-			true_state_exists = true;
-		}
+    unsigned state_counter = 0;
+    for (auto& edges_list : state_edges) {
+        if (states[state_counter].is_tt()) {
+            // we have a state for true: use this as a sink state
+            sink_state_id = state_counter;
+            true_state_exists = true;
+        }
 
-		for (auto& edge_id : edges_list) {
-			if (get_edge(edge_id)->get_targets().size() == 0) {
-				// this edge has empty set of targets
-				sink_state_needed = true;
-			}
-		}
+        for (auto& edge_id : edges_list) {
+            if (get_edge(edge_id)->get_targets().size() == 0) {
+                // this edge has empty set of targets
+                sink_state_needed = true;
+            }
+        }
 
-		++state_counter;
-	}
+        ++state_counter;
+    }
 
-	sink_state_needed = sink_state_needed && !true_state_exists;
+    sink_state_needed = sink_state_needed && !true_state_exists;
 
-	if (sink_state_needed) {
-		// we need a new virtual sink state
-		sink_state_id = state_counter;
-	}
+    if (sink_state_needed) {
+        // we need a new virtual sink state
+        sink_state_id = state_counter;
+    }
 
-	spot::tl_simplifier simp;
+    spot::tl_simplifier simp;
 
-	std::cout << "HOA: v1\n";
-	std::cout << "tool: \"LTL3sDBA\"\n";
-	std::cout << "name: \"SLAA for " << spot::unabbreviate(simp.simplify(phi), "WM") << "\"\n";
-	std::cout << "States: " << (sink_state_needed ? state_counter + 1 : state_counter) << '\n'; // + 1 is for sink state
+    std::cout << "HOA: v1\n";
+    std::cout << "tool: \"LTL3sDBA\"\n";
+    std::cout << "name: \"VWAA for " << spot::unabbreviate(simp.simplify(phi), "WM") << "\"\n";
+    std::cout << "States: " << (sink_state_needed ? state_counter + 1 : state_counter) << '\n'; // + 1 is for sink state
 
-	auto bdd_dict = spot_aut->ap();
-	unsigned bdd_dict_size = bdd_dict.size();
-	std::cout << "AP: " << bdd_dict_size;
-	for (unsigned i = 0; i < bdd_dict_size; ++i) {
-		std::cout << " \"" << bdd_dict[i] << '"';
-	}
-	std::cout << '\n';
+    auto bdd_dict = spot_aut->ap();
+    unsigned bdd_dict_size = bdd_dict.size();
+    std::cout << "AP: " << bdd_dict_size;
+    for (unsigned i = 0; i < bdd_dict_size; ++i) {
+        std::cout << " \"" << bdd_dict[i] << '"';
+    }
+    std::cout << '\n';
 
-	// initial states
-	for (auto& init_set : init_sets) {
-		std::cout << "Start: ";
-		bool target_printed = false;
-		for (auto& target_id : init_set) {
-			if (target_printed) {
-				std::cout << "&";
-			}
-			std::cout << target_id;
-			target_printed = true;
-		}
-		std::cout << std::endl;
-	}
+    // initial states
+    for (auto& init_set : init_sets) {
+        std::cout << "Start: ";
+        bool target_printed = false;
+        for (auto& target_id : init_set) {
+            if (target_printed) {
+                std::cout << "&";
+            }
+            std::cout << target_id;
+            target_printed = true;
+        }
+        std::cout << std::endl;
+    }
 
-	// acceptance condition
-	std::cout << "Acceptance: " << spot_aut->acc().num_sets() << ' ';
-	spot_aut->acc().get_acceptance().to_text(std::cout);
+    // acceptance condition
+    std::cout << "Acceptance: " << spot_aut->acc().num_sets() << ' ';
+    spot_aut->acc().get_acceptance().to_text(std::cout);
 
-	std::cout << "\n--BODY--\n";
-	for (unsigned state_id = 0, state_count = states.size(); state_id < state_count; ++state_id) {
-		std::cout << "State: " << state_id << " \"" << spot::unabbreviate(simp.simplify(states[state_id]), "WM") << "\"\n";
-		// for every edge of this state
-		for (auto& edge_id : state_edges[state_id]) {
-			Edge* edge = edges[edge_id];
+    std::cout << "\n--BODY--\n";
+    for (unsigned state_id = 0, state_count = states.size(); state_id < state_count; ++state_id) {
+        std::cout << "State: " << state_id << " \"" << spot::unabbreviate(simp.simplify(states[state_id]), "WM") << "\"\n";
+        // for every edge of this state
+        for (auto& edge_id : state_edges[state_id]) {
+            Edge* edge = edges[edge_id];
 
-			std::cout << "  [";
-			print_or = false;
-			bdd_allsat(edge->get_label(), allsatPrintHandler);
-			std::cout << "] ";
+            std::cout << "  [";
+            print_or = false;
+            bdd_allsat(edge->get_label(), allsatPrintHandler);
+            std::cout << "] ";
 
-			bool target_printed = false;
-			auto targets = edge->get_targets();
+            bool target_printed = false;
+            auto targets = edge->get_targets();
 
-			for (auto& target_id : targets) {
-				if (target_printed) {
-					std::cout << "&";
-				}
-				std::cout << target_id;
-				target_printed = true;
-			}
+            for (auto& target_id : targets) {
+                if (target_printed) {
+                    std::cout << "&";
+                }
+                std::cout << target_id;
+                target_printed = true;
+            }
 
-			// this edge leads to empty set
-			if (!target_printed) {
-				std::cout << sink_state_id;
-			}
+            // this edge leads to empty set
+            if (!target_printed) {
+                std::cout << sink_state_id;
+            }
 
-			auto marks = edge->get_marks();
-			if (!marks.empty()) {
-				std::cout << " {";
-				bool mark_printed = false;
+            auto marks = edge->get_marks();
+            if (!marks.empty()) {
+                std::cout << " {";
+                bool mark_printed = false;
 
-				for (auto& mark : marks) {
-					if (mark_printed) {
-						std::cout << ' ';
-					}
-					std::cout << mark;
-					mark_printed = true;
-				}
+                for (auto& mark : marks) {
+                    if (mark_printed) {
+                        std::cout << ' ';
+                    }
+                    std::cout << mark;
+                    mark_printed = true;
+                }
 
-				std::cout << '}';
-			}
+                std::cout << '}';
+            }
 
-			std::cout << "\n";
-		}
-	}
+            std::cout << "\n";
+        }
+    }
 
-	if (sink_state_needed) {
-		// we print the sink state with the true edge
-		std::cout << "State: " << state_counter << " \"t\"\n  [t] " << state_counter << "\n";
-	}
+    if (sink_state_needed) {
+        // we print the sink state with the true edge
+        std::cout << "State: " << state_counter << " \"t\"\n  [t] " << state_counter << "\n";
+    }
 
-	std::cout << "--END--\n";
+    std::cout << "--END--\n";
 }
 
-void SLAA::print_dot() {
+void VWAA::print_dot() {
 	std::cout << "digraph G {\n\trankdir=LR\n";
 
 	std::string init_state_style("[label=\"\", style=invis, width=0]");
@@ -771,7 +789,7 @@ void SLAA::print_dot() {
 }
 
 
-SLAA::SLAA(spot::formula f) {
+VWAA::VWAA(spot::formula f) {
 	spot_bdd_dict = spot::make_bdd_dict();
 	spot_aut = spot::make_twa_graph(spot_bdd_dict);
 
@@ -779,7 +797,7 @@ SLAA::SLAA(spot::formula f) {
 }
 
 NA::NA(std::vector<std::set<unsigned>>* sets) {
-	spot_id_to_slaa_set = sets;
+	spot_id_to_vwaa_set = sets;
 }
 
 // inspired by spot's twa_graph::merge_edges

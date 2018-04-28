@@ -31,7 +31,7 @@
 #include <spot/tl/simplify.hh>
 
 extern bool o_single_init_state;	// -i
-extern bool o_slaa_determ;			// -d
+extern bool o_vwaa_determ;			// -d
 extern unsigned o_eq_level;			// -e
 extern bool o_mergeable_info;		// -m
 extern bool o_ac_filter_fin;		// -t

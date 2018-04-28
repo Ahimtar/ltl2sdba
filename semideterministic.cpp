@@ -18,8 +18,85 @@
 */
 
 #include "semideterministic.hpp"
+#include <iostream>
+#include <sstream>
 
-// Returns the id for a set of SLAA states
+
+// Converts a given VWAA to sDBA;
+spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
+
+    //Transforming the VWAA into spot format
+
+    // Creating a helper file to print VWAA into
+    std::ofstream outs;
+    outs.open ("helper.hoa", std::ofstream::trunc);
+
+    // Redirecting all output into helper file, prints and returns to normal
+    std::streambuf *coutbuf = std::cout.rdbuf();
+    std::cout.rdbuf(outs.rdbuf());
+    vwaa->print_hoaf();
+    std::cout.rdbuf(coutbuf);
+
+    outs.close();
+
+    // Parsing the helper, acquiring spot format
+    spot::parsed_aut_ptr pvwaa = parse_aut("helper.hoa", spot::make_bdd_dict());
+    if (pvwaa->format_errors(std::cerr))
+        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully
+    if (pvwaa->aborted)
+    {
+        std::cerr << "--ABORT-- read\n";
+        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully
+    }
+
+    // We now have the VWAA parsed, we can move on
+    // Removing alternation
+    auto aut = spot::remove_alternation(pvwaa->aut);
+
+    // Changing from transition-based into state-based acceptance
+
+    // Opening helper again
+    outs.open ("helper.hoa", std::ofstream::trunc);
+
+    // Redirecting all output into helper file, prints with autfilt's -s option and returns to normal
+    std::cout.rdbuf(outs.rdbuf());
+    spot::print_hoa(std::cout, aut, "s");
+    std::cout.rdbuf(coutbuf);
+
+    outs.close();
+
+    // Parsing the helper, acquiring spot format again
+    spot::parsed_aut_ptr ppvwaa = parse_aut("helper.hoa", spot::make_bdd_dict());
+    if (ppvwaa->format_errors(std::cerr))
+        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully
+    if (ppvwaa->aborted)
+    {
+        std::cerr << "--ABORT-- read\n";
+        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully
+    }
+
+    // We have successfully removed alternation and changed into state-based acceptance
+    // The nondeterministic part of the sDBA is done
+    return aut;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Former code from ltl3tela's nondeterministic.cpp
+ *
+
+// Returns the id for a set of VWAA states
 // It creates a new state if not present
 unsigned get_state_id_for_set(spot::twa_graph_ptr aut, std::set<unsigned> state_set) {
 	auto sets = aut->get_named_prop<std::vector<std::set<unsigned>>>("state-sets");
@@ -55,42 +132,45 @@ std::string set_to_str(std::set<unsigned> set) {
 	return name;
 }
 
-// Converts a given SLAA to sDBA; TBD
-spot::twa_graph_ptr make_semideterministic(SLAA *slaa) {
+spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
 	unsigned last_inserted = 0;
 
 	// create an empty automaton
 	spot::bdd_dict_ptr dict = spot::make_bdd_dict();
 	spot::twa_graph_ptr aut = make_twa_graph(dict);
-	// copy the APs from SLAA
-	aut->copy_ap_of(slaa->spot_aut);
+	// copy the APs from VWAA
+	aut->copy_ap_of(vwaa->spot_aut);
 	// set the name of automaton
 	spot::tl_simplifier simp;
-	aut->set_named_prop("automaton-name", new std::string(str_psl(spot::unabbreviate(simp.simplify(slaa->get_input_formula()), "WM"))));
+	aut->set_named_prop("automaton-name", new std::string(str_psl(spot::unabbreviate(simp.simplify(vwaa->get_input_formula()), "WM"))));
 
 	// create a map of names
 	auto sets = new std::vector<std::set<unsigned>>;
 	aut->set_named_prop<std::vector<std::set<unsigned>>>("state-sets", sets);
 
-	// a map { mark => SLAA state } of Fin-marks removed from NA
-	// filled only if -t flag is active
+	// a map { mark => VWAA state } of Fin-marks removed from NA
+	// filled only if -t flag is active (improved construction of acceptance condition, default on)
 	std::map<spot::acc_cond::mark_t::value_t, unsigned> tgba_mark_owners;
 	// acr is a representation of the final acceptance condition
-	auto acr = slaa->mark_transformation(tgba_mark_owners);
+	auto acr = vwaa->mark_transformation(tgba_mark_owners);
 
 	auto& ac = aut->acc();
 
 	std::queue<unsigned> q;
 
+
+
+
+
 	NA* nha = new NA(sets);
-	// copy the Inf-marks from SLAA
-	nha->remember_inf_mark(slaa->get_inf_marks());
+	// copy the Inf-marks from VWAA
+	nha->remember_inf_mark(vwaa->get_inf_marks());
 	// put initial configurations into queue, create states
 	// and link them to the corresponding set
 	std::set<unsigned> na_init_states;
 
-	for(auto& init_set : slaa->get_init_sets()) {
+	for(auto& init_set : vwaa->get_init_sets()) {
 		auto index = get_state_id_for_set(aut, init_set);
 
 		q.push(index);
@@ -100,7 +180,7 @@ spot::twa_graph_ptr make_semideterministic(SLAA *slaa) {
 		last_inserted = index;
 	}
 
-	// map { mark => set of owner SLAA states } of Fin-marks removed from NA
+	// map { mark => set of owner VWAA states } of Fin-marks removed from NA
 	std::map<spot::acc_cond::mark_t::value_t, std::set<unsigned>> removed_fin_marks;
 
 	// map { mark => mark } of the siblings of removed Fin-marks
@@ -130,29 +210,29 @@ spot::twa_graph_ptr make_semideterministic(SLAA *slaa) {
 			// count the product
 			std::set<std::set<unsigned>> edges_for_product;
 			for (auto& state_id : source_sets) {
-				edges_for_product.insert(slaa->get_state_edges(state_id));
+				edges_for_product.insert(vwaa->get_state_edges(state_id));
 			}
 
-			std::set<unsigned> product_edges = slaa->product(edges_for_product, true);
+			std::set<unsigned> product_edges = vwaa->product(edges_for_product, true);
 
 			// check each successor and if needed, create a new state and add to queue
 			for (auto& edge_id : product_edges) {
-				auto label = slaa->get_edge(edge_id)->get_label();
+				auto label = vwaa->get_edge(edge_id)->get_label();
 				// do not add the false edges
 				if (label == bddfalse) {
 					continue;
 				}
 
-				std::set<unsigned> targets = slaa->get_edge(edge_id)->get_targets();
+				std::set<unsigned> targets = vwaa->get_edge(edge_id)->get_targets();
 
-				// creates state if not existe for given set
+				// creates state if not existing for given set
 				unsigned target_id = get_state_id_for_set(aut, targets);
 				if (target_id > last_inserted) {
 					last_inserted = target_id;
 					q.push(target_id);
 				}
 
-				auto marks = slaa->get_edge(edge_id)->get_marks();
+				auto marks = vwaa->get_edge(edge_id)->get_marks();
 				nha->add_edge(nha->get_state_id(source_id), label, std::set<unsigned>({ nha->get_state_id(target_id) }), marks);
 			}
 		}
@@ -220,8 +300,8 @@ spot::twa_graph_ptr make_semideterministic(SLAA *slaa) {
 						// find some edge f from target state that satisfies:
 						// 1) f goes to subset of target_set not containing the owner of mark
 						// 2) f.label ⊆ current edge.label
-						for (auto& f_edge_id : slaa->get_state_edges(rec.second)) {
-							auto f_edge = slaa->get_edge(f_edge_id);
+						for (auto& f_edge_id : vwaa->get_state_edges(rec.second)) {
+							auto f_edge = vwaa->get_edge(f_edge_id);
 							auto f_targets = f_edge->get_targets();
 
 							if (f_targets.count(rec.second) == 0
@@ -255,7 +335,6 @@ spot::twa_graph_ptr make_semideterministic(SLAA *slaa) {
 	if (o_eq_level > 0) {
 		nha->merge_equivalent_states();
 	}
-
 	// again, some may become unreachable
 	nha->remove_unreachable_states();
 
@@ -356,5 +435,9 @@ spot::twa_graph_ptr make_semideterministic(SLAA *slaa) {
 		spot::cleanup_acceptance_here(aut);
 	}
 
+
+	//auto auti = spot::remove_alternation(vwaa->spot_aut);
+
     return aut;
 }
+*/

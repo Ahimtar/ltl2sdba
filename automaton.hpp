@@ -38,6 +38,8 @@
 #include <spot/twaalgos/simulation.hh>
 #include <spot/twaalgos/sccfilter.hh>
 #include "utils.hpp"
+#include <iostream>
+#include <fstream>
 
 class Edge {
 protected:
@@ -99,7 +101,7 @@ protected:
 	// state_edges maps a set of edges to each state
 	std::vector<std::set<unsigned>> state_edges;
 
-	std::vector<std::set<unsigned>>* spot_id_to_slaa_set = nullptr; // this has to be nullptr for SLAA
+	std::vector<std::set<unsigned>>* spot_id_to_vwaa_set = nullptr; // this has to be nullptr for VWAA
 
 	// a set of Inf-marks used in the automaton
 	std::set<spot::acc_cond::mark_t::value_t> inf_marks;
@@ -161,7 +163,7 @@ public:
 	~Automaton();
 };
 
-class SLAA : public Automaton<spot::formula> {
+class VWAA : public Automaton<spot::formula> {
 protected:
 	spot::formula phi;
 
@@ -211,12 +213,16 @@ public:
 	// prints the automaton in HOA format
 	void print_hoaf();
 
+    // prints the automaton in HOA format into file
+    void printfile_hoaf();
+
 	// prints the automaton in DOT format
 	void print_dot();
 
-	SLAA(spot::formula f);
+	VWAA(spot::formula f);
 };
 
+// xz mozno dat prec
 class NA : public Automaton<unsigned> {
 public:
 	// merges edges with the same source and target

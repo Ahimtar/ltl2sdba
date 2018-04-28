@@ -35,7 +35,7 @@
 #include "automaton.hpp"
 
 bool o_single_init_state;	// -i
-bool o_slaa_determ;			// -d
+bool o_vwaa_determ;			// -d
 unsigned o_eq_level;		// -e
 bool o_mergeable_info;		// -m
 bool o_ac_filter_fin;		// -t
@@ -69,20 +69,20 @@ int main(int argc, char* argv[])
 			<< "\t\t0\tdo not simulate anything (default)\n"
 			<< "\t\t2\tltl2ba (like -d0 -u0 -n0 -e1)\n"
 			<< "\t\t3\tltl3ba (like -u0 -n0 -i1 -X1)\n"
-			<< "\t-d[0|1]\tmore deterministic SLAA construction (default on)\n"
+			<< "\t-d[0|1]\tmore deterministic VWAA construction (default on)\n"
 			<< "\t-e[0|1|2]\tequivalence check on NA\n"
 			<< "\t\t0\tno check\n"
 			<< "\t\t1\tltl2ba's simple check\n"
 			<< "\t\t2\tltl3ba's improved check (default)\n"
 			<< "\t-h, -?\tprint this help\n"
-			<< "\t-i[0|1]\tproduce SLAA with one initial state (default off)\n"
+			<< "\t-i[0|1]\tproduce VWAA with one initial state (default off)\n"
 			<< "\t-m[0|1]\tcheck formula for containment of some alpha-mergeable U (default off)\n"
 			<< "\t-n[0|1]\ttry translating !f and complementing the automaton (default on)\n"
 			<< "\t-o [hoa|dot]\ttype of output\n"
 			<< "\t\thoa\tprint automaton in HOA format (default)\n"
 			<< "\t\tdot\tprint dot format\n"
 			<< "\t-p[1|2|3]\tphase of translation\n"
-			<< "\t\t1\tprint SLAA\n"
+			<< "\t\t1\tprint VWAA\n"
 			<< "\t\t2\tprint NA with removed alternation\n"
 			<< "\t\t3\tprint both\n"
 			<< "\t-s[0|1]\tspot's formula simplifications (default on)\n"
@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
 	}
 
 	o_single_init_state = std::stoi(args["i"]);
-	o_slaa_determ = std::stoi(args["d"]);
+	o_vwaa_determ = std::stoi(args["d"]);
 	o_eq_level = std::stoi(args["e"]);
 	o_mergeable_info = std::stoi(args["m"]);
 	o_ac_filter_fin = std::stoi(args["t"]);
@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
 
 			f = spot::unabbreviate(f);
 
-			auto slaa = make_alternating(f);
+			auto vwaa = make_alternating(f);
 
 			if (o_mergeable_info) {
 				// If some mergeable is present, true is already outputed
@@ -146,26 +146,26 @@ int main(int argc, char* argv[])
 			}
 
 			if (o_spot_scc_filter || print_phase == 2) {
-				slaa->remove_unreachable_states();
-				slaa->remove_unnecessary_marks();
+				vwaa->remove_unreachable_states();
+				vwaa->remove_unnecessary_marks();
 			}
 
 			if ((print_phase & 1) && !neg) {
 				if (args["o"] == "dot") {
-					slaa->print_dot();
+					vwaa->print_dot();
 				} else {
-					slaa->print_hoaf();
+					vwaa->print_hoaf();
 				}
 			}
 
 			if (print_phase & 2) {
 
 				if (!o_spot_scc_filter && print_phase != 2) {
-					slaa->remove_unreachable_states();
-					slaa->remove_unnecessary_marks();
+					vwaa->remove_unreachable_states();
+					vwaa->remove_unnecessary_marks();
 				}
 
-				auto nwa_temp = make_semideterministic(slaa);
+				auto nwa_temp = make_semideterministic(vwaa);
 				if (!neg) {
 					// always assign the default value
 					nwa = nwa_temp;
@@ -179,7 +179,7 @@ int main(int argc, char* argv[])
 
 			}
 
-			delete slaa;
+			delete vwaa;
 		}
 	} catch (std::runtime_error& e) {
 		std::string what(e.what());
@@ -190,21 +190,10 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	//removing alternation and printing NA (eventually this could be changed into printing sDBA)
+	//removing alternation and printing sDBA
 	if (print_phase & 2) {
 
-        /* Version for parsing from a file, not used in the end
-	    spot::parsed_aut_ptr pa = parse_aut("vwaa.hoa", spot::make_bdd_dict());
-        if (pa->format_errors(std::cerr))
-            return 1;
-        if (pa->aborted)
-        {
-            std::cerr << "--ABORT-- read\n";
-            return 1;
-        }
-        auto aut = spot::remove_alternation(pa->aut);*/
-
-        auto aut = spot::remove_alternation(nwa);
+		auto aut = nwa; // xz remove this
 
 		if (args["o"] == "dot") {
 			spot::print_dot(std::cout, aut);
@@ -213,7 +202,6 @@ int main(int argc, char* argv[])
 			std::cout << '\n';
 		}
 	}
-
 
 
 	// do not call bdd_done(), we use libbddx

@@ -29,15 +29,15 @@
 #include <set>
 
 // registers atomic proposition from a state formula
-void register_ap_from_boolean_formula(SLAA* slaa, spot::formula f);
+void register_ap_from_boolean_formula(VWAA* slaa, spot::formula f);
 
 // checks whether U-formula f is mergeable
-bool is_mergeable(SLAA* slaa, spot::formula f);
+bool is_mergeable(VWAA* vwaa, spot::formula f);
 
 // converts an LTL formula to self-loop alternating automaton
-SLAA* make_alternating(spot::formula f);
+VWAA* make_alternating(spot::formula f);
 
 // helper function for LTL to automata translation
-unsigned make_alternating_recursive(SLAA* slaa, spot::formula f);
+unsigned make_alternating_recursive(VWAA* slaa, spot::formula f);
 
 #endif

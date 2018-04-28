@@ -20,7 +20,7 @@
 #include "utils.hpp"
 #include "alternating.hpp"
 
-bool is_mergeable(SLAA* slaa, spot::formula f) {
+bool is_mergeable(VWAA* vwaa, spot::formula f) {
 	if (!f.is(spot::op::U)) {
 		throw "Argument of is_mergeable is not an U-formula";
 	}
@@ -36,22 +36,22 @@ bool is_mergeable(SLAA* slaa, spot::formula f) {
 	}
 
 	// bdd of the left argument
-	auto alpha = spot::formula_to_bdd(f[0], slaa->spot_bdd_dict, slaa->spot_aut);
+	auto alpha = spot::formula_to_bdd(f[0], vwaa->spot_bdd_dict, vwaa->spot_aut);
 	bool at_least_one_loop = false;
 	// for each conjunction in DNF of psi test whether loops are covered by alpha
 	for (auto& clause : f_bar(f[1])) {
 		// convert a set of formulae into their conjunction
 		auto sf = spot::formula::And(std::vector<spot::formula>(clause.begin(), clause.end()));
 		// create the state for the conjunction
-		unsigned state_id = make_alternating_recursive(slaa, sf);
+		unsigned state_id = make_alternating_recursive(vwaa, sf);
 		// Check that any loop label impies alpha(f[0])
-		for (auto& edge_id : slaa->get_state_edges(state_id)) {
-			auto t = slaa->get_edge(edge_id);
+		for (auto& edge_id : vwaa->get_state_edges(state_id)) {
+			auto t = vwaa->get_edge(edge_id);
 			//check t is a loop
 			auto tar_states = t->get_targets();
 			std::set<spot::formula> targets;
 			for (auto& tar_state : tar_states) {
-				targets.insert(slaa->state_name(tar_state));
+				targets.insert(vwaa->state_name(tar_state));
 			}
 			if (std::includes(targets.begin(), targets.end(), clause.begin(), clause.end())) {
 				// If label does not satisfy alpha, return false
@@ -72,7 +72,7 @@ bool is_mergeable(SLAA* slaa, spot::formula f) {
 	return true;
 }
 
-void register_ap_from_boolean_formula(SLAA* slaa, spot::formula f) {
+void register_ap_from_boolean_formula(VWAA* slaa, spot::formula f) {
 	// recursively register APs from a state formula f
 	if (f.is(spot::op::And) || f.is(spot::op::Or)) {
 		for (unsigned i = 0, size = f.size(); i < size; ++i) {
@@ -83,7 +83,7 @@ void register_ap_from_boolean_formula(SLAA* slaa, spot::formula f) {
 	}
 }
 
-unsigned make_alternating_recursive(SLAA* slaa, spot::formula f) {
+unsigned make_alternating_recursive(VWAA* slaa, spot::formula f) {
 	if (slaa->state_exists(f)) {
 		// we already have a state for f
 		return slaa->get_state_id(f);
@@ -193,26 +193,26 @@ unsigned make_alternating_recursive(SLAA* slaa, spot::formula f) {
 	}
 }
 
-SLAA* make_alternating(spot::formula f) {
-	SLAA* slaa = new SLAA(f);
+VWAA* make_alternating(spot::formula f) {
+	VWAA* vwaa = new VWAA(f);
 
 	if (o_single_init_state) {
-		std::set<unsigned> init_set = { make_alternating_recursive(slaa, f) };
-		slaa->add_init_set(init_set);
+		std::set<unsigned> init_set = { make_alternating_recursive(vwaa, f) };
+		vwaa->add_init_set(init_set);
 	} else {
 		std::set<std::set<spot::formula>> f_dnf = f_bar(f);
 
 		for (auto& g_set : f_dnf) {
 			std::set<unsigned> init_set;
 			for (auto& g : g_set) {
-				unsigned init_state_id = make_alternating_recursive(slaa, g);
+				unsigned init_state_id = make_alternating_recursive(vwaa, g);
 				init_set.insert(init_state_id);
 			}
-			slaa->add_init_set(init_set);
+			vwaa->add_init_set(init_set);
 		}
 	}
 
-	slaa->build_acc();
+	vwaa->build_acc();
 
-	return slaa;
+	return vwaa;
 }
