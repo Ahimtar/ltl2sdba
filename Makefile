@@ -17,8 +17,8 @@
 
 FILES = alternating.cpp semideterministic.cpp automaton.cpp utils.cpp main.cpp
 
-ltl3tela: $(FILES)
-	g++ -std=c++14 -o ltl3tela $(FILES) -lspot -lbddx
+ltl3sdba: $(FILES)
+	g++ -std=c++14 -o ltl3sdba $(FILES) -lspot -lbddx
 
 clean:
-	rm ltl3tela
+	rm ltl3sdba

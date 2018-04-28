@@ -61,6 +61,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // Redirecting all output into helper file, prints with autfilt's -s option and returns to normal
     std::cout.rdbuf(outs.rdbuf());
     spot::print_hoa(std::cout, aut, "s");
+    //system("./ltl3hoa");
     std::cout.rdbuf(coutbuf);
 
     outs.close();
@@ -93,7 +94,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
 
 
-/* Former code from ltl3tela's nondeterministic.cpp
+/* Former code from ltl3sdba's nondeterministic.cpp
  *
 
 // Returns the id for a set of VWAA states
