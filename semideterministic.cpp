@@ -25,18 +25,17 @@
 // Converts a given VWAA to sDBA;
 spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
+    // Creating helper files and saving current stream buffer
+    std::ofstream outs;
+    std::streambuf *coutbuf = std::cout.rdbuf();
+
     //Transforming the VWAA into spot format
 
-    // Creating a helper file to print VWAA into
-    std::ofstream outs;
+    // Redirecting all output into helper file, printing and returning to normal
     outs.open ("helper.hoa", std::ofstream::trunc);
-
-    // Redirecting all output into helper file, prints and returns to normal
-    std::streambuf *coutbuf = std::cout.rdbuf();
     std::cout.rdbuf(outs.rdbuf());
     vwaa->print_hoaf();
     std::cout.rdbuf(coutbuf);
-
     outs.close();
 
     // Parsing the helper, acquiring spot format
@@ -55,19 +54,19 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
     // Changing from transition-based into state-based acceptance
 
-    // Opening helper again
-    outs.open ("helper.hoa", std::ofstream::trunc);
 
-    // Redirecting all output into helper file, prints with autfilt's -s option and returns to normal
+    // Printing automata into helper with spot's -s option
+    outs.open ("helper.hoa", std::ofstream::trunc);
     std::cout.rdbuf(outs.rdbuf());
     spot::print_hoa(std::cout, aut, "s");
-    //system("./ltl3hoa");
     std::cout.rdbuf(coutbuf);
-
     outs.close();
 
-    // Parsing the helper, acquiring spot format again
-    spot::parsed_aut_ptr ppvwaa = parse_aut("helper.hoa", spot::make_bdd_dict());
+    // Parsing the previous automata from helper and printing it into helper2 with autfilt's -s option
+    std::system("autfilt helper.hoa -S >helper2.hoa");
+
+    // Parsing the helper2 back, acquiring spot format again
+    spot::parsed_aut_ptr ppvwaa = parse_aut("helper2.hoa", spot::make_bdd_dict());
     if (ppvwaa->format_errors(std::cerr))
         return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully
     if (ppvwaa->aborted)
@@ -78,7 +77,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
     // We have successfully removed alternation and changed into state-based acceptance
     // The nondeterministic part of the sDBA is done
-    return aut;
+    return ppvwaa->aut;
 }
 
 

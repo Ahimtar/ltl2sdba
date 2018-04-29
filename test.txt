@@ -1,0 +1,21 @@
+total 1008
+-rw-rw-r-- 1 jaubu jaubu   7450 Apr 28 01:17 alternating.cpp
+-rw-rw-r-- 1 jaubu jaubu   1397 Apr 28 01:17 alternating.hpp
+-rw-rw-r-- 1 jaubu jaubu  31975 Apr 28 02:46 automaton.cpp
+-rw-rw-r-- 1 jaubu jaubu   7544 Apr 28 01:46 automaton.hpp
+-rw-rw-r-- 1 jaubu jaubu    848 Apr  5 02:28 ChangeLog.md
+drwxrwxr-x 3 jaubu jaubu   4096 Apr 28 22:22 cmake-build-debug
+-rw-rw-r-- 1 jaubu jaubu    406 Apr 28 21:24 CMakeLists.txt
+drwxrwxr-x 3 jaubu jaubu   4096 Apr 27 19:11 Experiments
+-rw-rw-r-- 1 jaubu jaubu      0 Apr 28 22:22 helper2.hoa
+-rw-rw-r-- 1 jaubu jaubu    232 Apr 28 22:22 helper.hoa
+-rw-rw-r-- 1 jaubu jaubu  35141 Apr  5 02:28 LICENSE
+-rwxrwxr-x 1 jaubu jaubu 871712 Apr 28 21:26 ltl3sdba
+-rw-rw-r-- 1 jaubu jaubu   6068 Apr 28 03:09 main.cpp
+-rw-rw-r-- 1 jaubu jaubu    900 Apr 28 21:26 Makefile
+-rw-rw-r-- 1 jaubu jaubu    655 Apr 28 22:19 README.md
+-rw-rw-r-- 1 jaubu jaubu  14152 Apr 28 22:22 semideterministic.cpp
+-rw-rw-r-- 1 jaubu jaubu   1249 Apr 28 00:53 semideterministic.hpp
+-rw-rw-r-- 1 jaubu jaubu      0 Apr 28 22:22 test.txt
+-rw-rw-r-- 1 jaubu jaubu   4610 Apr 11 03:02 utils.cpp
+-rw-rw-r-- 1 jaubu jaubu   1559 Apr 28 01:32 utils.hpp
