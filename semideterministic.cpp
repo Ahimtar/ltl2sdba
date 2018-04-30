@@ -49,7 +49,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     }
 
     // Removing alternation
-    auto aut = spot::remove_alternation(pvwaa->aut);
+    auto aut = spot::remove_alternation(pvwaa->aut, true);
 
     // Changing from transition-based into state-based acceptance
 
@@ -61,7 +61,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     outs.close();
 
     // Parsing the previous automaton from helper and printing it into helper2 with autfilt's -s option
-    std::system("autfilt helper.hoa -S -o='helper2.hoa'");
+    std::system("autfilt helper.hoa -S -Hk > 'helper2.hoa'");   // xz todo name states
 
     // Parsing the helper2 back, acquiring spot format again
     spot::parsed_aut_ptr ppvwaa = parse_aut("helper2.hoa", spot::make_bdd_dict());
@@ -74,11 +74,9 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     }
 
     // We have successfully removed alternation and changed into state-based acceptance
-    // The nondeterministic part of the sDBA is done
+    // The nondeterministic part of the sDBA is , we add deterministic part separately in another function
+
     return ppvwaa->aut;
-
-
-
 }
 
 
