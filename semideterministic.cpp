@@ -18,8 +18,6 @@
 */
 
 #include "semideterministic.hpp"
-#include <iostream>
-#include <sstream>
 
 
 // Converts a given VWAA to sDBA;
@@ -64,19 +62,42 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     std::system("autfilt helper.hoa -S -Hk > 'helper2.hoa'");   // xz todo name states
 
     // Parsing the helper2 back, acquiring spot format again
-    spot::parsed_aut_ptr ppvwaa = parse_aut("helper2.hoa", spot::make_bdd_dict());
-    if (ppvwaa->format_errors(std::cerr))
+    pvwaa = parse_aut("helper2.hoa", spot::make_bdd_dict());
+    if (pvwaa->format_errors(std::cerr))
         return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully
-    if (ppvwaa->aborted)
+    if (pvwaa->aborted)
     {
         std::cerr << "--ABORT-- read\n";
         return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully
     }
 
-    // We have successfully removed alternation and changed into state-based acceptance
-    // The nondeterministic part of the sDBA is , we add deterministic part separately in another function
+    aut = pvwaa->aut;
 
-    return ppvwaa->aut;
+    //return aut; //xz _________________________________________________________________________________
+    // We have successfully removed alternation and changed into state-based acceptance
+    // The nondeterministic part of the sDBA is done, we add deterministic part now
+
+
+    /*
+    //spot::twa_reachable_iterator::run();
+    state_set = aut->get_init_state();
+    auto sets = aut->get_named_prop<std::vector<std::set<unsigned>>>("state-sets");
+
+    for (unsigned i = 0; i < sets->size(); ++i) {
+        std::set<unsigned> candidate = (*sets)[i];
+        if (candidate == state_set) {
+            return i;
+        }
+    }
+    unsigned i = aut->new_state();
+    if (i != sets->size()) {
+        throw "Unexpected index.";
+    } else {
+        sets->push_back(state_set);
+        return i;
+    }*/
+
+    return aut;
 }
 
 
@@ -89,11 +110,9 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
 
 
+/*
+// Former code from ltl3tela's nondeterministic.cpp
 
-
-
-/* Former code from ltl3sdba's nondeterministic.cpp
- *
 
 // Returns the id for a set of VWAA states
 // It creates a new state if not present
@@ -435,8 +454,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 	}
 
 
-	//auto auti = spot::remove_alternation(vwaa->spot_aut);
-
     return aut;
 }
-*/
+//*/

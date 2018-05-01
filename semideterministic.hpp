@@ -27,6 +27,9 @@
 #include <spot/twaalgos/sccfilter.hh>
 #include <spot/twaalgos/alternation.hh>
 #include <spot/parseaut/public.hh>
+#include <spot/twaalgos/reachiter.hh>
+#include <iostream>
+#include <sstream>
 #include "automaton.hpp"
 
 // turns the given VWAA into an equivalent semideterministic
