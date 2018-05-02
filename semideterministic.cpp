@@ -18,6 +18,7 @@
 */
 
 #include "semideterministic.hpp"
+#include <string>
 
 
 // Converts a given VWAA to sDBA;
@@ -47,7 +48,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     }
 
     // Removing alternation
-    auto aut = spot::remove_alternation(pvwaa->aut, true);
+    spot::twa_graph_ptr aut = spot::remove_alternation(pvwaa->aut, true);
 
     // Changing from transition-based into state-based acceptance
 
@@ -78,29 +79,30 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // The nondeterministic part of the sDBA is done, we add deterministic part now
 
 
-    /*
-    //spot::twa_reachable_iterator::run();
-    state_set = aut->get_init_state();
-    auto sets = aut->get_named_prop<std::vector<std::set<unsigned>>>("state-sets");
 
-    for (unsigned i = 0; i < sets->size(); ++i) {
-        std::set<unsigned> candidate = (*sets)[i];
-        if (candidate == state_set) {
-            return i;
-        }
+    //pre kazdy stav od prveho po posledny
+        //vypis statename
+
+    //spot::twa_reachable_iterator iterator(&aut);
+    //iterator.run();
+    //auto sets = aut->states();
+
+    //state_map<int> spot::twa_reachable_iterator::seen;
+
+    //std::set<unsigned> state_set = aut->get_init_state();
+    //auto sets = aut->get_named_prop<std::vector<std::set<unsigned>>>("states");
+    //auto sets = aut->get()->g_->states;
+    //auto sets = aut->get_named_prop(std::string "sta");
+    auto sets = aut->get_graph().states();
+    for (unsigned i = 0; i < sets.size(); ++i) {
+        auto candidate = (sets)[i];
+        auto x = candidate.data(); //toto chcem dajako dostat
+        auto succx = candidate.succ;
+        auto succy = candidate.succ_tail;
+
     }
-    unsigned i = aut->new_state();
-    if (i != sets->size()) {
-        throw "Unexpected index.";
-    } else {
-        sets->push_back(state_set);
-        return i;
-    }*/
-
     return aut;
 }
-
-
 
 
 
