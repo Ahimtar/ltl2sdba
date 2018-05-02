@@ -19,6 +19,8 @@
 
 #include "semideterministic.hpp"
 #include <string>
+#include <map>
+#include <cstring>
 
 
 // Converts a given VWAA to sDBA;
@@ -80,25 +82,16 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
 
 
-    //pre kazdy stav od prveho po posledny
-        //vypis statename
-
-    //spot::twa_reachable_iterator iterator(&aut);
-    //iterator.run();
-    //auto sets = aut->states();
-
-    //state_map<int> spot::twa_reachable_iterator::seen;
-
-    //std::set<unsigned> state_set = aut->get_init_state();
-    //auto sets = aut->get_named_prop<std::vector<std::set<unsigned>>>("states");
-    //auto sets = aut->get()->g_->states;
-    //auto sets = aut->get_named_prop(std::string "sta");
+    // We iterate over all states of the automaton, checking each one for its type (may, must, cant)
     auto sets = aut->get_graph().states();
+    std::map<std::string, spot::twa_graph_state*> tuple; //maps name to state
+
     for (unsigned i = 0; i < sets.size(); ++i) {
-        auto candidate = (sets)[i];
-        auto x = candidate.data(); //toto chcem dajako dostat
-        auto succx = candidate.succ;
-        auto succy = candidate.succ_tail;
+        auto triple = (sets)[i];
+        auto state = triple.data();
+        tuple["State no." + std::to_string(i)] = &state;
+        auto succx = triple.succ;
+        auto succy = triple.succ_tail;
 
     }
     return aut;
