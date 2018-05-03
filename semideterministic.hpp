@@ -30,6 +30,8 @@
 #include <spot/twaalgos/reachiter.hh>
 #include <iostream>
 #include <sstream>
+#include <string>
+#include <map>
 #include "automaton.hpp"
 
 // turns the given VWAA into an equivalent semideterministic

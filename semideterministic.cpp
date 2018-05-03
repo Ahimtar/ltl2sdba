@@ -18,9 +18,6 @@
 */
 
 #include "semideterministic.hpp"
-#include <string>
-#include <map>
-#include <cstring>
 
 
 // Converts a given VWAA to sDBA;
