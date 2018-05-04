@@ -79,18 +79,32 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
 
 
-    // We iterate over all states of the automaton, checking each one for its type (may, must, cant)
-    auto sets = aut->get_graph().states();
-    std::map<std::string, spot::twa_graph_state*> tuple; //maps name to state
+    // We iterate over all states of the automaton
+    // For each state, we find out its type (may, must, cant) by iterating over its edges
+    const spot::bdd_dict_ptr& dict = aut->get_dict();
+    unsigned n = aut->num_states();
+    for (unsigned s = 0; s < n; ++s)
+    {
+        // States are referenced by their number (s), not name
+        std::cout << "State " << s << ":\n";
 
-    for (unsigned i = 0; i < sets.size(); ++i) {
-        auto triple = (sets)[i];
-        auto state = triple.data();
-        tuple["State no." + std::to_string(i)] = &state;
-        auto succx = triple.succ;
-        auto succy = triple.succ_tail;
+        //We go through all edges
+        for (auto& t: aut->out(s))
+        {
+            std::cout << "  edge(" << t.src << " -> " << t.dst << ")\n    label = ";
+            spot::bdd_print_formula(std::cout, dict, t.cond);
+            std::cout << "\n    acc sets = " << t.acc << '\n';
 
+            //Information about the edge
+            auto edgesrc = t.src;
+            auto edgedst = t.dst;
+            auto accsets = t.acc;
+            auto edgelabel = spot::bdd_format_formula(dict, t.cond);
+
+        }
     }
+
+
     return aut;
 }
 
@@ -98,12 +112,40 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
 
 
+/* First version of iterating over states, not using spot
+ *
+    // We iterate over all states of the automaton, checking each one for its type (may, must, cant)
+    auto sets = aut->get_graph().states();
+    //std::map<spot::twa_graph_state*, std::string> tuple; //maps a name to each state
+    std::map<unsigned, std::string> statte; //maps a name to each state number
+
+    int x = 0;
+
+    for (unsigned i = 0; i < sets.size(); ++i) {
+        auto triplet = (sets)[i];
+        auto statedata = triplet.data();
+
+        //from the state data we now evaluate the type(may, must, cant)
+        statte[i] = "State name: " + std::to_string(i) + " (currently only number)";
+        //tuple[&statedata] = "State name: " + std::to_string(i) + " (currently only number)"; // xz Instead, the state name should be assigned here
+
+        //spot::twa::succ_iter(&statedata);
+
+
+        //based on the type we now do one of the respective actions
+        //
+        auto succx = triplet.succ; // First outgoing edge (used when iterating)
+        auto succy = triplet.succ_tail; // Last outgoing edge
+
+        x++;
+    }*/
+
 
 
 
 
 /*
-// Former code from ltl3tela's nondeterministic.cpp
+// Former code from ltl3tela's nondeterministic.cpp (with naming edits)
 
 
 // Returns the id for a set of VWAA states
