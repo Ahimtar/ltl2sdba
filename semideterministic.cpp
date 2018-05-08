@@ -73,22 +73,27 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
     aut = pvwaa->aut;
 
-    //return aut; //xz _________________________________________________________________________________
     // We have successfully removed alternation and changed into state-based acceptance
+    //_________________________________________________________________________________
     // The nondeterministic part of the sDBA is done, we add deterministic part now
 
 
 
-    //xz We will map two phi-s to each state so that it is in the form of (R, phi1, phi2)
+    // xz We map two phi-s to each state so that it is in the form of (R, phi1, phi2)
 
-    // We iterate over all states of the automaton
-    // For each state, we find out its type (may, must, cant) by iterating over its edges
+    // Choosing the R-component
+
+    // We iterate over all states of the automaton, for each:
     const spot::bdd_dict_ptr& dict = aut->get_dict();
     unsigned n = aut->num_states();
     for (unsigned s = 0; s < n; ++s)
     {
         // States are referenced by their number (s), not name
         std::cout << "State " << s << ":\n";
+
+
+        // xz When there exists an edge which is looping and doesnt end in an accepting state = QMAY
+        // xz When all the edges only loop and dont leave = QMUST
 
         //We go through all edges
         for (auto& t: aut->out(s))
@@ -105,6 +110,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
         }
     }
+
+    // xz We choose a subset of QMAYs and name it R (we want to stay here forever)
 
 
     return aut;
