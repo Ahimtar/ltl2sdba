@@ -79,6 +79,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
 
 
+    //xz We will map two phi-s to each state so that it is in the form of (R, phi1, phi2)
+
     // We iterate over all states of the automaton
     // For each state, we find out its type (may, must, cant) by iterating over its edges
     const spot::bdd_dict_ptr& dict = aut->get_dict();
