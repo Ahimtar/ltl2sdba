@@ -113,6 +113,13 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
     // xz We choose a subset of QMAYs and name it R (we want to stay here forever)
 
+    // xz If the transition is looping on a state and it isn't going into F, we turn it into tt edge
+
+
+
+    // xz We now construct the transitions from the phi1 and phi2 successors
+    // xz We either only add edge, or we add it into acceptance transitions too
+
 
     return aut;
 }
