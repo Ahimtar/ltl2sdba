@@ -79,7 +79,10 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
 
 
-    // xz We map two phi-s to each state so that it is in the form of (R, phi1, phi2)
+    // xz These should not be strings
+    // We map two phi-s to each state so that it is in the form of (R, phi1, phi2)
+    std::map<unsigned, std::string> phi1;
+    std::map<unsigned, std::string> phi2;
 
     // Choosing the R-component
 
@@ -91,6 +94,9 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         // States are referenced by their number (s), not name
         std::cout << "State " << s << ":\n";
 
+        // We set the appropriate phis to their value
+        phi1[s] = "Phi_1";
+        phi2[s] = "Phi_2"; //xz todo Change these two from strings to actual values
 
         // xz When there exists an edge which is looping and doesnt end in an accepting state = QMAY
         // xz When all the edges only loop and dont leave = QMUST
