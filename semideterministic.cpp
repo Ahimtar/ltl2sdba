@@ -39,11 +39,11 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // Parsing the helper, acquiring spot format
     spot::parsed_aut_ptr pvwaa = parse_aut("helper.hoa", spot::make_bdd_dict());
     if (pvwaa->format_errors(std::cerr))
-        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully
+        return vwaa->spot_aut;  // todo returning random error, the file from printfile didnt create successfully
     if (pvwaa->aborted)
     {
         std::cerr << "--ABORT-- read\n";
-        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully
+        return vwaa->spot_aut;  // todo returning random error, the file from printfile didnt create successfully
     }
 
     // Removing alternation
@@ -59,72 +59,88 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     outs.close();
 
     // Parsing the previous automaton from helper and printing it into helper2 with autfilt's -s option
-    std::system("autfilt helper.hoa -S -Hk > 'helper2.hoa'");   // xz todo name states
+    std::system("autfilt helper.hoa -S -Hk > 'helper2.hoa'");   // todo name states?
 
     // Parsing the helper2 back, acquiring spot format again
     pvwaa = parse_aut("helper2.hoa", spot::make_bdd_dict());
     if (pvwaa->format_errors(std::cerr))
-        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully
+        return vwaa->spot_aut;  // todo returning random error, the file from printfile didnt create successfully
     if (pvwaa->aborted)
     {
         std::cerr << "--ABORT-- read\n";
-        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully
+        return vwaa->spot_aut;  // todo returning random error, the file from printfile didnt create successfully
     }
 
     aut = pvwaa->aut;
+
+    // todo Remove aut's acceptance marks from all states
+
 
     // We have successfully removed alternation and changed into state-based acceptance
     //_________________________________________________________________________________
     // The nondeterministic part of the sDBA is done, we add deterministic part now
 
 
-
-    // xz These should not be strings
-    // We map two phi-s to each state so that it is in the form of (R, phi1, phi2)
+    // todo These should not be strings
+    // We will map two phi-s to each state so that it is in the form of (R, phi1, phi2)
     std::map<unsigned, std::string> phi1;
     std::map<unsigned, std::string> phi2;
 
     // Choosing the R-component
 
-    // We iterate over all states of the automaton, for each:
     const spot::bdd_dict_ptr& dict = aut->get_dict();
     unsigned n = aut->num_states();
+
+    bool isqmay[n];
+    bool isqmust[n];
+
+    // We iterate over all states (referencing by their number, not name) of the automaton, for each:
     for (unsigned s = 0; s < n; ++s)
     {
-        // States are referenced by their number (s), not name
-        std::cout << "State " << s << ":\n";
-
-        // We set the appropriate phis to their value
+        // We set the phis
         phi1[s] = "Phi_1";
         phi2[s] = "Phi_2"; //xz todo Change these two from strings to actual values
 
-        // xz When there exists an edge which is looping and doesnt end in an accepting state = QMAY
-        // xz When all the edges only loop and dont leave = QMUST
+        // We set the state either as Qmay or Qmust
+        isqmay[s] = false;
+        isqmust[s] = false;
 
-        //We go through all edges
+        // If there exists an edge which is looping and doesnt end in an accepting state we set this state as Qmay
         for (auto& t: aut->out(s))
         {
-            std::cout << "  edge(" << t.src << " -> " << t.dst << ")\n    label = ";
-            spot::bdd_print_formula(std::cout, dict, t.cond);
-            std::cout << "\n    acc sets = " << t.acc << '\n';
-
-            //Information about the edge
-            auto edgesrc = t.src;
-            auto edgedst = t.dst;
-            auto accsets = t.acc;
-            auto edgelabel = spot::bdd_format_formula(dict, t.cond);
-
+            if (t.src == t.dst){
+                //if t.dst is not an accepting state
+                    isqmay[s] = true;
+                    break;
+            }
         }
+
+        // If all the edges only loop or their target is in QMUST, we set this state as Qmust
+        for (auto& t: aut->out(s))
+        {
+            if (t.src == t.dst || isqmust[t.dst]){ //we need to know scc to decide whether target is in Qmust
+                isqmust[s] = true;
+                break;
+            }
+        }
+
     }
 
-    // xz We choose a subset of QMAYs and name it R (we want to stay here forever)
-
-    // xz If the transition is looping on a state and it isn't going into F, we turn it into tt edge
-
+    // todo We nondeterministically choose a subset of Qmays and name it R (we want to stay here forever)
+    // todo a.k.a. we try the rest for every possible R combination?
 
 
-    // xz We now construct the transitions from the phi1 and phi2 successors
-    // xz We either only add edge, or we add it into acceptance transitions too
+    // Construction of R-component
+
+    // First we construct the edges from the first part into the R component
+    // todo For every edge going into R, do stuff?
+
+    // todo If the transition is looping on a state and it isn't going into F, we turn it into tt edge
+
+
+
+    // todo We now construct the transitions from the phi1 and phi2 successors
+    // todo We either only add edge, or we add it into acceptance transitions too
 
 
     return aut;
@@ -134,9 +150,22 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
 
 
+/* Working with edges - notes
+            std::cout << "  edge(" << t.src << " -> " << t.dst << ")\n    label = ";
+            spot::bdd_print_formula(std::cout, dict, t.cond);
+            std::cout << "\n    acc sets = " << t.acc << '\n';
+
+            Information about the edge
+            auto edgesrc = t.src;
+            auto edgedst = t.dst;
+            auto accsets = t.acc;
+            auto edgelabel = spot::bdd_format_formula(dict, t.cond);*/
+
+
+
 /* First version of iterating over states, not using spot
  *
-    // We iterate over all states of the automaton, checking each one for its type (may, must, cant)
+    // We iterate over all states of the automaton, checking each one for its type (may, must)
     auto sets = aut->get_graph().states();
     //std::map<spot::twa_graph_state*, std::string> tuple; //maps a name to each state
     std::map<unsigned, std::string> statte; //maps a name to each state number
@@ -161,7 +190,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
         x++;
     }*/
-
 
 
 
