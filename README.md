@@ -1,7 +1,7 @@
 Overview
 ========
 
-LTL3sDBA is a tool that translates LTL formulae to semi-deterministic automata.
+LTL2sDBA is a tool that translates LTL formulae to semi-deterministic automata.
 
 Requirements
 ============
@@ -14,10 +14,10 @@ Installation
 
 Usage
 =====
-Use `./ltl3sdba -f 'formula to translate'`, for example `./ltl3sdba -f "F(b | GFa)" -p 2`
-See `./ltl3sdba -h` for more information.
+Use `./ltl2sdba -f 'formula to translate'`, for example `./ltl2sdba -f "F(b | GFa)" -p 2`
+See `./ltl2sdba -h` for more information.
 
 Known issues
 ==========
 
-LTL3sDBA is unable to set more than 32 acceptance marks, therefore some larger formulae cannot be translated. This is a limitation of Spot.
+LTL2sDBA is unable to set more than 32 acceptance marks, therefore some larger formulae cannot be translated. This is a limitation of Spot.

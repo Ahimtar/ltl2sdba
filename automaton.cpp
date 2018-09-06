@@ -596,7 +596,7 @@ void VWAA::print_hoaf() {
     spot::tl_simplifier simp;
 
     std::cout << "HOA: v1\n";
-    std::cout << "tool: \"LTL3sDBA\"\n";
+    std::cout << "tool: \"LTL2sDBA\"\n";
     std::cout << "name: \"VWAA for " << spot::unabbreviate(simp.simplify(phi), "WM") << "\"\n";
     std::cout << "States: " << (sink_state_needed ? state_counter + 1 : state_counter) << '\n'; // + 1 is for sink state
 

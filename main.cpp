@@ -55,14 +55,14 @@ int main(int argc, char* argv[])
 	std::map<std::string, std::string> args = parse_arguments(argc, argv);
 
 	if (args.count("v") > 0) {
-		std::cout << "LTL3sDBA " << version << "\n";
+		std::cout << "LTL2sDBA " << version << "\n";
 		return 0;
 	}
 
 	bool invalid_run = args.count("f") == 0;
 
 	if (invalid_run || args.count("h") > 0) {
-		std::cout << "LTL3sDBA " << version << "\n\n"
+		std::cout << "LTL2sDBA " << version << "\n\n"
 			<< "usage: " << argv[0] << " [-flags] -f formula\n"
 			<< "available flags:\n"
 			<< "\t-a[0|2|3]\tact like\n"
@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
 		std::string what(e.what());
 
 		if (what == "Too many acceptance sets used.") {
-			std::cerr << "LTL3sDBA is unable to set more than 32 acceptance marks.\n";
+			std::cerr << "LTL2sDBA is unable to set more than 32 acceptance marks.\n";
 			return 32;
 		}
 	}
