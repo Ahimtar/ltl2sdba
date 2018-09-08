@@ -253,7 +253,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
 	// a map { mark => VWAA state } of Fin-marks removed from NA
 	// filled only if -t flag is active (improved construction of acceptance condition, default on)
-	std::map<spot::acc_cond::mark_t::value_t, unsigned> tgba_mark_owners;
+	std::map<acc_mark, unsigned> tgba_mark_owners;
 	// acr is a representation of the final acceptance condition
 	auto acr = vwaa->mark_transformation(tgba_mark_owners);
 
@@ -283,10 +283,10 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 	}
 
 	// map { mark => set of owner VWAA states } of Fin-marks removed from NA
-	std::map<spot::acc_cond::mark_t::value_t, std::set<unsigned>> removed_fin_marks;
+	std::map<acc_mark, std::set<unsigned>> removed_fin_marks;
 
 	// map { mark => mark } of the siblings of removed Fin-marks
-	std::map<spot::acc_cond::mark_t::value_t, spot::acc_cond::mark_t::value_t> sibling_of_removed_fin;
+	std::map<acc_mark, acc_mark> sibling_of_removed_fin;
 	for (auto& disj : acr) {
 		auto disj_f = spot::acc_cond::acc_code::f();
 
@@ -441,7 +441,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 	nha->remove_unreachable_states();
 
 	// count all used marks to remove the unused ones
-	std::set<spot::acc_cond::mark_t::value_t> used_marks;
+	std::set<acc_mark> used_marks;
 
 	for (unsigned st_id = 0, st_count = nha->states_count(); st_id < st_count; ++st_id) {
 		for (auto& edge_id : nha->get_state_edges(st_id)) {
@@ -451,8 +451,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 	}
 
 	// create a conversion table { old mark => new mark }
-	std::map<spot::acc_cond::mark_t::value_t, spot::acc_cond::mark_t::value_t> mark_conversion;
-	spot::acc_cond::mark_t::value_t mark_counter = 0;
+	std::map<acc_mark, acc_mark> mark_conversion;
+	acc_mark mark_counter = 0;
 	for (auto old_mark : used_marks) {
 		mark_conversion[old_mark] = mark_counter;
 		++mark_counter;
@@ -512,7 +512,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 			auto label = edge->get_label();
 			auto marks = edge->get_marks();
 
-			std::set<spot::acc_cond::mark_t::value_t> marks_relabelled;
+			std::set<acc_mark> marks_relabelled;
 			for (auto mark : marks) {
 				marks_relabelled.insert(mark_conversion[mark]);
 			}
