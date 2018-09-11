@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
 			auto vwaa = make_alternating(f);
 
 			if (o_mergeable_info) {
-				// If some mergeable is present, true is already outputed
+				// If some mergeable is present, true is already output
 				// from the call of is_mergeable
 				std::cout << false << std::endl;
 				std::exit(0);
@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
 				vwaa->remove_unnecessary_marks();
 			}
 
-			if ((print_phase & 1) && !neg) {
+			if ((print_phase & 1) && !neg) {     // if print_phase is 1 or 3 (&& !neg)
 				if (args["o"] == "dot") {
 					vwaa->print_dot();
 				} else {
@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
 				}
 			}
 
-			if (print_phase & 2) {
+			if (print_phase & 2) {       // if print_phase is 2 or 3
 
 				if (!o_spot_scc_filter && print_phase != 2) {
 					vwaa->remove_unreachable_states();
@@ -194,7 +194,7 @@ int main(int argc, char* argv[])
 	//removing alternation and printing sDBA
 	if (print_phase & 2) {
 
-		auto aut = nwa; // xz remove this
+		auto aut = nwa; // xz remove this (?)
 
 		if (args["o"] == "dot") {
 			spot::print_dot(std::cout, aut);
