@@ -58,8 +58,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     std::cout.rdbuf(coutbuf);
     outs.close();
 
-    // Parsing the previous automaton from helper and printing it into helper2 with autfilt's -s option
-    std::system("autfilt helper.hoa -S -Hk > 'helper2.hoa'");   // todo name states?
+    // Parsing the previous automaton from helper and printing it into helper2 with autfilt's -s (state-based) option
+    std::system("autfilt helper.hoa -S -Hk > 'helper2.hoa'");   // todo name states
 
     // Parsing the helper2 back, acquiring spot format again
     pvwaa = parse_aut("helper2.hoa", spot::make_bdd_dict());
@@ -74,7 +74,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     aut = pvwaa->aut;
 
     // todo Remove aut's acceptance marks from all states
-
 
     // We have successfully removed alternation and changed into state-based acceptance
     //_________________________________________________________________________________
@@ -260,8 +259,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 	auto& ac = aut->acc();
 
 	std::queue<unsigned> q;
-
-
 
 
 
@@ -539,5 +536,4 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
 
     return aut;
-}
-//*/
+}*/
