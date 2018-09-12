@@ -6,7 +6,7 @@ LTL2sDBA is a tool that translates LTL formulae to semi-deterministic automata.
 Requirements
 ============
 
-The Spot library <https://spot.lrde.epita.fr/> has to be installed. Version 2.4 or higher is required for LTL3sDBA to compile and work properly.
+The Spot library <https://spot.lrde.epita.fr/> has to be installed. Version 2.4 or higher is required for LTL2sDBA to compile and work properly.
 
 Installation
 ============
