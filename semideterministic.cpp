@@ -73,7 +73,18 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
     aut = pvwaa->aut;
 
-    // todo Remove aut's acceptance marks from all states
+    // xz Remove aut's acceptance marks from all states. Is this required as the state-based acceptance is "fake"?
+    /*
+    unsigned n = aut->num_states();
+
+    // We iterate over all states (referencing by their number, not name) of the automaton, for each:
+    for (unsigned s = 0; s < n; ++s) {
+        if (aut->state_is_accepting(s)){
+            //aut->state_acc_sets(s);
+        }
+    }*/
+
+
 
     // We have successfully removed alternation and changed into state-based acceptance
     //_________________________________________________________________________________
