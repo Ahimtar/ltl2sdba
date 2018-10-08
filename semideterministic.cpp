@@ -49,7 +49,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // Removing alternation
     spot::twa_graph_ptr aut = spot::remove_alternation(pvwaa->aut, true);
 
-    // Changing from transition-based into state-based acceptance
+    /*
+    // Changing from transition-based into state-based acceptance. Not an effective way, scrapping this.
 
     // Printing the automaton into helper with spot's -s option
     outs.open ("helper.hoa", std::ofstream::trunc);
@@ -59,34 +60,21 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     outs.close();
 
     // Parsing the previous automaton from helper and printing it into helper2 with autfilt's -s (state-based) option
-    std::system("autfilt helper.hoa -S -Hk > 'helper2.hoa'");   // todo name states
+    std::system("autfilt helper.hoa -S -H > 'helper2.hoa'");   // xz name states?
 
     // Parsing the helper2 back, acquiring spot format again
     pvwaa = parse_aut("helper2.hoa", spot::make_bdd_dict());
     if (pvwaa->format_errors(std::cerr))
-        return vwaa->spot_aut;  // todo returning random error, the file from printfile didnt create successfully
+        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully?
     if (pvwaa->aborted)
     {
         std::cerr << "--ABORT-- read\n";
-        return vwaa->spot_aut;  // todo returning random error, the file from printfile didnt create successfully
+        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully?
     }
-
     aut = pvwaa->aut;
-
-    // xz Remove aut's acceptance marks from all states. Is this required as the state-based acceptance is "fake"?
-    /*
-    unsigned n = aut->num_states();
-
-    // We iterate over all states (referencing by their number, not name) of the automaton, for each:
-    for (unsigned s = 0; s < n; ++s) {
-        if (aut->state_is_accepting(s)){
-            //aut->state_acc_sets(s);
-        }
-    }*/
+     */
 
 
-
-    // We have successfully removed alternation and changed into state-based acceptance
     //_________________________________________________________________________________
     // The nondeterministic part of the sDBA is done, we add deterministic part now
 
