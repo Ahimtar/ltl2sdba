@@ -124,14 +124,16 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
     }
 
-    // todo We nondeterministically choose a subset of Qmays and name it R (we want to stay here forever)
-    // todo a.k.a. we try the rest for every possible R combination?
+    // todo We nondeterministically choose a subset of Qmays in C and name it R (we want to stay here forever)
+    // todo We add all Qmusts in C to this R
+
+    // todo ...we try the rest for every possible R combination?
 
 
-    // Construction of R-component
+    // Construction of R-component            rest is unpolished
 
     // First we construct the edges from the first part into the R component
-    // todo For every edge going into R, do stuff?
+    // todo For every edge going into R, "remove it" since it is accepting?
 
     // todo If the transition is looping on a state and it isn't going into F, we turn it into tt edge
 
