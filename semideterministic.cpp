@@ -97,7 +97,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     {
         // We set the phis
         phi1[s] = "Phi_1";
-        phi2[s] = "Phi_2"; //xz todo Change these two from strings to actual values
+        phi2[s] = "Phi_2"; //xz todo Change these two from strings to sets of states
 
         // We set the state either as Qmay or Qmust
         isqmay[s] = false;
@@ -107,7 +107,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         for (auto& t: aut->out(s))
         {
             if (t.src == t.dst){
-                //if t.dst is not an accepting state
+                //if the transition is not accepting
                     isqmay[s] = true;
                     break;
             }
