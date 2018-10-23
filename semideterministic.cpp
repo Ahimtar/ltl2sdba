@@ -46,8 +46,39 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         return vwaa->spot_aut;  // todo returning random error, the file from printfile didnt create successfully
     }
 
+    int nq = pvwaa->aut->num_states(); // Number of states Q of the automaton.
+
+    bool isqmay[nq];
+    bool isqmust[nq];
+
+    // We iterate over all states of the automaton, for each one we check if it belongs to Qmay or Qmust or none:
+    for (unsigned q = 0; q < nq; ++q)
+    {
+        isqmay[q] = false;
+        isqmust[q] = false;
+
+        // If there exists an edge which is looping and not accepting, we set this state as Qmay
+        for (auto& t: pvwaa->aut->out(q))
+        {
+            if (t.src == t.dst && !t.acc){
+                isqmay[q] = true;
+                break;
+            }
+        }
+
+        // If all the edges only loop or their target is in Qmust, we set this state as Qmust
+        for (auto& t: pvwaa->aut->out(q))
+        {
+            if (t.src == t.dst || isqmust[t.dst]){ //we need to know scc to decide whether target is in Qmust
+                isqmust[q] = true;
+                break;
+            }
+        }
+    }
+
     // Removing alternation
     spot::twa_graph_ptr aut = spot::remove_alternation(pvwaa->aut, true);
+    //todo name these states (configurations) adequately, e.g. as "1.2" "8.10.12" "4" etc based on numbering of Q
 
     /*
     // Changing from transition-based into state-based acceptance. Not an effective way, scrapping this.
@@ -78,59 +109,28 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     //_________________________________________________________________________________
     // The nondeterministic part of the sDBA is done, we add deterministic part now
 
-
-    // todo These should not be strings
+    // todo These should not be strings, but sets of states
     // We will map two phi-s to each state so that it is in the form of (R, phi1, phi2)
     std::map<unsigned, std::string> phi1;
     std::map<unsigned, std::string> phi2;
 
-    // Choosing the R-component
-
     const spot::bdd_dict_ptr& dict = aut->get_dict();
-    unsigned n = aut->num_states();
+    unsigned n = aut->num_states(); //number of configurations (states in the nondeterministic part)
 
-    bool isqmay[n];
-    bool isqmust[n];
-
-    // We iterate over all states (referencing by their number, not name) of the automaton, for each:
-    for (unsigned s = 0; s < n; ++s)
-    {
+    // Choosing the R-component
+    for (unsigned s = 0; s < n; ++s) {
         // We set the phis
         phi1[s] = "Phi_1";
-        phi2[s] = "Phi_2"; //xz todo Change these two from strings to sets of states
-
-        // We set the state either as Qmay or Qmust
-        isqmay[s] = false;
-        isqmust[s] = false;
-
-        // If there exists an edge which is looping and doesnt end in an accepting state we set this state as Qmay
-        for (auto& t: aut->out(s))
-        {
-            if (t.src == t.dst){
-                //if the transition is not accepting
-                    isqmay[s] = true;
-                    break;
-            }
-        }
-
-        // If all the edges only loop or their target is in QMUST, we set this state as Qmust
-        for (auto& t: aut->out(s))
-        {
-            if (t.src == t.dst || isqmust[t.dst]){ //we need to know scc to decide whether target is in Qmust
-                isqmust[s] = true;
-                break;
-            }
-        }
-
+        phi2[s] = "Phi_2"; //todo Change these two from strings to sets of states
     }
 
     // todo We nondeterministically choose a subset of Qmays in C and name it R (we want to stay here forever)
-    // todo We add all Qmusts in C to this R
+    // todo We add all Qmusts in that C to this R
 
     // todo ...we try the rest for every possible R combination?
 
 
-    // Construction of R-component            rest is unpolished
+    // Construction of R-component      -rest is unpolished
 
     // First we construct the edges from the first part into the R component
     // todo For every edge going into R, "remove it" since it is accepting?
