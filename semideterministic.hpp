@@ -28,6 +28,7 @@
 #include <spot/twaalgos/alternation.hh>
 #include <spot/parseaut/public.hh>
 #include <spot/twaalgos/reachiter.hh>
+#include <spot/twa/bddprint.hh>
 #include <iostream>
 #include <sstream>
 #include <string>

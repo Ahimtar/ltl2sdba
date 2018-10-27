@@ -19,7 +19,6 @@
 
 #include "semideterministic.hpp"
 
-
 // Converts a given VWAA to sDBA;
 spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
@@ -46,39 +45,63 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         return vwaa->spot_aut;  // todo returning random error, the file from printfile didnt create successfully
     }
 
-    int nq = pvwaa->aut->num_states(); // Number of states Q of the automaton.
+    // Removing alternation
+    spot::twa_graph_ptr aut = spot::remove_alternation(pvwaa->aut, true);
+    //todo name these states (configurations) adequately, e.g. as "1.2" "8.10.12" "4" etc based on numbering of Q
+
+    int nq = aut->num_states(); // Number of states Q of the automaton. (sometimes results 1 more than it should? xz)
+    std::cout << (nq) << "states\n"; //xz
+
+    const spot::bdd_dict_ptr& dict = aut->get_dict();
 
     bool isqmay[nq];
     bool isqmust[nq];
 
-    // We iterate over all states of the automaton, for each one we check if it belongs to Qmay or Qmust or none:
+    // We iterate over all states of the automaton, for each one we check if it belongs to Qmay and Qmust:
     for (unsigned q = 0; q < nq; ++q)
     {
         isqmay[q] = false;
-        isqmust[q] = false;
+        isqmust[q] = true;
+
+        // takto v spote v hoa vypisuju nazov statu
+        auto sn = aut->get_named_prop<std::vector<std::string>>("state-names");
+        if (sn && q < sn->size() && !(*sn)[q].empty()) {
+            std::cout << "State: " << q << " \"" << (*sn)[q] << "\"\n"; //xz
+        }
+
 
         // If there exists an edge which is looping and not accepting, we set this state as Qmay
-        for (auto& t: pvwaa->aut->out(q))
+        // We iterate over all edges going from this state
+        for (auto& t: aut->out(q)) //TODO THIS DOESNT WORK FOR SOME REASON
         {
-            if (t.src == t.dst && !t.acc){
+            std::cout << "[" << spot::bdd_format_formula(dict, t.cond) << "] ";
+            bool notfirst = false;
+            for (unsigned d: aut->univ_dests(t.dst))
+            {
+                if (notfirst)
+                    std::cout << '&';
+                else
+                    notfirst = true;
+                std::cout << d;
+            }
+            std::cout << " " << t.acc << "\n";
+
+            if (t.src == t.dst){ // t.src = q    // este musime pridat podmienku:  && t.acc == {}
                 isqmay[q] = true;
                 break;
             }
         }
 
-        // If all the edges only loop or their target is in Qmust, we set this state as Qmust
-        for (auto& t: pvwaa->aut->out(q))
+        // If all the edges loop, we set this state as Qmust
+        for (auto& t: aut->out(q))
         {
-            if (t.src == t.dst || isqmust[t.dst]){ //we need to know scc to decide whether target is in Qmust
-                isqmust[q] = true;
+            if (t.src != t.dst){ // t.src = q; t.dst should be a set, not a single state, needs fix!
+                isqmust[q] = false;
                 break;
             }
         }
     }
-
-    // Removing alternation
-    spot::twa_graph_ptr aut = spot::remove_alternation(pvwaa->aut, true);
-    //todo name these states (configurations) adequately, e.g. as "1.2" "8.10.12" "4" etc based on numbering of Q
+    std::cout << ("This is the end of this state. Next: ");
 
     /*
     // Changing from transition-based into state-based acceptance. Not an effective way, scrapping this.
@@ -114,7 +137,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     std::map<unsigned, std::string> phi1;
     std::map<unsigned, std::string> phi2;
 
-    const spot::bdd_dict_ptr& dict = aut->get_dict();
     unsigned n = aut->num_states(); //number of configurations (states in the nondeterministic part)
 
     // Choosing the R-component
@@ -127,7 +149,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // todo We nondeterministically choose a subset of Qmays in C and name it R (we want to stay here forever)
     // todo We add all Qmusts in that C to this R
 
-    // todo ...we try the rest for every possible R combination?
+    // todo we try the rest for every possible R combination.
 
 
     // Construction of R-component      -rest is unpolished
@@ -151,15 +173,13 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
 
 /* Working with edges - notes
-            std::cout << "  edge(" << t.src << " -> " << t.dst << ")\n    label = ";
+            xz t.cond is bdd of edges (napriklad ze: a&!b, akurat ne v pismenach ale cislach)
+            std::cout << "edge(" << t.src << " -> " << t.dst << "), label ";
             spot::bdd_print_formula(std::cout, dict, t.cond);
-            std::cout << "\n    acc sets = " << t.acc << '\n';
-
-            Information about the edge
-            auto edgesrc = t.src;
-            auto edgedst = t.dst;
-            auto accsets = t.acc;
-            auto edgelabel = spot::bdd_format_formula(dict, t.cond);*/
+            auto edgelabel = spot::bdd_format_formula(dict, t.cond);
+            std::cout << ", acc sets " << t.acc;
+            std::cout << ", next succ " << (t.next_succ) << " Univ dests:\n";
+            */
 
 
 
