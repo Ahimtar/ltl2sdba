@@ -10,7 +10,7 @@ The Spot library <https://spot.lrde.epita.fr/> has to be installed. Version 2.4 
 
 Installation
 ============
-`make` should be enough to compile LTL3sDBA.
+`make` should be enough to compile LTL2sDBA.
 
 Usage
 =====
