@@ -22,11 +22,11 @@
 // Converts a given VWAA to sDBA;
 spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
+    // We first transform the VWAA into spot format
+
     // Creating helper files and saving current stream buffer
     std::ofstream outs;
     std::streambuf *coutbuf = std::cout.rdbuf();
-
-    //Transforming the VWAA into spot format
 
     // Redirecting output into helper file and printing vwaa in hoa
     outs.open ("helper.hoa", std::ofstream::trunc);
@@ -45,74 +45,60 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         return vwaa->spot_aut;  // todo returning random error, the file from printfile didnt create successfully
     }
 
-    /*
-    // Changing from transition-based into state-based acceptance. Not an effective way, scrapping this.
-
-    // Printing the automaton into helper with spot's -s option
-    outs.open ("helper.hoa", std::ofstream::trunc);
-    std::cout.rdbuf(outs.rdbuf());
-    spot::print_hoa(std::cout, aut, "s");
-    std::cout.rdbuf(coutbuf);
-    outs.close();
-
-    // Parsing the previous automaton from helper and printing it into helper2 with autfilt's -s (state-based) option
-    std::system("autfilt helper.hoa -S -H > 'helper2.hoa'");   // xz name states?
-
-    // Parsing the helper2 back, acquiring spot format again
-    pvwaa = parse_aut("helper2.hoa", spot::make_bdd_dict());
-    if (pvwaa->format_errors(std::cerr))
-        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully?
-    if (pvwaa->aborted)
-    {
-        std::cerr << "--ABORT-- read\n";
-        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully?
-    }
-    aut = pvwaa->aut;
-     */
-
-    // Removing alternation
-    spot::twa_graph_ptr aut = spot::remove_alternation(pvwaa->aut, true);
-
 
     //_________________________________________________________________________________
-    // The nondeterministic part of the sDBA is almost done
-    // Now we just need to assign Qmays and Qmusts and remove acceptance marks
+    // We have VWAA parsed. Now, we assign Qmays and Qmusts and remove acceptance marks
 
-
-    int nq = aut->num_states();
+    int nq = pvwaa->aut->num_states();
     std::cout << (nq) << " states\n"; // xz Print
 
-    const spot::bdd_dict_ptr& dict = aut->get_dict();
+    const spot::bdd_dict_ptr& dict = pvwaa->aut->get_dict();
 
     bool isqmay[nq];
     bool isqmust[nq];
 
-    // We iterate over all states of the automaton, which are actually configurations of the former VWAA states
-    // State-names are in style of "1,2,3", these represent states of the former VWAA configuration
-    // We use numbers to work with these states more efficiently
+    // We iterate over all states of the VWAA
     for (unsigned q = 0; q < nq; ++q)
     {
         isqmay[q] = false;
         isqmust[q] = true;
 
-        // todo state names arent always in the style mentioned earlier, we need to look into it
-        // xz print state name from hoa ---------
-        auto sn = aut->get_named_prop<std::vector<std::string>>("state-names");
-        if (sn && q < sn->size() && !(*sn)[q].empty()) {
-            std::cout << "State: " << q << " \"" << (*sn)[q] << "\"\n";
-        }
-        // --------------------------------------
+        std::cout << "State: " << q << "\n"; // xz Print
 
+        // We iterate over all edges going from this state checking for Qmays and Qmusts
 
         // If there exists an edge which is looping and not accepting, we set this state as Qmay
-        // We iterate over all edges going from this state
-        for (auto& t: aut->out(q)) //TODO THIS DOESNT WORK, FOR SOME REASON SOME TRANSITIONS ARE MISSING
+        for (auto& t: pvwaa->aut->out(q))
         {
 
+            for (unsigned d: pvwaa->aut->univ_dests(t.dst))
+            {
+                if (t.src == d && t.acc.id == 0) { // t.src = q
+                    isqmay[q] = true;
+                    break;
+                }
+            }
+        }
+
+        // If all the edges loop, we set this state as Qmust   //todo do really ALL edges need to be loops?
+        for (auto& t: pvwaa->aut->out(q))
+        {
+            for (unsigned d: pvwaa->aut->univ_dests(t.dst))
+            {
+                if (t.src != d){ // t.src = q
+                    isqmust[q] = false;
+                    break;
+                }
+            }
+        }
+
+        // We remove acceptance marks from all the edges, since no edge in the nondeterministic part is accepting
+        for (auto& t: pvwaa->aut->out(q))
+        {
             // xz PRINT PART -------------
             std::cout << "[" << spot::bdd_format_formula(dict, t.cond) << "] ";
             bool notfirst = false;
-            for (unsigned d: aut->univ_dests(t.dst))
+            for (unsigned d: pvwaa->aut->univ_dests(t.dst))
             {
                 if (notfirst)
                     std::cout << '&';
@@ -123,38 +109,19 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
             std::cout << " " << t.acc << "\n";
             // ---------------------------
 
-
-            if (t.src == t.dst && t.acc.id == 0){ // t.src = q
-                isqmay[q] = true;
-                break;
-            }
-        }
-
-        // If all the edges loop, we set this state as Qmust
-        for (auto& t: aut->out(q))
-        {
-            if (t.src != t.dst){ // t.src = q
-                isqmust[q] = false;
-                break;
-            }
-        }
-
-        // We remove acceptance marks from all the edges, since no edge in the nondeterministic part is accepting
-        for (auto& t: aut->out(q))
-        {
-            t.acc == 0;
+            t.acc = 0;
         }
     }
     std::cout << ("This is the end of this state. Next: "); // xz Print
 
 
-
     //_________________________________________________________________________________
-    // The nondeterministic part of the sDBA is fully done
-    // We add deterministic part now
+    // We are done with the VWAA and can move on
+    // We now start building the SDBA by removing alternation
 
-    // Rest is unpolished
-    
+    spot::twa_graph_ptr aut = spot::remove_alternation(pvwaa->aut, true);
+
+    // The nondeterministic part of the SDBA is fully done, we add deterministic part now
 
 
     // todo These should not be strings, but sets of states
@@ -165,11 +132,29 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     unsigned n = aut->num_states(); //number of configurations (states in the nondeterministic part)
 
     // Choosing the R-component
-    for (unsigned s = 0; s < n; ++s) {
+    // We iterate over all states of the automaton, which are actually configurations of the former VWAA states
+    // State-names are in style of "1,2,3", these represent states of the former VWAA configuration
+    // todo state names arent always in this style, we need to look into it
+    // We use numbers to work with these states more efficiently
+
+    std::cout << "\n Num of states C: " << n << "\n"; //xz
+
+    for (unsigned c = 0; c < n; ++c) {
         // We set the phis
-        phi1[s] = "Phi_1";
-        phi2[s] = "Phi_2"; //todo Change these two from strings to sets of states
+        phi1[c] = "Phi_1";
+        phi2[c] = "Phi_2"; //todo Change these two from strings to sets of states
+
+
+
+        // xz print state name from hoa ---------
+        auto sn = pvwaa->aut->get_named_prop<std::vector<std::string>>("state-names");
+        if (sn && c < sn->size() && !(*sn)[c].empty()) {
+            std::cout << "State: " << c << " \"" << (*sn)[c] << "\"\n";
+        }
+        // --------------------------------------
     }
+
+    std::cout << "End of algorithm\n";
 
     // todo We nondeterministically choose a subset of Qmays in C and name it R (we want to stay here forever)
     // todo We add all Qmusts in that C to this R
@@ -236,6 +221,31 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         x++;
     }*/
 
+
+/*
+    // Changing from transition-based into state-based acceptance. Not an effective way, scrapping this.
+
+    // Printing the automaton into helper with spot's -s option
+    outs.open ("helper.hoa", std::ofstream::trunc);
+    std::cout.rdbuf(outs.rdbuf());
+    spot::print_hoa(std::cout, aut, "s");
+    std::cout.rdbuf(coutbuf);
+    outs.close();
+
+    // Parsing the previous automaton from helper and printing it into helper2 with autfilt's -s (state-based) option
+    std::system("autfilt helper.hoa -S -H > 'helper2.hoa'");   // xz name states?
+
+    // Parsing the helper2 back, acquiring spot format again
+    pvwaa = parse_aut("helper2.hoa", spot::make_bdd_dict());
+    if (pvwaa->format_errors(std::cerr))
+        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully?
+    if (pvwaa->aborted)
+    {
+        std::cerr << "--ABORT-- read\n";
+        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully?
+    }
+    aut = pvwaa->aut;
+     */
 
 
 
