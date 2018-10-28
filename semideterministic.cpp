@@ -36,23 +36,23 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     outs.close();
 
     // Parsing the helper, acquiring spot format
-    spot::parsed_aut_ptr pvwaa = parse_aut("helper.hoa", spot::make_bdd_dict());
-    if (pvwaa->format_errors(std::cerr))
+    spot::parsed_aut_ptr pvwaaptr = parse_aut("helper.hoa", spot::make_bdd_dict());
+    if (pvwaaptr->format_errors(std::cerr))
         return vwaa->spot_aut;  // todo returning random error, the file from printfile didnt create successfully
-    if (pvwaa->aborted)
+    if (pvwaaptr->aborted)
     {
         std::cerr << "--ABORT-- read\n";
         return vwaa->spot_aut;  // todo returning random error, the file from printfile didnt create successfully
     }
-
+    auto pvwaa = pvwaaptr->aut;
 
     //_________________________________________________________________________________
     // We have VWAA parsed. Now, we assign Qmays and Qmusts and remove acceptance marks
 
-    int nq = pvwaa->aut->num_states();
+    int nq = pvwaa->num_states();
     std::cout << (nq) << " states\n"; // xz Print
 
-    const spot::bdd_dict_ptr& dict = pvwaa->aut->get_dict();
+    const spot::bdd_dict_ptr& dict = pvwaa->get_dict();
 
     bool isqmay[nq];
     bool isqmust[nq];
@@ -66,12 +66,11 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         std::cout << "State: " << q << "\n"; // xz Print
 
         // We iterate over all edges going from this state checking for Qmays and Qmusts
-
         // If there exists an edge which is looping and not accepting, we set this state as Qmay
-        for (auto& t: pvwaa->aut->out(q))
+        for (auto& t: pvwaa->out(q))
         {
 
-            for (unsigned d: pvwaa->aut->univ_dests(t.dst))
+            for (unsigned d: pvwaa->univ_dests(t.dst))
             {
                 if (t.src == d && t.acc.id == 0) { // t.src = q
                     isqmay[q] = true;
@@ -81,9 +80,9 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         }
 
         // If all the edges loop, we set this state as Qmust   //todo do really ALL edges need to be loops?
-        for (auto& t: pvwaa->aut->out(q))
+        for (auto& t: pvwaa->out(q))
         {
-            for (unsigned d: pvwaa->aut->univ_dests(t.dst))
+            for (unsigned d: pvwaa->univ_dests(t.dst))
             {
                 if (t.src != d){ // t.src = q
                     isqmust[q] = false;
@@ -93,12 +92,12 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         }
 
         // We remove acceptance marks from all the edges, since no edge in the nondeterministic part is accepting
-        for (auto& t: pvwaa->aut->out(q))
+        for (auto& t: pvwaa->out(q))
         {
             // xz PRINT PART -------------
             std::cout << "[" << spot::bdd_format_formula(dict, t.cond) << "] ";
             bool notfirst = false;
-            for (unsigned d: pvwaa->aut->univ_dests(t.dst))
+            for (unsigned d: pvwaa->univ_dests(t.dst))
             {
                 if (notfirst)
                     std::cout << '&';
@@ -119,8 +118,9 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // We are done with the VWAA and can move on
     // We now start building the SDBA by removing alternation
 
-    spot::twa_graph_ptr aut = spot::remove_alternation(pvwaa->aut, true);
+    spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
 
+    //_________________________________________________________________________________
     // The nondeterministic part of the SDBA is fully done, we add deterministic part now
 
 
@@ -129,7 +129,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     std::map<unsigned, std::string> phi1;
     std::map<unsigned, std::string> phi2;
 
-    unsigned n = aut->num_states(); //number of configurations (states in the nondeterministic part)
+    unsigned nc = sdba->num_states(); //number of configurations (states in the nondeterministic part)
 
     // Choosing the R-component
     // We iterate over all states of the automaton, which are actually configurations of the former VWAA states
@@ -137,9 +137,9 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // todo state names arent always in this style, we need to look into it
     // We use numbers to work with these states more efficiently
 
-    std::cout << "\n Num of states C: " << n << "\n"; //xz
+    std::cout << "\n Num of states C: " << nc << "\n"; //xz
 
-    for (unsigned c = 0; c < n; ++c) {
+    for (unsigned c = 0; c < nc; ++c) {
         // We set the phis
         phi1[c] = "Phi_1";
         phi2[c] = "Phi_2"; //todo Change these two from strings to sets of states
@@ -147,7 +147,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
 
         // xz print state name from hoa ---------
-        auto sn = pvwaa->aut->get_named_prop<std::vector<std::string>>("state-names");
+        auto sn = sdba->get_named_prop<std::vector<std::string>>("state-names");
         if (sn && c < sn->size() && !(*sn)[c].empty()) {
             std::cout << "State: " << c << " \"" << (*sn)[c] << "\"\n";
         }
@@ -175,7 +175,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // todo We either only add edge, or we add it into acceptance transitions too
 
 
-    return aut;
+    return sdba;
 }
 
 
