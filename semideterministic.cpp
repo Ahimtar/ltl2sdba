@@ -50,7 +50,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // We have VWAA parsed. Now, we assign Qmays and Qmusts and remove acceptance marks
 
     int nq = pvwaa->num_states();
-    std::cout << (nq) << " states\n"; // xz Print
+    //std::cout << (nq) << " states\n"; // xz Print
 
     const spot::bdd_dict_ptr& dict = pvwaa->get_dict();
 
@@ -63,7 +63,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         isqmay[q] = false;
         isqmust[q] = true;
 
-        std::cout << "State: " << q << "\n"; // xz Print
+        //std::cout << "State: " << q << "\n"; // xz Print
 
         // We iterate over all edges going from this state checking for Qmays and Qmusts
         // If there exists an edge which is looping and not accepting, we set this state as Qmay
@@ -94,7 +94,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         // We remove acceptance marks from all the edges, since no edge in the nondeterministic part is accepting
         for (auto& t: pvwaa->out(q))
         {
-            // xz PRINT PART -------------
+            /* xz PRINT PART -------------
             std::cout << "[" << spot::bdd_format_formula(dict, t.cond) << "] ";
             bool notfirst = false;
             for (unsigned d: pvwaa->univ_dests(t.dst))
@@ -106,22 +106,20 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
                 std::cout << d;
             }
             std::cout << " " << t.acc << "\n";
-            // ---------------------------
+            // ---------------------------*/
 
             t.acc = 0;
         }
     }
-    std::cout << ("This is the end of this state. Next: "); // xz Print
+    //std::cout << ("This is the end of this state. Next: "); // xz Print
 
 
     //_________________________________________________________________________________
     // We are done with the VWAA and can move on
-    // We now start building the SDBA by removing alternation
+    // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
 
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
 
-    //_________________________________________________________________________________
-    // The nondeterministic part of the SDBA is fully done, we add deterministic part now
 
 
     // todo These should not be strings, but sets of states
@@ -130,21 +128,17 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     std::map<unsigned, std::string> phi2;
 
     unsigned nc = sdba->num_states(); //number of configurations (states in the nondeterministic part)
+    std::cout << "Num of states C: " << nc << "\n"; // xz Print
 
-    // Choosing the R-component
     // We iterate over all states of the automaton, which are actually configurations of the former VWAA states
     // State-names are in style of "1,2,3", these represent states of the former VWAA configuration
-    // todo state names arent always in this style, we need to look into it
+    // todo state names arent always in this style (p6, !p3, !p4), we need to look into it
+
     // We use numbers to work with these states more efficiently
-
-    std::cout << "\n Num of states C: " << nc << "\n"; //xz
-
     for (unsigned c = 0; c < nc; ++c) {
         // We set the phis
         phi1[c] = "Phi_1";
         phi2[c] = "Phi_2"; //todo Change these two from strings to sets of states
-
-
 
         // xz print state name from hoa ---------
         auto sn = sdba->get_named_prop<std::vector<std::string>>("state-names");
@@ -154,27 +148,30 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         // --------------------------------------
     }
 
-    std::cout << "End of algorithm\n";
+    //_________________________________________________________________________________
+    // Choosing the R
 
-    // todo We nondeterministically choose a subset of Qmays in C and name it R (we want to stay here forever)
-    // todo We add all Qmusts in that C to this R
+    // We go through all the states in C
+    // In each one, we go through all its Q's
+    // If it is Qmust, we add it and states reachable from it
+    // If it is Qmay, we recursively call the function and try both adding it with states reachable from it, and not
+    // After we sorted the last Q, we have one R done and can build an R-component for it
 
-    // todo we try the rest for every possible R combination.
+    
+
+
+
 
 
     // Construction of R-component
 
     // First we construct the edges from the first part into the R component
     // todo For every edge going into R, "remove it" since it is accepting?
-
     // todo If the transition is looping on a state and it isn't going into F, we turn it into tt edge
-
-
-
     // todo We now construct the transitions from the phi1 and phi2 successors
     // todo We either only add edge, or we add it into acceptance transitions too
 
-
+    std::cout << "End of algorithm\n";
     return sdba;
 }
 
