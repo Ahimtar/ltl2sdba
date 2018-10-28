@@ -120,33 +120,20 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
 
+    unsigned nc = sdba->num_states(); //number of configurations (states in the nondeterministic part)
+    std::cout << "Num of states C: " << nc << "\n"; // xz Print
 
-
-    // todo These should not be strings, but sets of states
+    /* todo These should not be strings, but sets of states
     // We will map two phi-s to each state so that it is in the form of (R, phi1, phi2)
     std::map<unsigned, std::string> phi1;
     std::map<unsigned, std::string> phi2;
 
-    unsigned nc = sdba->num_states(); //number of configurations (states in the nondeterministic part)
-    std::cout << "Num of states C: " << nc << "\n"; // xz Print
-
-    // We iterate over all states of the automaton, which are actually configurations of the former VWAA states
-    // State-names are in style of "1,2,3", these represent states of the former VWAA configuration
-    // todo state names arent always in this style (p6, !p3, !p4), we need to look into it
-
-    // We use numbers to work with these states more efficiently
     for (unsigned c = 0; c < nc; ++c) {
+
         // We set the phis
         phi1[c] = "Phi_1";
         phi2[c] = "Phi_2"; //todo Change these two from strings to sets of states
-
-        // xz print state name from hoa ---------
-        auto sn = sdba->get_named_prop<std::vector<std::string>>("state-names");
-        if (sn && c < sn->size() && !(*sn)[c].empty()) {
-            std::cout << "State: " << c << " \"" << (*sn)[c] << "\"\n";
-        }
-        // --------------------------------------
-    }
+    }*/
 
     //_________________________________________________________________________________
     // Choosing the R
@@ -156,8 +143,39 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // If it is Qmust, we add it and states reachable from it
     // If it is Qmay, we recursively call the function and try both adding it with states reachable from it, and not
     // After we sorted the last Q, we have one R done and can build an R-component for it
+    //_________________________________________________________________________________
 
-    
+
+    // We iterate over all states of the automaton (C), which are actually configurations of the former VWAA states
+    // State-names are in style of "1,2,3", these represent states of the former VWAA configuration
+    // todo state names arent always in this style (p6, !p3, !p4), we need to look into it
+    std::set<std::string> C[nc];
+
+    // We use numbers to work with these states more efficiently. ci = number of state C
+    for (unsigned ci = 0; ci < nc; ++ci) {
+
+        // We parse the statename to create a set of states
+        auto sn = sdba->get_named_prop<std::vector<std::string>>("state-names");
+        if (sn && ci < sn->size() && !(*sn)[ci].empty()) {
+
+            std::cout << " snci: " << (*sn)[ci]; // xz Print
+
+            std::string s = ((*sn)[ci]) + ",";
+            std::string delimiter = ",";
+            size_t pos = 0;
+            std::string token;
+            while ((pos = s.find(delimiter)) != std::string::npos) {
+                token = s.substr(0, pos);
+                C[ci].insert(token);
+                s.erase(0, pos + delimiter.length());
+            }
+        } else
+        {
+            std::cout << "Some problem happened";
+        }
+
+
+    }
 
 
 
