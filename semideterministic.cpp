@@ -120,21 +120,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
 
-    unsigned nc = sdba->num_states(); //number of configurations (states in the nondeterministic part)
-    std::cout << "Num of states C: " << nc << "\n"; // xz Print
-
-    /* todo These should not be strings, but sets of states
-    // We will map two phi-s to each state so that it is in the form of (R, phi1, phi2)
-    std::map<unsigned, std::string> phi1;
-    std::map<unsigned, std::string> phi2;
-
-    for (unsigned c = 0; c < nc; ++c) {
-
-        // We set the phis
-        phi1[c] = "Phi_1";
-        phi2[c] = "Phi_2"; //todo Change these two from strings to sets of states
-    }*/
-
     //_________________________________________________________________________________
     // Choosing the R
 
@@ -145,6 +130,9 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // After we sorted the last Q, we have one R done and can build an R-component for it
     //_________________________________________________________________________________
 
+
+    unsigned nc = sdba->num_states(); //number of configurations (states in the nondeterministic part)
+    std::cout << "Num of states C: " << nc << "\n"; // xz Print
 
     // We iterate over all states of the automaton (C), which are actually configurations of the former VWAA states
     // State-names are in style of "1,2,3", these represent states of the former VWAA configuration
@@ -169,14 +157,16 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
                 C[ci].insert(token);
                 s.erase(0, pos + delimiter.length());
             }
-        } else
-        {
+        } else {
             std::cout << "Some problem happened";
         }
 
+        std::set<std::string> R;
+
+        // We call our function to judge Qs of this C and create R based on them
+        createR(C[ci], R, isqmay, isqmust);
 
     }
-
 
 
 
@@ -194,10 +184,48 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 }
 
 
+void createR(std::set<std::string> Conf, std::set<std::string> R, bool isqmay[], bool isqmust[]){
+
+    for (auto q : Conf){
+        std::cout << "We are inside of " << q;
+        /*
+        if (!q.empty() && std::front(q))
+
+            std::find_if(q.begin(),q.end(), [](char c) { return !std::isdigit(c); }) == q.end();
+
+
+        if (!q.empty() || std::isdigit()){
+            if(isqmay[std::stoi(q)]){
+                std::cout << " this is working with: " << q;
+            }
+        }*/
+    }
+
+    return;
+}
 
 
 
-/* Working with edges - notes
+
+
+
+
+
+/* Phis work
+ * These should not be strings, but sets of states
+// We will map two phi-s to each state so that it is in the form of (R, phi1, phi2)
+std::map<unsigned, std::string> phi1;
+std::map<unsigned, std::string> phi2;
+
+for (unsigned c = 0; c < nc; ++c) {
+
+    // We set the phis
+    phi1[c] = "Phi_1";
+    phi2[c] = "Phi_2"; //Change these two from strings to sets of states
+}*/
+
+
+/* Working with vwaa edges - notes
             xz t.cond is bdd of edges (napriklad ze: a&!b, akurat ne v pismenach ale cislach)
             std::cout << "edge(" << t.src << " -> " << t.dst << "), label ";
             spot::bdd_print_formula(std::cout, dict, t.cond);
