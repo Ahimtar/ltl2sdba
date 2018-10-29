@@ -124,10 +124,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // Choosing the R
 
     // We go through all the states in C
-    // In each one, we go through all its Q's
-    // If it is Qmust, we add it and states reachable from it
-    // If it is Qmay, we recursively call the function and try both adding it with states reachable from it, and not
-    // After we sorted the last Q, we have one R done and can build an R-component for it
+    // In each one, we go through all its Q-s and build all possible R-s based on what types of states Q-s are
+    // For each R - if it is a new R, we build an R-component
     //_________________________________________________________________________________
 
 
@@ -158,16 +156,17 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
                 s.erase(0, pos + delimiter.length());
             }
         } else {
-            std::cout << "Some problem happened";
+            std::cout << "Some problem happened"; // xz print
         }
 
         std::set<std::string> R;
 
         // We call our function to judge Qs of this C and create R based on them
-        createR(C[ci], R, isqmay, isqmust);
+        createR(pvwaa, C[ci], R, isqmay, isqmust);
+
+        std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 
     }
-
 
 
 
@@ -179,33 +178,79 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // todo We now construct the transitions from the phi1 and phi2 successors
     // todo We either only add edge, or we add it into acceptance transitions too
 
-    std::cout << "End of algorithm\n";
+    std::cout << "End of algorithm\n"; // xz print
     return sdba;
 }
 
 
-void createR(std::set<std::string> Conf, std::set<std::string> R, bool isqmay[], bool isqmust[]){
+
+
+
+// Conf = States Q we still need to check
+// Go through all states of Conf, check if they are qmay and qmust, add corresponding states of VWAA into R
+void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> R,
+             bool isqmay[], bool isqmust[]){
 
     for (auto q : Conf){
-        std::cout << "We are inside of " << q;
-        /*
-        if (!q.empty() && std::front(q))
 
-            std::find_if(q.begin(),q.end(), [](char c) { return !std::isdigit(c); }) == q.end();
+        // Checking state correctness _____________________________________
+        if (q.empty() || !isdigit(q.at(0))){
+            std::cout << "We are in BADSTATE: " << q; // xz print todo Deal with this better
+        } else {
+            std::cout << "We are inside of " << q << "\n"; // xz print
+        // ________________________________________________________________
 
+            // We will not need to check this state again
+            Conf.erase(q);
 
-        if (!q.empty() || std::isdigit()){
-            if(isqmay[std::stoi(q)]){
-                std::cout << " this is working with: " << q;
+            // If this state is Qmust, we add it and states reachable from it to R
+            if (isqmust[std::stoi(q)]){
+                std::cout << " qmusttttttt for q " << q << ". ";
+                addToR(vwaa, q, Conf, R);
             }
-        }*/
+
+            // If it is Qmay, we recursively call the function and try both adding it with states reachable, and not
+            if (isqmay[std::stoi(q)]){
+                std::cout << " qmayyyy for q " << q << ". ";
+
+                // We create a new branch with new Conf and R
+                std::set<std::string> Rx = R;
+                std::set<std::string> newConf = Conf;
+                // We add the state q to R in this branch
+                addToR(vwaa, q, newConf, Rx);
+                // We run the function creating the R where this state is added
+                createR(vwaa, newConf, Rx, isqmay, isqmust);
+
+                // We also continue this run without adding this state to R - representing the second branch
+                std::cout<< "continuing for q " << q << ". ";
+            }
+
+            std::cout << "done run for q: " << q << "\n";
+        }
+
     }
 
     return;
 }
 
+// todo Possibly change q from string to unsigned?
+// Adds the state q and all states reachable from it in vwaa into R
+void addToR(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<std::string> Conf, std::set<std::string> R){
 
-
+    std::cout << " Adding to R? " << q << ". ";
+    // We only add states which are not in R yet
+    if (R.count(q) == 0){
+        std::cout << " yes ";
+        R.insert(q);
+        // We add into R all states reachable from q too
+        for (auto& t: vwaa->out(std::stoi(q))) {
+            for (unsigned d: vwaa->univ_dests(t.dst)) {
+                addToR(vwaa, std::to_string(d), Conf, R);
+            }
+        }
+        std::cout << " Did it. ";
+    }
+}
 
 
 
