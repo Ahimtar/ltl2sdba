@@ -165,35 +165,40 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
 
     for (auto q : Conf)
     {
+        std::cout << "Judging state: " << q << ". "; // xz Print
         // Checking state correctness
         if (q.empty() || !isdigit(q.at(0))){
-            std::cout << " We are in BADSTATE: " << q; // todo Deal with this
+            if (q != "{}") {
+                std::cout << "We are in BADSTATE: " << q << ". "; // todo Deal with this
+            }
+            else {
+                std::cout << "q is {}. "; // xz Print
+            }
         } else {
-            // If this state is Qmust, we add it and states reachable from it to R
+            // If this state is Qmust, we add it and states reachable from it to R (and don't have to check Qmay)
             if (isqmust[std::stoi(q)]){
-                std::cout << " Qmust for q: " << q << ". "; // xz Print
+                std::cout << "It is Qmust. "; // xz Print
                 addToR(vwaa, q, R);
+            } else {
+                // If it is Qmay, we recursively call the function and try both adding it with states reachable, and not
+                if (isqmay[std::stoi(q)]){
+                    std::cout << "It is Qmay. "; // xz Print
+
+                    // We create a new branch with new Conf (we will not need to check this state again) and R
+                    std::set<std::string> newConf = Conf;
+                    newConf.erase(q);
+                    std::set<std::string> Rx = R;
+                    // We add the state q to R in this branch
+                    addToR(vwaa, q, Rx);
+                    std::cout << "Digging deeper for q: " << q << ". "; // xz Print
+                    // We run the branch building the R where this state is added
+                    createR(vwaa, newConf, Rx, isqmay, isqmust);
+
+                    // We also continue this run without adding this state to R - representing the second branch
+                    std::cout<< "Continuing for q " << q << ". "; // xz Print
+                }
             }
-
-            // If it is Qmay, we recursively call the function and try both adding it with states reachable, and not
-            if (isqmay[std::stoi(q)]){
-                std::cout << " Qmay for q: " << q; // xz Print
-
-                // We create a new branch with new Conf (we will not need to check this state again) and R
-                std::set<std::string> newConf = Conf;
-                newConf.erase(q);
-                std::set<std::string> Rx = R;
-                // We add the state q to R in this branch
-                addToR(vwaa, q, Rx);
-                std::cout << "Digging deeper for q: " << q; // xz Print
-                // We run the branch building the R where this state is added
-                createR(vwaa, newConf, Rx, isqmay, isqmust);
-
-                // We also continue this run without adding this state to R - representing the second branch
-                std::cout<< "Continuing for q " << q; // xz Print
-            }
-
-            std::cout << "Done run for q: " << q << "\n"; // xz Print
+            std::cout << "Done checking may/must for q: " << q << "\n"; // xz Print
         }
 
         // todo if configuration is empty, build R-component from R
@@ -204,7 +209,6 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
 // todo Possibly change q from string to unsigned eventually when we are sure about the type of q?
 // Adds the state q and all states reachable from it in vwaa into R
 void addToR(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<std::string> R){
-
     // We only add states which are not in R yet
     if (R.count(q) == 0){
         R.insert(q);
