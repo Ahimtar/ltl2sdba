@@ -50,7 +50,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // We have VWAA parsed. Now, we assign Qmays and Qmusts and remove acceptance marks
 
     int nq = pvwaa->num_states();
-    //std::cout << (nq) << " states\n"; // xz Print
 
     const spot::bdd_dict_ptr& dict = pvwaa->get_dict();
 
@@ -63,13 +62,10 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         isqmay[q] = false;
         isqmust[q] = true;
 
-        //std::cout << "State: " << q << "\n"; // xz Print
-
         // We iterate over all edges going from this state checking for Qmays and Qmusts
         // If there exists an edge which is looping and not accepting, we set this state as Qmay
         for (auto& t: pvwaa->out(q))
         {
-
             for (unsigned d: pvwaa->univ_dests(t.dst))
             {
                 if (t.src == d && t.acc.id == 0) { // t.src = q
@@ -94,24 +90,9 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         // We remove acceptance marks from all the edges, since no edge in the nondeterministic part is accepting
         for (auto& t: pvwaa->out(q))
         {
-            /* xz PRINT PART -------------
-            std::cout << "[" << spot::bdd_format_formula(dict, t.cond) << "] ";
-            bool notfirst = false;
-            for (unsigned d: pvwaa->univ_dests(t.dst))
-            {
-                if (notfirst)
-                    std::cout << '&';
-                else
-                    notfirst = true;
-                std::cout << d;
-            }
-            std::cout << " " << t.acc << "\n";
-            // ---------------------------*/
-
             t.acc = 0;
         }
     }
-    //std::cout << ("This is the end of this state. Next: "); // xz Print
 
 
     //_________________________________________________________________________________
@@ -130,10 +111,9 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
 
     unsigned nc = sdba->num_states(); //number of configurations (states in the nondeterministic part)
-    std::cout << "Num of states C: " << nc << "\n"; // xz Print
 
-    // We iterate over all states of the automaton (C), which are actually configurations of the former VWAA states
-    // State-names are in style of "1,2,3", these represent states of the former VWAA configuration
+    // We iterate over all states (C) of the automaton, which are actually configurations of the former VWAA states
+    // State-names C are in style of "1,2,3", these represent states Q of the former VWAA configuration
     // todo state names arent always in this style (p6, !p3, !p4), we need to look into it
     std::set<std::string> C[nc];
 
@@ -143,9 +123,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         // We parse the statename to create a set of states
         auto sn = sdba->get_named_prop<std::vector<std::string>>("state-names");
         if (sn && ci < sn->size() && !(*sn)[ci].empty()) {
-
-            std::cout << " snci: " << (*sn)[ci]; // xz Print
-
             std::string s = ((*sn)[ci]) + ",";
             std::string delimiter = ",";
             size_t pos = 0;
@@ -156,21 +133,18 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
                 s.erase(0, pos + delimiter.length());
             }
         } else {
-            std::cout << "Some problem happened"; // xz print
+            std::cout << "Some problem happened"; // todo fix?
         }
 
         std::set<std::string> R;
 
-        // We call our function to judge Qs of this C and create R based on them
+        // We call this function to judge Q-s of this C and create R-s (and R-components) based on them
         createR(pvwaa, C[ci], R, isqmay, isqmust);
-
-        std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-
     }
 
 
 
-    // Construction of R-component
+    // Construction of R-component (random notes, the code will not necessarily be here)
 
     // First we construct the edges from the first part into the R component
     // todo For every edge going into R, "remove it" since it is accepting?
@@ -184,73 +158,69 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
 
 
-
-
 // Conf = States Q we still need to check
 // Go through all states of Conf, check if they are qmay and qmust, add corresponding states of VWAA into R
 void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> R,
              bool isqmay[], bool isqmust[]){
 
-    for (auto q : Conf){
-
-        // Checking state correctness _____________________________________
+    for (auto q : Conf)
+    {
+        // Checking state correctness
         if (q.empty() || !isdigit(q.at(0))){
-            std::cout << "We are in BADSTATE: " << q; // xz print todo Deal with this better
+            std::cout << " We are in BADSTATE: " << q; // todo Deal with this
         } else {
-            std::cout << "We are inside of " << q << "\n"; // xz print
-        // ________________________________________________________________
-
-            // We will not need to check this state again
-            Conf.erase(q);
-
             // If this state is Qmust, we add it and states reachable from it to R
             if (isqmust[std::stoi(q)]){
-                std::cout << " qmusttttttt for q " << q << ". ";
-                addToR(vwaa, q, Conf, R);
+                std::cout << " Qmust for q: " << q << ". "; // xz Print
+                addToR(vwaa, q, R);
             }
 
             // If it is Qmay, we recursively call the function and try both adding it with states reachable, and not
             if (isqmay[std::stoi(q)]){
-                std::cout << " qmayyyy for q " << q << ". ";
+                std::cout << " Qmay for q: " << q; // xz Print
 
-                // We create a new branch with new Conf and R
-                std::set<std::string> Rx = R;
+                // We create a new branch with new Conf (we will not need to check this state again) and R
                 std::set<std::string> newConf = Conf;
+                newConf.erase(q);
+                std::set<std::string> Rx = R;
                 // We add the state q to R in this branch
-                addToR(vwaa, q, newConf, Rx);
-                // We run the function creating the R where this state is added
+                addToR(vwaa, q, Rx);
+                std::cout << "Digging deeper for q: " << q; // xz Print
+                // We run the branch building the R where this state is added
                 createR(vwaa, newConf, Rx, isqmay, isqmust);
 
                 // We also continue this run without adding this state to R - representing the second branch
-                std::cout<< "continuing for q " << q << ". ";
+                std::cout<< "Continuing for q " << q; // xz Print
             }
 
-            std::cout << "done run for q: " << q << "\n";
+            std::cout << "Done run for q: " << q << "\n"; // xz Print
         }
 
+        // todo if configuration is empty, build R-component from R
     }
-
     return;
 }
 
-// todo Possibly change q from string to unsigned?
+// todo Possibly change q from string to unsigned eventually when we are sure about the type of q?
 // Adds the state q and all states reachable from it in vwaa into R
-void addToR(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<std::string> Conf, std::set<std::string> R){
+void addToR(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<std::string> R){
 
-    std::cout << " Adding to R? " << q << ". ";
     // We only add states which are not in R yet
     if (R.count(q) == 0){
-        std::cout << " yes ";
         R.insert(q);
         // We add into R all states reachable from q too
         for (auto& t: vwaa->out(std::stoi(q))) {
             for (unsigned d: vwaa->univ_dests(t.dst)) {
-                addToR(vwaa, std::to_string(d), Conf, R);
+                // We exclude loops for effectivity, as they never need to be checked to be added again
+                if (std::to_string(d)!= q){
+                    addToR(vwaa, std::to_string(d), R);
+                }
             }
         }
-        std::cout << " Did it. ";
     }
 }
+
+
 
 
 
@@ -268,6 +238,22 @@ for (unsigned c = 0; c < nc; ++c) {
     phi1[c] = "Phi_1";
     phi2[c] = "Phi_2"; //Change these two from strings to sets of states
 }*/
+
+
+
+/* xz Print from removing acceptance marks loop -------------
+std::cout << "[" << spot::bdd_format_formula(dict, t.cond) << "] ";
+bool notfirst = false;
+for (unsigned d: pvwaa->univ_dests(t.dst))
+{
+    if (notfirst)
+        std::cout << '&';
+    else
+        notfirst = true;
+    std::cout << d;
+}
+std::cout << " " << t.acc << "\n";
+// ---------------------------*/
 
 
 /* Working with vwaa edges - notes
