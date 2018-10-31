@@ -78,15 +78,16 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         // If all the edges loop, we set this state as Qmust   //todo do really ALL edges need to be loops?
         for (auto& t: pvwaa->out(q))
         {
-            for (unsigned d: pvwaa->univ_dests(t.dst))
+            for (unsigned d: pvwaa->univ_dests(t.dst))  // todo function isloop takes (alt.) edge and checks if there is loop inside
             {
-                if (t.src != d){ // t.src = q
+                if (t.src != d){ // t.src = q   // todo check all dsts of alt. edge, if there is q inside, it is loop
                     isqmust[q] = false;
                     break;
                 }
             }
         }
 
+        // todo save these acceptance marks for the r-component building
         // We remove acceptance marks from all the edges, since no edge in the nondeterministic part is accepting
         for (auto& t: pvwaa->out(q))
         {
@@ -99,7 +100,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // We are done with the VWAA and can move on
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
 
-    spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
+    spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true); // todo prefer transition-based, look into it
 
     //_________________________________________________________________________________
     // Choosing the R
@@ -163,7 +164,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> R,
              bool isqmay[], bool isqmust[]){
 
-    for (auto q : Conf)
+    // todo first run through all states to check all states are only states reachable from qmay, if not, skip this entirely
+    for (auto q : Conf) // todo no need to have this cycle. go full-recursion mode, for each state decide what it is and call function on the remaining states
     {
         std::cout << "Judging state: " << q << ". "; // xz Print
         // Checking state correctness
@@ -172,7 +174,7 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
                 std::cout << "We are in BADSTATE: " << q << ". "; // todo Deal with this
             }
             else {
-                std::cout << "q is {}. "; // xz Print
+                std::cout << "q is {}. "; // xz Print    todo keep in mind acceptation
             }
         } else {
             // If this state is Qmust, we add it and states reachable from it to R (and don't have to check Qmay)
@@ -185,7 +187,7 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
                     std::cout << "It is Qmay. "; // xz Print
 
                     // We create a new branch with new Conf (we will not need to check this state again) and R
-                    std::set<std::string> newConf = Conf;
+                    std::set<std::string> newConf = Conf; // todo we need to remember the initial Conf to be able to connect it to the r-comp
                     newConf.erase(q);
                     std::set<std::string> Rx = R;
                     // We add the state q to R in this branch
@@ -193,6 +195,7 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
                     std::cout << "Digging deeper for q: " << q << ". "; // xz Print
                     // We run the branch building the R where this state is added
                     createR(vwaa, newConf, Rx, isqmay, isqmust);
+                    // todo call function to create R component from rx?
 
                     // We also continue this run without adding this state to R - representing the second branch
                     std::cout<< "Continuing for q " << q << ". "; // xz Print
@@ -206,6 +209,8 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
     return;
 }
 
+
+// todo only add Q, not reachable states !
 // todo Possibly change q from string to unsigned eventually when we are sure about the type of q?
 // Adds the state q and all states reachable from it in vwaa into R
 void addToR(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<std::string> R){
@@ -225,7 +230,7 @@ void addToR(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<std::
 }
 
 
-
+// todo try ltlcross to test this tool. generate random formulae and check them in ltlcross (using ltl2tgba) and this
 
 
 

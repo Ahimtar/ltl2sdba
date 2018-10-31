@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
 	spot::twa_graph_ptr nwa = nullptr;
 
 	try {
-		for (unsigned neg = 0; neg <= try_negation; ++neg) {
+		for (unsigned neg = 0; neg <= try_negation; ++neg) { // todo remove this negation part (not needed for now)
 			// neg means we try to negate the formula and complement
 			// the resulting automaton, if it's deterministic
 			// we then choose the smaller of the two automata
