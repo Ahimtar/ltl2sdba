@@ -105,7 +105,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // We are done with the VWAA and can move on
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
 
-    spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true); // todo prefer transition-based, look into it
+    // todo fix: if no state gets changed, the states don't get renamed
+    spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
 
     //_________________________________________________________________________________
     // Choosing the R
@@ -120,7 +121,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
     // We iterate over all states (C) of the automaton, which are actually configurations of the former VWAA states
     // State-names C are in style of "1,2,3", these represent states Q of the former VWAA configuration
-    // todo state names arent always in this style (p6, !p3, !p4), we need to look into it
     std::set<std::string> C[nc];
 
     // We use numbers to work with these states more efficiently. ci = number of state C
@@ -139,13 +139,19 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
                 s.erase(0, pos + delimiter.length());
             }
         } else {
-            std::cout << "Some problem happened"; // todo fix?
+            std::cout << "Wrong C state name."; // todo better error message
         }
 
         std::set<std::string> R;
 
-        // We call this function to judge Q-s of this C and create R-s (and R-components) based on them
-        createR(pvwaa, C[ci], R, isqmay, isqmust);
+        // Check if only states reachable from Qmays are in C. If not, this configuration can not contain an R.
+        if (checkMayReachableStates(pvwaa, C[ci], R, isqmay)){  // We are using R just as a placeholder empty set here
+            R.clear();
+            std::cout << "WE in "; // xz print
+
+            // We call this function to judge Q-s of this C and create R-s (and R-components) based on them
+            createR(pvwaa, C[ci], R, isqmay, isqmust);
+        }
     }
 
 
@@ -161,77 +167,115 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     return sdba;
 }
 
+// Conf = States Q we still need to check
+// Valid = States marked as QMay or its successors
+bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
+                             std::set<std::string> Valid, bool isqmay[]){
 
+    // We check each state whether it is Qmay. If it is, we add it to Valid with all successors
+    for (auto q : Conf)
+    {
+        std::cout << "WE in state q: " << q; // xz
+        if (q.empty() || !isdigit(q.at(0))){
+            if (q != "{}") {
+                std::cout << "We are in BADSTATE: " << q << ". "; // todo Deal with this
+            }
+            else {
+                std::cout << "q is {}. ";
+            }
+        } else {
+            std::cout << ". THis state is legit, lets check if it is may: "; // xz
+            if (isqmay[std::stoi(q)]) {
+                std::cout << "Yes it is may: " << "\n"; // xz
+                addToValid(vwaa, q, Valid);
+            }
+        }
+    }
+
+    // If there were only valid states (QMays and their successors), all states of q can be found in Valid
+    for (auto q : Conf)
+    {
+        if (Valid.find(q) == Valid.end()){
+            std::cout << "falseee "; // xz
+            return false;
+        }
+    } // todo this could be done better maybe?
+    std::cout << "trueeee "; // xz
+
+    return true;
+}
+
+void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<std::string> Valid){
+    Valid.insert(q);
+    std::cout << "we just inserted into valid: " << q; // xz
+    // We add into Valid all states reachable from q too
+    for (auto &t: vwaa->out(std::stoi(q))) {
+        for (unsigned d: vwaa->univ_dests(t.dst)) {
+            // We exclude loops for effectivity, as they never need to be checked to be added again
+            if (std::to_string(d) != q) {
+                std::cout << " we addin to valid " << d; // xz
+                addToValid(vwaa, std::to_string(d), Valid);
+            }
+        }
+    }
+}
 
 // Conf = States Q we still need to check
 // Go through all states of Conf, check if they are qmay and qmust, add corresponding states of VWAA into R
 void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> R,
              bool isqmay[], bool isqmust[]){
 
-    // todo first run through all states to check all states are only states reachable from qmay, if not, skip this entirely
-    for (auto q : Conf) // todo no need to have this cycle. go full-recursion mode, for each state decide what it is and call function on the remaining states
-    {
-        std::cout << "Judging state: " << q << ". "; // xz Print
-        // Checking state correctness
-        if (q.empty() || !isdigit(q.at(0))){
-            if (q != "{}") {
-                std::cout << "We are in BADSTATE: " << q << ". "; // todo Deal with this
-            }
-            else {
-                std::cout << "q is {}. "; // xz Print    todo keep in mind acceptation
+    // We pick first q that comes into way
+    auto it = Conf.begin();
+    std::string q;
+    if (it != Conf.end()) q = *it;
+
+    // Erase it from Conf as we are checking it now
+    Conf.erase(q); // todo we need to remember the initial Conf to be able to connect it to the r-comp
+
+    std::cout << "Judging state: " << q << ". "; // xz Print
+    // Checking state correctness
+    if (q.empty() || !isdigit(q.at(0))){
+        if (q != "{}") {
+            std::cout << "We are in BADSTATE: " << q << ". "; // todo Deal with this
+        }
+        else {
+            std::cout << "q is {}. "; // xz Print todo keep in mind acceptation
+        }
+    } else {
+        // If this state is Qmust, we add it (and don't have to check Qmay)
+        if (isqmust[std::stoi(q)]){
+            std::cout << "It is Qmust. "; // xz Print
+            if (R.count(q) == 0) {
+                R.insert(q);
             }
         } else {
-            // If this state is Qmust, we add it and states reachable from it to R (and don't have to check Qmay)
-            if (isqmust[std::stoi(q)]){
-                std::cout << "It is Qmust. "; // xz Print
-                addToR(vwaa, q, R);
-            } else {
-                // If it is Qmay, we recursively call the function and try both adding it with states reachable, and not
-                if (isqmay[std::stoi(q)]){
-                    std::cout << "It is Qmay. "; // xz Print
+            // If it is Qmay, we recursively call the function and try both adding it and not
+            if (isqmay[std::stoi(q)]){
+                std::cout << "It is Qmay. "; // xz Print
 
-                    // We create a new branch with new Conf (we will not need to check this state again) and R
-                    std::set<std::string> newConf = Conf; // todo we need to remember the initial Conf to be able to connect it to the r-comp
-                    newConf.erase(q);
-                    std::set<std::string> Rx = R;
-                    // We add the state q to R in this branch
-                    addToR(vwaa, q, Rx);
-                    std::cout << "Digging deeper for q: " << q << ". "; // xz Print
-                    // We run the branch building the R where this state is added
-                    createR(vwaa, newConf, Rx, isqmay, isqmust);
-                    // todo call function to create R component from rx?
-
-                    // We also continue this run without adding this state to R - representing the second branch
-                    std::cout<< "Continuing for q " << q << ". "; // xz Print
+                // We create a new branch with new R and add the state q to this R
+                std::set<std::string> Rx = R;
+                if (Rx.count(q) == 0) {
+                    Rx.insert(q);
                 }
-            }
-            std::cout << "Done checking may/must for q: " << q << "\n"; // xz Print
-        }
+                std::cout << "Digging deeper for q: " << q << ". "; // xz Print
+                // We run the branch building the R where this state is added
+                createR(vwaa, Conf, Rx, isqmay, isqmust);
+                // todo call function to create R component from rx?
 
-        // todo if configuration is empty, build R-component from R
+                // We also continue this run without adding this state to R - representing the second branch
+                std::cout<< "Continuing for q " << q << ". "; // xz Print
+            }
+        }
+        std::cout << "Done checking may/must for q: " << q << "\n"; // xz Print
     }
+
+    // todo if configuration is empty, build R-component from R
+
     return;
 }
 
-
-// todo only add Q, not reachable states !
-// todo Possibly change q from string to unsigned eventually when we are sure about the type of q?
-// Adds the state q and all states reachable from it in vwaa into R
-void addToR(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<std::string> R){
-    // We only add states which are not in R yet
-    if (R.count(q) == 0){
-        R.insert(q);
-        // We add into R all states reachable from q too
-        for (auto& t: vwaa->out(std::stoi(q))) {
-            for (unsigned d: vwaa->univ_dests(t.dst)) {
-                // We exclude loops for effectivity, as they never need to be checked to be added again
-                if (std::to_string(d)!= q){
-                    addToR(vwaa, std::to_string(d), R);
-                }
-            }
-        }
-    }
-}
 
 
 // todo try ltlcross to test this tool. generate random formulae and check them in ltlcross (using ltl2tgba) and this

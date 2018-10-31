@@ -39,7 +39,7 @@
 // automaton in the Spot's structure
 spot::twa_graph_ptr make_semideterministic(VWAA *vwaa);
 
+bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> Valid, bool isqmay[]);
+void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<std::string> Valid);
 void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> R,  bool isqmay[], bool isqmust[]);
-void addToR(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<std::string> R);
-
 #endif
