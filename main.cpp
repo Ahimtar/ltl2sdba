@@ -120,13 +120,6 @@ int main(int argc, char* argv[])
 	spot::twa_graph_ptr nwa = nullptr;
 
 	try {
-		for (unsigned neg = 0; neg <= try_negation; ++neg) { // todo remove this negation part (not needed for now)
-			// neg means we try to negate the formula and complement
-			// the resulting automaton, if it's deterministic
-			// we then choose the smaller of the two automata
-			if (neg) {
-				f = spot::formula::Not(f);
-			}
 
 			f = spot::negative_normal_form(spot::unabbreviate(f));
 
@@ -151,7 +144,7 @@ int main(int argc, char* argv[])
 				vwaa->remove_unnecessary_marks();
 			}
 
-			if ((print_phase & 1) && !neg) {     // if print_phase is 1 or 3 (&& !neg)
+			if (print_phase & 1) {     // if print_phase is 1 or 3 (&& !neg)
 				if (args["o"] == "dot") {
 					vwaa->print_dot();
 				} else {
@@ -167,21 +160,11 @@ int main(int argc, char* argv[])
 				}
 
 				auto nwa_temp = make_semideterministic(vwaa);
-				if (!neg) {
-					// always assign the default value
-					nwa = nwa_temp;
-				} else if (spot::is_universal(nwa_temp)) { // we are only interested if the automaton is deterministic
-					nwa_temp = spot::dualize(nwa_temp);
-
-					if (nwa->num_states() >= nwa_temp->num_states()) {
-						nwa = nwa_temp;
-					}
-				}
+				nwa = nwa_temp;
 
 			}
+            delete vwaa;
 
-			delete vwaa;
-		}
 	} catch (std::runtime_error& e) {
 		std::string what(e.what());
 

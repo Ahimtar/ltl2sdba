@@ -158,7 +158,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // todo We now construct the transitions from the phi1 and phi2 successors
     // todo We either only add edge, or we add it into acceptance transitions too
 
-    std::cout << "End of algorithm\n"; // xz print
     return sdba;
 }
 
