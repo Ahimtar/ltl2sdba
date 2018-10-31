@@ -59,31 +59,36 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // We iterate over all states of the VWAA
     for (unsigned q = 0; q < nq; ++q)
     {
-        isqmay[q] = false;
-        isqmust[q] = true;
-
         // We iterate over all edges going from this state checking for Qmays and Qmusts
+
+        isqmay[q] = false;
         // If there exists an edge which is looping and not accepting, we set this state as Qmay
         for (auto& t: pvwaa->out(q))
         {
             for (unsigned d: pvwaa->univ_dests(t.dst))
             {
-                if (t.src == d && t.acc.id == 0) { // t.src = q
+                if (t.src == d && t.acc.id == 0) {
                     isqmay[q] = true;
                     break;
                 }
             }
         }
 
-        // If all the edges loop, we set this state as Qmust   //todo do really ALL edges need to be loops?
+        isqmust[q] = true;
+        bool thereIsALoop;
+        // If we find an edge, where there is no loop, we set this state as not Qmust and break the loop
         for (auto& t: pvwaa->out(q))
         {
-            for (unsigned d: pvwaa->univ_dests(t.dst))  // todo function isloop takes (alt.) edge and checks if there is loop inside
+            thereIsALoop = false;
+            for (unsigned d: pvwaa->univ_dests(t.dst))
             {
-                if (t.src != d){ // t.src = q   // todo check all dsts of alt. edge, if there is q inside, it is loop
-                    isqmust[q] = false;
-                    break;
+                if (t.src == d){
+                    thereIsALoop = true;
                 }
+            }
+            if (!thereIsALoop){
+                isqmust[q] = false;
+                break;
             }
         }
 
