@@ -167,7 +167,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     return sdba;
 }
 
-// Conf = States Q we still need to check
+// Conf = States Q we need to check
 // Valid = States marked as QMay or its successors
 bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                              std::set<std::string> Valid, bool isqmay[]){
@@ -175,7 +175,6 @@ bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std
     // We check each state whether it is Qmay. If it is, we add it to Valid with all successors
     for (auto q : Conf)
     {
-        std::cout << "WE in state q: " << q; // xz
         if (q.empty() || !isdigit(q.at(0))){
             if (q != "{}") {
                 std::cout << "We are in BADSTATE: " << q << ". "; // todo Deal with this
@@ -184,9 +183,7 @@ bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std
                 std::cout << "q is {}. ";
             }
         } else {
-            std::cout << ". THis state is legit, lets check if it is may: "; // xz
             if (isqmay[std::stoi(q)]) {
-                std::cout << "Yes it is may: " << "\n"; // xz
                 addToValid(vwaa, q, Valid);
             }
         }
@@ -195,25 +192,22 @@ bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std
     // If there were only valid states (QMays and their successors), all states of q can be found in Valid
     for (auto q : Conf)
     {
-        if (Valid.find(q) == Valid.end()){
-            std::cout << "falseee "; // xz
+        if (!(Valid.find(q) != Valid.end())){
+            // There is a state of q that is not in valid, therefore this configuration is not valid
             return false;
         }
-    } // todo this could be done better maybe?
-    std::cout << "trueeee "; // xz
-
+    }
+    // All states of this configuration are either Qmay or their successors.
     return true;
 }
 
-void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<std::string> Valid){
+void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<std::string> &Valid){
     Valid.insert(q);
-    std::cout << "we just inserted into valid: " << q; // xz
     // We add into Valid all states reachable from q too
     for (auto &t: vwaa->out(std::stoi(q))) {
         for (unsigned d: vwaa->univ_dests(t.dst)) {
             // We exclude loops for effectivity, as they never need to be checked to be added again
             if (std::to_string(d) != q) {
-                std::cout << " we addin to valid " << d; // xz
                 addToValid(vwaa, std::to_string(d), Valid);
             }
         }
