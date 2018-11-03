@@ -147,22 +147,11 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         // Check if only states reachable from Qmays are in C. If not, this configuration can not contain an R.
         if (checkMayReachableStates(pvwaa, C[ci], R, isqmay)){  // We are using R just as a placeholder empty set here
             R.clear();
-            std::cout << "WE in "; // xz print
 
             // We call this function to judge Q-s of this C and create R-s (and R-components) based on them
             createR(pvwaa, C[ci], R, isqmay, isqmust);
         }
     }
-
-
-
-    // Construction of R-component (random notes, the code will not necessarily be here)
-
-    // First we construct the edges from the first part into the R component
-    // todo For every edge going into R, "remove it" since it is accepting?
-    // todo If the transition is looping on a state and it isn't going into F, we turn it into tt edge
-    // todo We now construct the transitions from the phi1 and phi2 successors
-    // todo We either only add edge, or we add it into acceptance transitions too
 
     return sdba;
 }
@@ -177,10 +166,11 @@ bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std
     {
         if (q.empty() || !isdigit(q.at(0))){
             if (q != "{}") {
-                std::cout << "We are in BADSTATE: " << q << ". "; // todo Deal with this
+                std::cout << "We are in BADSTATE: " << q << ". "; // todo Better error message
             }
             else {
-                std::cout << "q is {}. ";
+                // This state can not be Qmay nor Qmust
+                std::cout << "q is {}, cannot be Qmay/Qmust. "; // todo Is this right?
             }
         } else {
             if (isqmay[std::stoi(q)]) {
@@ -234,6 +224,7 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
             std::cout << "We are in BADSTATE: " << q << ". "; // todo Deal with this
         }
         else {
+            //If the state is {}, we don't have to check if it is Qmay or Qmust
             std::cout << "q is {}. "; // xz Print todo keep in mind acceptation
         }
     } else {
@@ -255,8 +246,10 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
                 }
                 std::cout << "Digging deeper for q: " << q << ". "; // xz Print
                 // We run the branch building the R where this state is added
-                createR(vwaa, Conf, Rx, isqmay, isqmust);
-                // todo call function to create R component from rx?
+
+                if (!Conf.empty()){
+                    createR(vwaa, Conf, Rx, isqmay, isqmust);
+                }
 
                 // We also continue this run without adding this state to R - representing the second branch
                 std::cout<< "Continuing for q " << q << ". "; // xz Print
@@ -265,16 +258,27 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
         std::cout << "Done checking may/must for q: " << q << "\n"; // xz Print
     }
 
-    // todo if configuration is empty, build R-component from R
+    // If this was the last state, we have one R complete. Let's build an R-component from it.
+    if (Conf.empty()){
+
+
+        // Construction of R-component (random notes)
+
+        // First we construct the edges from the first part into the R component
+        // todo For every edge going into R, "remove it" since it is accepting?
+        // todo If the transition is looping on a state and it isn't going into F, we turn it into tt edge
+        // todo We now construct the transitions from the phi1 and phi2 successors
+        // todo We either only add edge, or we add it into acceptance transitions too
+    }
 
     return;
 }
 
 
 
+
+
 // todo try ltlcross to test this tool. generate random formulae and check them in ltlcross (using ltl2tgba) and this
-
-
 
 
 /* Phis work
@@ -308,7 +312,7 @@ std::cout << " " << t.acc << "\n";
 
 
 /* Working with vwaa edges - notes
-            xz t.cond is bdd of edges (napriklad ze: a&!b, akurat ne v pismenach ale cislach)
+            xz t.cond is bdd of edges
             std::cout << "edge(" << t.src << " -> " << t.dst << "), label ";
             spot::bdd_print_formula(std::cout, dict, t.cond);
             auto edgelabel = spot::bdd_format_formula(dict, t.cond);
