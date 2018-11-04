@@ -59,10 +59,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // We iterate over all states of the VWAA
     for (unsigned q = 0; q < nq; ++q)
     {
-        // We iterate over all edges going from this state checking for Qmays and Qmusts
-
         isqmay[q] = false;
-        // If there exists an edge which is looping and not accepting, we set this state as Qmay
+        // If there exists a looping, but not accepting outgoing edge, we set this state as Qmay
         for (auto& t: pvwaa->out(q))
         {
             for (unsigned d: pvwaa->univ_dests(t.dst))
@@ -76,7 +74,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
         isqmust[q] = true;
         bool thereIsALoop;
-        // If we find an edge, where there is no loop, we set this state as not Qmust and break the loop
+        // If we find an outgoing edge, where there is no loop, we set this state as not Qmust and break the loop
         for (auto& t: pvwaa->out(q))
         {
             thereIsALoop = false;
@@ -117,13 +115,12 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     //_________________________________________________________________________________
 
 
-    unsigned nc = sdba->num_states(); //number of configurations (states in the nondeterministic part)
+    unsigned nc = sdba->num_states(); //number of configurations C (states in the nondeterministic part)
 
-    // We iterate over all states (C) of the automaton, which are actually configurations of the former VWAA states
     // State-names C are in style of "1,2,3", these represent states Q of the former VWAA configuration
     std::set<std::string> C[nc];
 
-    // We use numbers to work with these states more efficiently. ci = number of state C
+    // We iterate over all states (C) of the automaton. ci = number of state C
     for (unsigned ci = 0; ci < nc; ++ci) {
 
         // We parse the statename to create a set of states
@@ -148,7 +145,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
         if (checkMayReachableStates(pvwaa, C[ci], R, isqmay)){  // We are using R just as a placeholder empty set here
             R.clear();
 
-            // We call this function to judge Q-s of this C and create R-s (and R-components) based on them
+            // We call this function to judge Q-s of this C and create R-s and R-components based on them
             createR(pvwaa, C[ci], C[ci], R, isqmay, isqmust);
         }
     }
@@ -157,7 +154,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 }
 
 // Conf = States Q we need to check
-// Valid = States marked as QMay or its successors
+// Valid = States marked as QMay or their successors
 bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                              std::set<std::string> Valid, bool isqmay[]){
 
@@ -179,15 +176,13 @@ bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std
         }
     }
 
-    // If there were only valid states (QMays and their successors), all states of q can be found in Valid
+    // We check and return whether all states in Conf are valid (QMays and their successors)
     for (auto q : Conf)
     {
         if (!(Valid.find(q) != Valid.end())){
-            // There is a state of q that is not in valid, therefore this configuration is not valid
             return false;
         }
     }
-    // All states of this configuration are either Qmay or their successors.
     return true;
 }
 
