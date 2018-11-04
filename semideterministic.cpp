@@ -149,7 +149,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
             R.clear();
 
             // We call this function to judge Q-s of this C and create R-s (and R-components) based on them
-            createR(pvwaa, C[ci], R, isqmay, isqmust);
+            createR(pvwaa, C[ci], C[ci], R, isqmay, isqmust);
         }
     }
 
@@ -204,18 +204,19 @@ void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<s
     }
 }
 
-// Conf = States Q we still need to check
+// Conf = The configuration C we are creating R for
+// remaining = States Q (of the configuration C) that we still need to check
 // Go through all states of Conf, check if they are qmay and qmust, add corresponding states of VWAA into R
-void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> R,
+void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> remaining, std::set<std::string> R,
              bool isqmay[], bool isqmust[]){
 
-    // We pick first q that comes into way
-    auto it = Conf.begin();
+    // We choose first q that comes into way
+    auto it = remaining.begin();
     std::string q;
-    if (it != Conf.end()) q = *it;
+    if (it != remaining.end()) q = *it;
 
-    // Erase it from Conf as we are checking it now
-    Conf.erase(q); // todo we need to remember the initial Conf to be able to connect it to the r-comp
+    // Erase it from remaining as we are checking it now
+    remaining.erase(q);
 
     std::cout << "Judging state: " << q << ". "; // xz Print
     // Checking state correctness
@@ -248,9 +249,12 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
                 // We run the branch building the R where this state is added
 
                 if (!Conf.empty()){
-                    createR(vwaa, Conf, Rx, isqmay, isqmust);
+                    createR(vwaa, Conf, remaining, Rx, isqmay, isqmust);
+                } else{
+                    // If this was the last state, we have one R complete. Let's build an R-component from it.
+                    std::set<std::string> rxcomp;
+                    createRComp(Conf, Rx, rxcomp);
                 }
-
                 // We also continue this run without adding this state to R - representing the second branch
                 std::cout<< "Continuing for q " << q << ". "; // xz Print
             }
@@ -260,18 +264,20 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
 
     // If this was the last state, we have one R complete. Let's build an R-component from it.
     if (Conf.empty()){
-
-
-        // Construction of R-component (random notes)
-
-        // First we construct the edges from the first part into the R component
-        // todo For every edge going into R, "remove it" since it is accepting?
-        // todo If the transition is looping on a state and it isn't going into F, we turn it into tt edge
-        // todo We now construct the transitions from the phi1 and phi2 successors
-        // todo We either only add edge, or we add it into acceptance transitions too
+        std::set<std::string> rcomp;
+        createRComp(Conf, R, rcomp);
     }
 
     return;
+}
+
+void createRComp(std::set<std::string> Conf, std::set<std::string> R, std::set<std::string> rcomp){
+
+    // First we construct the edges from the first part into the R component
+    // todo For every edge going into R, "remove it" since it is accepting?
+    // todo If the transition is looping on a state and it isn't going into F, we turn it into tt edge
+    // todo We now construct the transitions from the phi1 and phi2 successors
+    // todo We either only add edge, or we add it into acceptance transitions too
 }
 
 
