@@ -120,7 +120,6 @@ int main(int argc, char* argv[])
 	spot::twa_graph_ptr sdba = nullptr;
 
 	try {
-
 			f = spot::negative_normal_form(spot::unabbreviate(f));
 
 			if (args["s"] == "1") {
@@ -144,7 +143,7 @@ int main(int argc, char* argv[])
 				vwaa->remove_unnecessary_marks();
 			}
 
-			if (print_phase & 1) {     // if print_phase is 1 or 3 (&& !neg)
+			if (print_phase & 1) {     // if print_phase is 1 or 3
 				if (args["o"] == "dot") {
 					vwaa->print_dot();
 				} else {
@@ -184,7 +183,6 @@ int main(int argc, char* argv[])
 			std::cout << '\n';
 		}
 	}
-
 
 	// do not call bdd_done(), we use libbddx
 

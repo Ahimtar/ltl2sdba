@@ -56,9 +56,14 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     bool isqmay[nq];
     bool isqmust[nq];
 
+    auto snvwaa = pvwaa->get_named_prop<std::vector<std::string>>("state-names");
+
     // We iterate over all states of the VWAA
     for (unsigned q = 0; q < nq; ++q)
     {
+        // Renaming state to its number instead of the LTL formula for later use
+        (*snvwaa)[q] = std::to_string(q);
+
         isqmay[q] = false;
         // If there exists a looping, but not accepting outgoing edge, we set this state as Qmay
         for (auto& t: pvwaa->out(q))
@@ -66,7 +71,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
             for (unsigned d: pvwaa->univ_dests(t.dst))
             {
                 if (t.src == d && t.acc.id == 0) {
-                    isqmay[q] = true;
+                    isqmay[q] = true; // todo p4, confirms same state twice, fix?
+                    std::cout << q << " is Qmay. ";
                     break;
                 }
             }
@@ -86,6 +92,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
             }
             if (!thereIsALoop){
                 isqmust[q] = false;
+                std::cout << q << " is not Qmust. ";
                 break;
             }
         }
@@ -103,7 +110,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // We are done with the VWAA and can move on
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
 
-    // todo fix: if no state gets changed, the states don't get renamed
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
 
     //_________________________________________________________________________________
@@ -120,11 +126,12 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
     // State-names C are in style of "1,2,3", these represent states Q of the former VWAA configuration
     std::set<std::string> C[nc];
 
+    auto sn = sdba->get_named_prop<std::vector<std::string>>("state-names");
+
     // We iterate over all states (C) of the automaton. ci = number of state C
     for (unsigned ci = 0; ci < nc; ++ci) {
 
-        // We parse the statename to create a set of states
-        auto sn = sdba->get_named_prop<std::vector<std::string>>("state-names");
+        // We parse the statename ((*sn)[ci]) to create a set of states
         if (sn && ci < sn->size() && !(*sn)[ci].empty()) {
             std::string s = ((*sn)[ci]) + ",";
             std::string delimiter = ",";
@@ -141,12 +148,14 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
         std::set<std::string> R;
 
+        std::cout << "Checking if this configuration contains only valid states: " << ci << "\n";
         // Check if only states reachable from Qmays are in C. If not, this configuration can not contain an R.
         if (checkMayReachableStates(pvwaa, C[ci], R, isqmay)){  // We are using R just as a placeholder empty set here
             R.clear();
+            std::cout << "Yes! \n";
 
             // We call this function to judge Q-s of this C and create R-s and R-components based on them
-            createR(pvwaa, C[ci], C[ci], R, isqmay, isqmust);
+            createR(pvwaa, C[ci], C[ci], R, isqmay, isqmust, sdba);
         }
     }
 
@@ -203,15 +212,17 @@ void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<s
 // remaining = States Q (of the configuration C) that we still need to check
 // Go through all states of Conf, check if they are qmay and qmust, add corresponding states of VWAA into R
 void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> remaining, std::set<std::string> R,
-             bool isqmay[], bool isqmust[]){
+             bool isqmay[], bool isqmust[], spot::twa_graph_ptr &sdba){
 
     // We choose first q that comes into way
     auto it = remaining.begin();
     std::string q;
     if (it != remaining.end()) q = *it;
 
+    std::cout << "We chose q: " << q;
     // Erase it from remaining as we are checking it now
     remaining.erase(q);
+
 
     std::cout << "Judging state: " << q << ". "; // xz Print
     // Checking state correctness
@@ -226,49 +237,82 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
     } else {
         // If this state is Qmust, we add it (and don't have to check Qmay)
         if (isqmust[std::stoi(q)]){
-            std::cout << "It is Qmust. "; // xz Print
+            std::cout << "It is Qmust, adding to R. "; // xz Print
             if (R.count(q) == 0) {
                 R.insert(q);
             }
         } else {
             // If it is Qmay, we recursively call the function and try both adding it and not
             if (isqmay[std::stoi(q)]){
-                std::cout << "It is Qmay. "; // xz Print
+                std::cout << "It is Qmay, adding to R "; // xz Print
 
                 // We create a new branch with new R and add the state q to this R
                 std::set<std::string> Rx = R;
                 if (Rx.count(q) == 0) {
                     Rx.insert(q);
                 }
-                std::cout << "Digging deeper for q: " << q << ". "; // xz Print
-                // We run the branch building the R where this state is added
 
                 if (!Conf.empty()){
-                    createR(vwaa, Conf, remaining, Rx, isqmay, isqmust);
+                    // We run the branch building the R where this state is added
+                    std::cout << " and creating another branch for: " << q << ". "; // xz Print
+                    createR(vwaa, Conf, remaining, Rx, isqmay, isqmust, sdba);
                 } else{
                     // If this was the last state, we have one R complete. Let's build an R-component from it.
-                    std::set<std::string> rxcomp;
-                    createRComp(Conf, Rx, rxcomp);
+                    std::cout << " and this was last state, creating Rxcomp for: " << q << ". "; // xz Print
+                    createRComp(Conf, Rx, sdba);
                 }
                 // We also continue this run without adding this state to R - representing the second branch
-                std::cout<< "Continuing for q " << q << ". "; // xz Print
+                std::cout<< "Also continuing for q " << q << ". "; // xz Print
             }
         }
-        std::cout << "Done checking may/must for q: " << q << "\n"; // xz Print
-    }
+        std::cout << "Done checking may/must for q: " << q; // xz Print
 
-    // If this was the last state, we have one R complete. Let's build an R-component from it.
-    if (Conf.empty()){
-        std::set<std::string> rcomp;
-        createRComp(Conf, R, rcomp);
+}
+    std::cout << "\n Is this the last state? ";
+    // If this was the last state, we have this R complete. Let's build an R-component from it.
+    if (remaining.empty()){
+        std::cout << " YES! Create R comp: \n";
+        createRComp(Conf, R, sdba);
+    } else{
+        std::cout << " NO! Check another state: \n";
+        createR(vwaa, Conf, remaining, R, isqmay, isqmust, sdba);
     }
 
     return;
 }
 
-void createRComp(std::set<std::string> Conf, std::set<std::string> R, std::set<std::string> rcomp){
+void createRComp(std::set<std::string> Conf, std::set<std::string> R, spot::twa_graph_ptr &sdba){
 
     // First we construct the edges from the first part into the R component
+
+    std::cout << " Start ";
+/*
+    sdba->prop_universal()=false;
+    // xz test: Add a state X into sdba
+    sdba->new_state();
+    bdd a = bdd_ithvar(sdba->register_ap("a"));
+    sdba->new_edge(0, 2, a);
+
+*/
+    // im in one C. lets write what Qs are inside, or otherwise, lets print the name of this C:
+    for (auto q : Conf){
+        std::cout << q;
+    }
+
+ /*
+    unsigned nc = sdba->num_states(); //number of configurations C (states in the nondeterministic part)
+
+    // State-names C are in style of "1,2,3", these represent states Q of the former VWAA configuration
+    std::set<std::string> C[nc];
+    auto sn = sdba->get_named_prop<std::vector<std::string>>("state-names");
+
+    // We iterate over all states (C) of the automaton. ci = number of state C
+    for (unsigned ci = 0; ci < nc; ++ci) {
+        std::cout << (*sn)[ci] << " . ";
+    }
+*/
+    std::cout << " End \n";
+
     // todo For every edge going into R, "remove it" since it is accepting?
     // todo If the transition is looping on a state and it isn't going into F, we turn it into tt edge
     // todo We now construct the transitions from the phi1 and phi2 successors
