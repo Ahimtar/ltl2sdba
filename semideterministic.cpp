@@ -251,8 +251,8 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
                     Rx.insert(q);
                 }
 
-                if (!Conf.empty()){
-                    // We run the branch building the R where this state is added
+                if (!remaining.empty()){
+                    // We run the branch that builds the R where this state is added
                     if (debug == "1"){std::cout << " and creating another branch for: " << q << ". ";}
                     createR(vwaa, Conf, remaining, Rx, isqmay, isqmust, sdba, debug);
                 } else{
@@ -282,7 +282,7 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
 
 void createRComp(std::set<std::string> Conf, std::set<std::string> R, spot::twa_graph_ptr &sdba, std::string debug){
 
-    // First we construct the edges from the first part into the R component
+    // todo First we construct the edges from C into the R component
 
     if (debug == "1"){std::cout << " Start ";}
 /*
@@ -291,14 +291,14 @@ void createRComp(std::set<std::string> Conf, std::set<std::string> R, spot::twa_
     sdba->new_state();
     bdd a = bdd_ithvar(sdba->register_ap("a"));
     sdba->new_edge(0, 2, a);
-
 */
-    // im in one C. lets write what Qs are inside, or otherwise, lets print the name of this C:
     for (auto q : Conf){
         if (debug == "1"){std::cout << q << ", ";}
     }
 
     if (debug == "1"){std::cout << " End \n";}
+
+    // todo For every "a", we compute phi1, phi2, create state (R, phi1, phi2) and edge from Conf
 
     // todo For every edge going into R, "remove it" since it is accepting?
     // todo If the transition is looping on a state and it isn't going into F, we turn it into tt edge
