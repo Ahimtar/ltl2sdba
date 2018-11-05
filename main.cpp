@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
 	unsigned int print_phase = std::stoi(args["p"]);
 	unsigned int try_negation = std::stoi(args["n"]);
 
-	spot::twa_graph_ptr nwa = nullptr;
+	spot::twa_graph_ptr sdba = nullptr;
 
 	try {
 
@@ -159,8 +159,8 @@ int main(int argc, char* argv[])
 					vwaa->remove_unnecessary_marks();
 				}
 
-				auto nwa_temp = make_semideterministic(vwaa);
-				nwa = nwa_temp;
+				auto sdba_temp = make_semideterministic(vwaa);
+				sdba = sdba_temp;
 
 			}
             delete vwaa;
@@ -177,12 +177,10 @@ int main(int argc, char* argv[])
 	//removing alternation and printing sDBA
 	if (print_phase & 2) {
 
-		auto aut = nwa; // xz remove this (?)
-
 		if (args["o"] == "dot") {
-			spot::print_dot(std::cout, aut);
+			spot::print_dot(std::cout, sdba);
 		} else {
-		    spot::print_hoa(std::cout, aut);
+		    spot::print_hoa(std::cout, sdba);
 			std::cout << '\n';
 		}
 	}
