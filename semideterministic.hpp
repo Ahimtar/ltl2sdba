@@ -47,10 +47,12 @@ bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std
 void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<std::string> &Valid);
 
 // takes a configuration Conf and calculates all possible Rs and their R-components
-void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> remaining,
-             std::set<std::string> R,  bool isqmay[], bool isqmust[], spot::twa_graph_ptr &sdba, std::string debug);
+void createR(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
+             std::set<std::string> remaining, std::set<std::string> R,  bool isqmay[], bool isqmust[],
+             spot::twa_graph_ptr &sdba, std::string debug);
 
 // creates r-components from a given R
-void createRComp(std::set<std::string> Conf, std::set<std::string> R, spot::twa_graph_ptr &sdba, std::string debug);
+void createRComp(unsigned ci, std::set<std::string> Conf, std::set<std::string> R, spot::twa_graph_ptr &sdba,
+                 std::string debug);
 
 #endif

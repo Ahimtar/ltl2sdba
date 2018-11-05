@@ -155,7 +155,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             if (debug == "1"){std::cout << "Yes! \n";}
 
             // We call this function to judge Q-s of this C and create R-s and R-components based on them
-            createR(pvwaa, C[ci], C[ci], R, isqmay, isqmust, sdba, debug);
+            createR(pvwaa, ci, C[ci], C[ci], R, isqmay, isqmust, sdba, debug);
         }
     }
 
@@ -210,8 +210,9 @@ void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<s
 // Conf = The configuration C we are creating R for
 // remaining = States Q (of the configuration C) that we still need to check
 // Go through all states of Conf, check if they are qmay and qmust, add corresponding states of VWAA into R
-void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> remaining, std::set<std::string> R,
-             bool isqmay[], bool isqmust[], spot::twa_graph_ptr &sdba, std::string debug){
+void createR(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
+             std::set<std::string> remaining, std::set<std::string> R, bool isqmay[], bool isqmust[],
+             spot::twa_graph_ptr &sdba, std::string debug){
 
     // We choose first q that comes into way
     auto it = remaining.begin();
@@ -223,7 +224,7 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
     remaining.erase(q);
 
 
-    if (debug == "1"){std::cout << "Judging state: " << q << ". ";}
+    if (debug == "1"){std::cout << " Judging state: " << q << ". ";}
     // Checking state correctness
     if (q.empty() || !isdigit(q.at(0))){
         if (q != "{}") {
@@ -254,11 +255,11 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
                 if (!remaining.empty()){
                     // We run the branch that builds the R where this state is added
                     if (debug == "1"){std::cout << " and creating another branch for: " << q << ". ";}
-                    createR(vwaa, Conf, remaining, Rx, isqmay, isqmust, sdba, debug);
+                    createR(vwaa, ci, Conf, remaining, Rx, isqmay, isqmust, sdba, debug);
                 } else{
                     // If this was the last state, we have one R complete. Let's build an R-component from it.
                     if (debug == "1"){std::cout << " and this was last state, creating Rxcomp for: " << q << ". ";}
-                    createRComp(Conf, Rx, sdba, debug);
+                    createRComp(ci, Conf, Rx, sdba, debug);
                 }
                 // We also continue this run without adding this state to R - representing the second branch
                 if (debug == "1"){std::cout<< "Also continuing for q " << q << ". ";}
@@ -266,21 +267,22 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
         }
         if (debug == "1"){std::cout << "Done checking may/must for q: " << q;}
 
-}
+    }
     if (debug == "1"){std::cout << "\n Is this the last state? ";}
     // If this was the last state, we have this R complete. Let's build an R-component from it.
     if (remaining.empty()){
         if (debug == "1"){std::cout << " YES! Create R comp: \n";}
-        createRComp(Conf, R, sdba, debug);
+        createRComp(ci, Conf, R, sdba, debug);
     } else{
         if (debug == "1"){std::cout << " NO! Check another state: \n";}
-        createR(vwaa, Conf, remaining, R, isqmay, isqmust, sdba, debug);
+        createR(vwaa, ci, Conf, remaining, R, isqmay, isqmust, sdba, debug);
     }
 
     return;
 }
 
-void createRComp(std::set<std::string> Conf, std::set<std::string> R, spot::twa_graph_ptr &sdba, std::string debug){
+void createRComp(unsigned ci, std::set<std::string> Conf, std::set<std::string> R, spot::twa_graph_ptr &sdba,
+                 std::string debug){
 
     // todo First we construct the edges from C into the R component
 
@@ -298,12 +300,36 @@ void createRComp(std::set<std::string> Conf, std::set<std::string> R, spot::twa_
 
     if (debug == "1"){std::cout << " End \n";}
 
-    // todo For every "a", we compute phi1, phi2, create state (R, phi1, phi2) and edge from Conf
+    // todo create edges from C to R-comp
+    // For every "a"
+        // For every q of this Conf
+            // todo compute phi1
+            // If q is not in R
+                // Check the destination of edge from it under a (or go through all the edges and check when there is one)
+                // if (q is not in Conf or) edge is accepting, skip, else
+                    // if destination is in R
+                        // it TT state doesn't exist yet, create it
+                        // delete this edge and add edge from q to TT
+                        // add TT state to phi1 (if it's not there already)
+                    // else
+                        // add destination to phi1 (if it's not there already)  //keep in mind this destination is q state
+            // else
+            // todo compute phi2
+                // add q to phi2
 
-    // todo For every edge going into R, "remove it" since it is accepting?
-    // todo If the transition is looping on a state and it isn't going into F, we turn it into tt edge
-    // todo We now construct the transitions from the phi1 and phi2 successors
-    // todo We either only add edge, or we add it into acceptance transitions too
+     // todo create transitions in an R component
+
+
+
+
+    // random garbage notes
+        // create state (R, phi1, phi2)
+        // create edge from sdba[ci] to (R, phi1, phi2)
+
+    // For every edge going into R, "remove it" since it is accepting?
+    // If the transition is looping on a state and it isn't going into F, we turn it into tt edge
+    // We now construct the transitions from the phi1 and phi2 successors
+    // We either only add edge, or we add it into acceptance transitions too
 }
 
 
