@@ -75,10 +75,11 @@ int main(int argc, char* argv[])
 			<< "\t\t0\tno check\n"
 			<< "\t\t1\tltl2ba's simple check\n"
 			<< "\t\t2\tltl3ba's improved check (default)\n"
+			<< "\t-g[0|1]\tprint debug messages (default off)\n"
 			<< "\t-h, -?\tprint this help\n"
 			<< "\t-i[0|1]\tproduce VWAA with one initial state (default off)\n"
 			<< "\t-m[0|1]\tcheck formula for containment of some alpha-mergeable U (default off)\n"
-			<< "\t-n[0|1]\ttry translating !f and complementing the automaton (default on)\n"
+			<< "\t-n[0|1]\ttry translating !f and complementing the automaton (default on) -currently disabled function\n"
 			<< "\t-o [hoa|dot]\ttype of output\n"
 			<< "\t\thoa\tprint automaton in HOA format (default)\n"
 			<< "\t\tdot\tprint dot format\n"
@@ -158,7 +159,7 @@ int main(int argc, char* argv[])
 					vwaa->remove_unnecessary_marks();
 				}
 
-				auto sdba_temp = make_semideterministic(vwaa);
+				auto sdba_temp = make_semideterministic(vwaa, args["g"]);
 				sdba = sdba_temp;
 
 			}

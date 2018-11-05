@@ -20,7 +20,7 @@
 #include "semideterministic.hpp"
 
 // Converts a given VWAA to sDBA;
-spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
+spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
     // We first transform the VWAA into spot format
 
@@ -72,7 +72,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
             {
                 if (t.src == d && t.acc.id == 0) {
                     isqmay[q] = true; // todo p4, confirms same state twice, fix?
-                    std::cout << q << " is Qmay. ";
+                    if (debug == "1"){std::cout << q << " is Qmay. ";}
                     break;
                 }
             }
@@ -92,7 +92,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
             }
             if (!thereIsALoop){
                 isqmust[q] = false;
-                std::cout << q << " is not Qmust. ";
+                if (debug == "1"){std::cout << q << " is not Qmust. ";}
                 break;
             }
         }
@@ -148,14 +148,14 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa) {
 
         std::set<std::string> R;
 
-        std::cout << "Checking if this configuration contains only valid states: " << ci << "\n";
+        if (debug == "1"){std::cout << "\nChecking if this configuration contains only valid states: " << ci << "\n";}
         // Check if only states reachable from Qmays are in C. If not, this configuration can not contain an R.
         if (checkMayReachableStates(pvwaa, C[ci], R, isqmay)){  // We are using R just as a placeholder empty set here
             R.clear();
-            std::cout << "Yes! \n";
+            if (debug == "1"){std::cout << "Yes! \n";}
 
             // We call this function to judge Q-s of this C and create R-s and R-components based on them
-            createR(pvwaa, C[ci], C[ci], R, isqmay, isqmust, sdba);
+            createR(pvwaa, C[ci], C[ci], R, isqmay, isqmust, sdba, debug);
         }
     }
 
@@ -175,8 +175,7 @@ bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std
                 std::cout << "We are in BADSTATE: " << q << ". "; // todo Better error message
             }
             else {
-                // This state can not be Qmay nor Qmust
-                std::cout << "q is {}, cannot be Qmay/Qmust. "; // todo Is this right?
+                // This state is {} and can not be Qmay nor Qmust // todo Is this right?
             }
         } else {
             if (isqmay[std::stoi(q)]) {
@@ -212,19 +211,19 @@ void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<s
 // remaining = States Q (of the configuration C) that we still need to check
 // Go through all states of Conf, check if they are qmay and qmust, add corresponding states of VWAA into R
 void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> remaining, std::set<std::string> R,
-             bool isqmay[], bool isqmust[], spot::twa_graph_ptr &sdba){
+             bool isqmay[], bool isqmust[], spot::twa_graph_ptr &sdba, std::string debug){
 
     // We choose first q that comes into way
     auto it = remaining.begin();
     std::string q;
     if (it != remaining.end()) q = *it;
 
-    std::cout << "We chose q: " << q;
+    if (debug == "1"){std::cout << "We chose q: " << q;}
     // Erase it from remaining as we are checking it now
     remaining.erase(q);
 
 
-    std::cout << "Judging state: " << q << ". "; // xz Print
+    if (debug == "1"){std::cout << "Judging state: " << q << ". ";}
     // Checking state correctness
     if (q.empty() || !isdigit(q.at(0))){
         if (q != "{}") {
@@ -232,19 +231,19 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
         }
         else {
             //If the state is {}, we don't have to check if it is Qmay or Qmust
-            std::cout << "q is {}. "; // xz Print todo keep in mind acceptation
+            if (debug == "1"){std::cout << "q is {}. ";} // todo keep in mind acceptation
         }
     } else {
         // If this state is Qmust, we add it (and don't have to check Qmay)
         if (isqmust[std::stoi(q)]){
-            std::cout << "It is Qmust, adding to R. "; // xz Print
+            if (debug == "1"){std::cout << "It is Qmust, adding to R. ";}
             if (R.count(q) == 0) {
                 R.insert(q);
             }
         } else {
             // If it is Qmay, we recursively call the function and try both adding it and not
             if (isqmay[std::stoi(q)]){
-                std::cout << "It is Qmay, adding to R "; // xz Print
+                if (debug == "1"){std::cout << "It is Qmay, adding to R ";}
 
                 // We create a new branch with new R and add the state q to this R
                 std::set<std::string> Rx = R;
@@ -254,38 +253,38 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, 
 
                 if (!Conf.empty()){
                     // We run the branch building the R where this state is added
-                    std::cout << " and creating another branch for: " << q << ". "; // xz Print
-                    createR(vwaa, Conf, remaining, Rx, isqmay, isqmust, sdba);
+                    if (debug == "1"){std::cout << " and creating another branch for: " << q << ". ";}
+                    createR(vwaa, Conf, remaining, Rx, isqmay, isqmust, sdba, debug);
                 } else{
                     // If this was the last state, we have one R complete. Let's build an R-component from it.
-                    std::cout << " and this was last state, creating Rxcomp for: " << q << ". "; // xz Print
-                    createRComp(Conf, Rx, sdba);
+                    if (debug == "1"){std::cout << " and this was last state, creating Rxcomp for: " << q << ". ";}
+                    createRComp(Conf, Rx, sdba, debug);
                 }
                 // We also continue this run without adding this state to R - representing the second branch
-                std::cout<< "Also continuing for q " << q << ". "; // xz Print
+                if (debug == "1"){std::cout<< "Also continuing for q " << q << ". ";}
             }
         }
-        std::cout << "Done checking may/must for q: " << q; // xz Print
+        if (debug == "1"){std::cout << "Done checking may/must for q: " << q;}
 
 }
-    std::cout << "\n Is this the last state? ";
+    if (debug == "1"){std::cout << "\n Is this the last state? ";}
     // If this was the last state, we have this R complete. Let's build an R-component from it.
     if (remaining.empty()){
-        std::cout << " YES! Create R comp: \n";
-        createRComp(Conf, R, sdba);
+        if (debug == "1"){std::cout << " YES! Create R comp: \n";}
+        createRComp(Conf, R, sdba, debug);
     } else{
-        std::cout << " NO! Check another state: \n";
-        createR(vwaa, Conf, remaining, R, isqmay, isqmust, sdba);
+        if (debug == "1"){std::cout << " NO! Check another state: \n";}
+        createR(vwaa, Conf, remaining, R, isqmay, isqmust, sdba, debug);
     }
 
     return;
 }
 
-void createRComp(std::set<std::string> Conf, std::set<std::string> R, spot::twa_graph_ptr &sdba){
+void createRComp(std::set<std::string> Conf, std::set<std::string> R, spot::twa_graph_ptr &sdba, std::string debug){
 
     // First we construct the edges from the first part into the R component
 
-    std::cout << " Start ";
+    if (debug == "1"){std::cout << " Start ";}
 /*
     sdba->prop_universal()=false;
     // xz test: Add a state X into sdba
@@ -296,22 +295,10 @@ void createRComp(std::set<std::string> Conf, std::set<std::string> R, spot::twa_
 */
     // im in one C. lets write what Qs are inside, or otherwise, lets print the name of this C:
     for (auto q : Conf){
-        std::cout << q;
+        if (debug == "1"){std::cout << q << ", ";}
     }
 
- /*
-    unsigned nc = sdba->num_states(); //number of configurations C (states in the nondeterministic part)
-
-    // State-names C are in style of "1,2,3", these represent states Q of the former VWAA configuration
-    std::set<std::string> C[nc];
-    auto sn = sdba->get_named_prop<std::vector<std::string>>("state-names");
-
-    // We iterate over all states (C) of the automaton. ci = number of state C
-    for (unsigned ci = 0; ci < nc; ++ci) {
-        std::cout << (*sn)[ci] << " . ";
-    }
-*/
-    std::cout << " End \n";
+    if (debug == "1"){std::cout << " End \n";}
 
     // todo For every edge going into R, "remove it" since it is accepting?
     // todo If the transition is looping on a state and it isn't going into F, we turn it into tt edge

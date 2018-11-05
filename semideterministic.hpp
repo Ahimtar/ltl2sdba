@@ -37,7 +37,7 @@
 
 // turns the given VWAA into an equivalent semideterministic
 // automaton in the Spot's structure
-spot::twa_graph_ptr make_semideterministic(VWAA *vwaa);
+spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug);
 
 // checks whether the set of states Conf of vwaa contains only states that are qmay or are reachable from them
 bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
@@ -48,9 +48,9 @@ void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<s
 
 // takes a configuration Conf and calculates all possible Rs and their R-components
 void createR(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> remaining,
-             std::set<std::string> R,  bool isqmay[], bool isqmust[], spot::twa_graph_ptr &sdba);
+             std::set<std::string> R,  bool isqmay[], bool isqmust[], spot::twa_graph_ptr &sdba, std::string debug);
 
 // creates r-components from a given R
-void createRComp(std::set<std::string> Conf, std::set<std::string> R, spot::twa_graph_ptr &sdba);
+void createRComp(std::set<std::string> Conf, std::set<std::string> R, spot::twa_graph_ptr &sdba, std::string debug);
 
 #endif
