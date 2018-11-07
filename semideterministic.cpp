@@ -111,6 +111,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
                 t.acc = 2;
             }
         }
+
+        // todo how to handle automata that dont accept at all? do we need to bother with them?
     }
 
 
@@ -304,30 +306,38 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         std::cout << " Go:\n";
     }
 
-    // First we construct the edges from C into the R component
+    // Note: "vwaa->num_states()-1" is the last state of the vwaa, which is always the TT state.
+
+    bdd phi1; // todo initialize both to be empty
+    bdd phi2;
+
+    // First we construct the edges from C into the R component by getting the correct phi1 and phi2
     unsigned nq = vwaa->num_states();
 
     for (unsigned q = 0; q < nq; ++q) {
-        if (!(R.find(std::to_string(q)) != R.end())){  // If q is not in R, we are doing phi1 part
+        if (!(R.find(std::to_string(q)) != R.end())){  // q is not in R, we are doing phi1 part
+            // Check if each edge is in the modified transition relation, we only work with those
             for (auto& t: vwaa->out(q)) {
-                // Check if this edge is in the modified transition relation
                 if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc == 2) {
                     // Replace the edges ending in R with TT
                     if (R.find(std::to_string(t.dst)) != R.end()){
-                        // it TT state doesn't exist yet, create it
-                        // delete this edge and add edge from q to TT
-                        // add TT state to phi1 (if it's not there already)
+                        // todo we might need to reroute this edge not to t.dst but to TT. maybe not.
+                        // t.dst = vwaa->num_states()-1; xz
+                        phi1 = bdd_and(phi1, bdd_ithvar(vwaa->num_states()-1));
                     } else {
-                        //add destination to phi1 (if it's not there already)  //keep in mind this destination is q state
+                        phi1 = bdd_and(phi1, bdd_ithvar(t.dst));  // Keep in mind this destination is q state
                     }
 
                 }
             }
         } else {  // q is in R, we are doing phi2 part
-            // add destination to phi1 (if it's not there already)  //keep in mind this destination is q state
+            phi2 = bdd_and(phi2, bdd_ithvar(q));  // Keep in mind this destination is q state
         }
     }
 
+    if (debug == "1"){std::cout << "phi1: " << phi1 << " and 2: " << phi2 << ". ";}
+
+    // todo create sdba triplet states from this, check if the added state doesn"t exist already
     // todo create transitions in an R component
 
 
@@ -342,28 +352,6 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
     // We now construct the transitions from the phi1 and phi2 successors
     // We either only add edge, or we add it into acceptance transitions too
 }
-
-
-
-//auto sn = sdba->get_named_prop<std::vector<std::string>>("state-names");
-
-/* We parse the statename ((*sn)[ci]) to create a set of states
-if (sn && ci < sn->size() && !(*sn)[ci].empty()) {
-    std::string s = ((*sn)[ci]) + ",";
-    std::string delimiter = ",";
-    size_t pos = 0;
-    std::string token;
-    while ((pos = s.find(delimiter)) != std::string::npos) {
-        token = s.substr(0, pos);
-        C[ci].insert(token);
-        s.erase(0, pos + delimiter.length());
-    }
-} else {
-    std::cout << "Wrong C state name."; // todo better error message
-}*/
-
-
-
 
 
 
