@@ -126,6 +126,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
+    sdba->prop_complete() = false; // todo is this right?
 
     unsigned nc = sdba->num_states(); // Number of configurations C (states in the nondeterministic part)
 
@@ -322,45 +323,63 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
     // Note: "vwaa->num_states()-1" is the last state of the vwaa, which is always the TT state.
 
-    bdd phi1 = bdd_true();
-    bdd phi2 = bdd_true();
+    // The phis for this triplet state
+    std::map<unsigned, bdd> phi1;
+    std::map<unsigned, bdd> phi2;
+
+    // The bdds we work with in the algorithm
+    bdd p1 = bdd_true();
+    bdd p2 = bdd_true();
 
     // First we construct the edges from C into the R component by getting the correct phi1 and phi2
     unsigned nq = vwaa->num_states();
+    const spot::bdd_dict_ptr dict = sdba->get_dict();
 
-    for (unsigned q = 0; q < nq; ++q) {
-        if (debug == "1"){std::cout << "\nChecking q: " << q << ". ";}
-        if (!(R.find(std::to_string(q)) != R.end())){  // q is not in R, we are doing phi1 part
-            if (debug == "1"){std::cout << "It's not in R. ";}
-            // Check if each edge is in the modified transition relation, we only work with those
-            for (auto& t: vwaa->out(q)) {
-                for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                    if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
-                    if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc == 2) {
-                        if (debug == "1") { std::cout << "q is in Conf and e is acc. "; }
-                        // Replace the edges ending in R with TT
-                        if (R.find(std::to_string(tdst)) != R.end()) {
-                            if (debug == "1") { std::cout << "t.dst is in R. adding TT to phi1"; }
-                            // todo we might need to reroute this edge not to t.dst but to TT. maybe not.
-                            // t.dst = vwaa->num_states()-1; xz
-                            phi1 = bdd_and(phi1, bdd_ithvar(vwaa->num_states() - 1));
-                        } else {
-                            if (debug == "1") { std::cout << "t.dst is not in R. adding t.dst to phi1"; }
-                            phi1 = bdd_and(phi1, bdd_ithvar(tdst));  // Keep in mind this destination is q state
+    // For each edge label of the alphabet
+    for (auto labelvar : dict.get()->var_map){
+        auto label = labelvar.second;
+        for (unsigned q = 0; q < nq; ++q) {
+            if (debug == "1") { std::cout << "\nChecking q: " << q << " for label: " << label << ". "; }
+            if (!(R.find(std::to_string(q)) != R.end())) {  // q is not in R, we are doing phi1 part
+                if (debug == "1") { std::cout << "It's not in R. "; }
+                // Check if each edge is in the modified transition relation, we only work with those
+                for (auto &t: vwaa->out(q)) {
+                    for (unsigned tdst: vwaa->univ_dests(t.dst)) {
+                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
+                        if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc == 2) {
+                            if (debug == "1") { std::cout << "q is in Conf and e is acc. "; }
+                            // Replace the edges ending in R with TT
+                            if (R.find(std::to_string(tdst)) != R.end()) {
+                                if (debug == "1") { std::cout << "t.dst is in R. adding TT to phi1"; }
+                                p1 = bdd_and(p1, bdd_ithvar(vwaa->num_states() - 1));
+                            } else {
+                                if (debug == "1") { std::cout << "t.dst is not in R. adding t.dst to phi1"; }
+                                p1 = bdd_and(p1, bdd_ithvar(tdst));
+                            }
                         }
-
                     }
                 }
+            } else {  // q is in R, we are doing phi2 part
+                if (debug == "1") { std::cout << "It's in R. adding q to phi2"; }
+                p2 = bdd_and(p2, bdd_ithvar(q));
             }
-        } else {  // q is in R, we are doing phi2 part
-            if (debug == "1"){std::cout << "It's in R. adding q to phi2";}
-            phi2 = bdd_and(phi2, bdd_ithvar(q));  // Keep in mind this destination is q state
         }
+
+        // todo check if the added state doesn't exist already
+/*
+        // We create a state for this R-component with "sdba->num_states()-1" as its number.
+        sdba->new_state();
+        phi1[sdba->num_states()-1] = p1;
+        phi2[sdba->num_states()-1] = p2;
+        // And connect it to the automaton via this label
+        sdba->new_edge(ci, sdba->num_states()-1, bdd_ithvar(label), {});*/
+
+        if (debug == "1"){std::cout << "\nlaststatenum:" << sdba->num_states()-1 << " phi1: " << p1 << " and 2: " << p2 << ". ";}
     }
 
-    if (debug == "1"){std::cout << "\nphi1: " << phi1 << " and 2: " << phi2 << ". ";}
 
-    // todo create sdba triplet states from this, check if the added state doesn"t exist already
+
+
     // todo create transitions in an R component
 
 
@@ -372,8 +391,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
     // For every edge going into R, "remove it" since it is accepting?
     // If the transition is looping on a state and it isn't going into F, we turn it into tt edge
-    // We now construct the transitions from the phi1 and phi2 successors
-    // We either only add edge, or we add it into acceptance transitions too
+    // Construct the transitions from the phi1 and phi2 successors
+    // Either only add edge, or we add it into acceptance transitions too
 }
 
 
@@ -383,7 +402,6 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
 
 /* Phis work
- * These should not be strings, but sets of states
 // We will map two phi-s to each state so that it is in the form of (R, phi1, phi2)
 std::map<unsigned, std::string> phi1;
 std::map<unsigned, std::string> phi2;
@@ -420,59 +438,3 @@ std::cout << " " << t.acc << "\n";
             std::cout << ", acc sets " << t.acc;
             std::cout << ", next succ " << (t.next_succ) << " Univ dests:\n";
             */
-
-
-
-/* First version of iterating over states, not using spot
- *
-    // We iterate over all states of the automaton, checking each one for its type (may, must)
-    auto sets = aut->get_graph().states();
-    //std::map<spot::twa_graph_state*, std::string> tuple; //maps a name to each state
-    std::map<unsigned, std::string> statte; //maps a name to each state number
-
-    int x = 0;
-
-    for (unsigned i = 0; i < sets.size(); ++i) {
-        auto triplet = (sets)[i];
-        auto statedata = triplet.data();
-
-        //from the state data we now evaluate the type(may, must, cant)
-        statte[i] = "State name: " + std::to_string(i) + " (currently only number)";
-        //tuple[&statedata] = "State name: " + std::to_string(i) + " (currently only number)"; // xz Instead, the state name should be assigned here
-
-        //spot::twa::succ_iter(&statedata);
-
-
-        //based on the type we now do one of the respective actions
-        //
-        auto succx = triplet.succ; // First outgoing edge (used when iterating)
-        auto succy = triplet.succ_tail; // Last outgoing edge
-
-        x++;
-    }*/
-
-
-/*
-    // Changing from transition-based into state-based acceptance. Not an effective way, scrapping this.
-
-    // Printing the automaton into helper with spot's -s option
-    outs.open ("helper.hoa", std::ofstream::trunc);
-    std::cout.rdbuf(outs.rdbuf());
-    spot::print_hoa(std::cout, aut, "s");
-    std::cout.rdbuf(coutbuf);
-    outs.close();
-
-    // Parsing the previous automaton from helper and printing it into helper2 with autfilt's -s (state-based) option
-    std::system("autfilt helper.hoa -S -H > 'helper2.hoa'");   // xz name states?
-
-    // Parsing the helper2 back, acquiring spot format again
-    pvwaa = parse_aut("helper2.hoa", spot::make_bdd_dict());
-    if (pvwaa->format_errors(std::cerr))
-        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully?
-    if (pvwaa->aborted)
-    {
-        std::cerr << "--ABORT-- read\n";
-        return vwaa->spot_aut;  // xz returning random error, the file from printfile didnt create successfully?
-    }
-    aut = pvwaa->aut;
-     */
