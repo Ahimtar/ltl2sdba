@@ -67,6 +67,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
         (*snvwaa)[q] = std::to_string(q);
 
         isqmay[q] = false;
+        bool thereIsALoop = false;
         // If there exists a looping, but not accepting outgoing edge, we set this state as Qmay
         for (auto& t: pvwaa->out(q))
         {
@@ -75,13 +76,14 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
                 if (t.src == d && t.acc.id == 0) {
                     isqmay[q] = true; // todo p4, p9 confirms same state twice, fix?
                     if (debug == "1"){std::cout << "It's Qmay. ";}
+                    thereIsALoop = true;
                     break;
                 }
             }
+            if (thereIsALoop){ break; }
         }
 
         isqmust[q] = true;
-        bool thereIsALoop;
         // If we find an outgoing edge, where there is no loop, we set this state as not Qmust and break the loop
         for (auto& t: pvwaa->out(q))
         {
@@ -170,9 +172,9 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
         }
     }
 
-/* xz
     sdba->prop_universal(false);
-    sdba->prop_complete(false);
+    sdba->prop_complete(false); // todo remove this once we make edges in the deterministic part
+/* xz
     // xz test: Add a state X into sdba
     sdba->new_state();
     std::cout << "New state num" << sdba->num_states()-1 ;//<< " and nameset: " << (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()];
@@ -346,8 +348,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                 for (auto &t: vwaa->out(q)) {
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
-                        if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc == 2) {
-                            if (debug == "1") { std::cout << "q is in Conf and e is acc. "; }
+                        if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc != 2) {
+                            if (debug == "1") { std::cout << "q is in Conf and e is not acc. "; }
                             // Replace the edges ending in R with TT
                             if (R.find(std::to_string(tdst)) != R.end()) {
                                 if (debug == "1") { std::cout << "t.dst is in R. adding TT to phi1"; }
@@ -365,14 +367,54 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
             }
         }
 
+        if (debug == "1") {
+            std::cout << "\nEdges of Conf: \n";
+            for (unsigned c = 0; c < sdba->num_states()-1; ++c) {
+                for (auto i: sdba->succ(sdba->state_from_number(c))) {
+                    std::cout << " Bdd of edges-label: " << i->cond() << " from " << c
+                              << " to " << i->dst();
+                    if (sdba->state_from_number(c) == i->dst()) { std::cout << " (loop)"; }
+                    std::cout << ".\n";
+                }
+            }
+        }
+
+        bool RAlreadyExists = false;
+
         // todo check if the added state doesn't exist already
-/*
+        // for states of sdba   beginning from the first Rstate
+            // if R tamtoho = tomuto R
+                // if phi1 toho = phi1 tohto
+                    // if phi2 tamtoho = phi2 tohto
+                        // vynechaj tvorbu new statu ale napoj na ten
+
         // We create a state for this R-component with "sdba->num_states()-1" as its number.
         sdba->new_state();
         phi1[sdba->num_states()-1] = p1;
         phi2[sdba->num_states()-1] = p2;
-        // And connect it to the automaton via this label
-        sdba->new_edge(ci, sdba->num_states()-1, bdd_ithvar(label), {});*/
+        // And connect it to the automaton via this label todo if it doesn't exist already
+
+        // Go through all edges leaving this C. If there exists an edge to this (R, phi1, phi2), check label.
+        //if (sdba->succ(sdba->state_from_number(stoi(x)))
+        sdba->new_edge(ci, sdba->num_states()-1, bdd_ithvar(label), {});
+        if (debug == "1"){std::cout << "New edge from C" << ci << " to C" << sdba->num_states()-1 << " labeled " << label;}
+
+
+
+
+        if (debug == "1") {
+            std::cout << "\nEdges of Conf: \n";
+            for (unsigned c = 0; c < sdba->num_states()-1; ++c) {
+                for (auto i: sdba->succ(sdba->state_from_number(c))) {
+                    std::cout << " Bdd of edges-label: " << i->cond() << " from " << c
+                              << " to " << i->dst();
+                    if (sdba->state_from_number(c) == i->dst()) { std::cout << " (loop)"; }
+                    std::cout << ".\n";
+                }
+            }
+        }
+
+
 
         if (debug == "1"){std::cout << "\nlaststatenum:" << sdba->num_states()-1 << " phi1: " << p1 << " and 2: " << p2 << ". ";}
     }
@@ -412,8 +454,6 @@ for (unsigned c = 0; c < nc; ++c) {
     phi1[c] = "Phi_1";
     phi2[c] = "Phi_2"; //Change these two from strings to sets of states
 }*/
-
-
 
 /* xz Print from removing acceptance marks loop -------------
 std::cout << "[" << spot::bdd_format_formula(dict, t.cond) << "] ";
