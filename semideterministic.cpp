@@ -318,14 +318,16 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         for (auto y : R){
             std::cout << y << ", ";
         }
+        std::cout << " Num of states of sdba: " << sdba->num_states();
         std::cout << " Go:\n";
     }
 
-    // todo what if R is empty?
+    // todo optimalization, if R is empty?
 
     // Note: "vwaa->num_states()-1" is the last state of the vwaa, which is always the TT state.
 
-    // The phis for this triplet state
+    // The phis and R for this triplet state
+    std::map<unsigned, std::set<std::string>> RcompR;
     std::map<unsigned, bdd> phi1;
     std::map<unsigned, bdd> phi2;
 
@@ -368,8 +370,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         }
 
         if (debug == "1") {
-            std::cout << "\nEdges of Conf: \n";
-            for (unsigned c = 0; c < sdba->num_states()-1; ++c) {
+            std::cout << "\nAll edges of Conf before: \n";
+            for (unsigned c = 0; c < sdba->num_states(); ++c) {
                 for (auto i: sdba->succ(sdba->state_from_number(c))) {
                     std::cout << " Bdd of edges-label: " << i->cond() << " from " << c
                               << " to " << i->dst();
@@ -379,32 +381,39 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
             }
         }
 
-        bool RAlreadyExists = false;
+        // We need to check if this R-component state exists already
+        // rCompState is the number of the state if it exists, else value remains as a "new state" number:
+        unsigned rCompStateNum = sdba->num_states();
 
-        // todo check if the added state doesn't exist already
-        // for states of sdba   beginning from the first Rstate
-            // if R tamtoho = tomuto R
-                // if phi1 toho = phi1 tohto
-                    // if phi2 tamtoho = phi2 tohto
-                        // vynechaj tvorbu new statu ale napoj na ten
+        for (unsigned c = 0; c < sdba->num_states(); ++c) {
+            if (RcompR[c] == R){
+                if (phi1[c] == p1){
+                    if (phi2[c] == p2){
+                        rCompStateNum = c;
+                        break;
+                    }
+                }
+            }
+        }
 
-        // We create a state for this R-component with "sdba->num_states()-1" as its number.
-        sdba->new_state();
-        phi1[sdba->num_states()-1] = p1;
-        phi2[sdba->num_states()-1] = p2;
-        // And connect it to the automaton via this label todo if it doesn't exist already
+        // If the state doesn't exist yet, we create it with "sdba->num_states()-1" becoming its new number.
+        if (rCompStateNum == sdba->num_states()) {
+            sdba->new_state();         // rCompStateNum is now equal to sdba->num_states()-1
+            phi1[sdba->num_states() - 1] = p1;
+            phi2[sdba->num_states() - 1] = p2;
+            RcompR[sdba->num_states() - 1] = R;
+            // (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "Newstate"; todo name states
+        }
 
-        // Go through all edges leaving this C. If there exists an edge to this (R, phi1, phi2), check label.
-        //if (sdba->succ(sdba->state_from_number(stoi(x)))
+        // We connect the state to this configuration under the currently checked label
         sdba->new_edge(ci, sdba->num_states()-1, bdd_ithvar(label), {});
+
         if (debug == "1"){std::cout << "New edge from C" << ci << " to C" << sdba->num_states()-1 << " labeled " << label;}
 
 
-
-
         if (debug == "1") {
-            std::cout << "\nEdges of Conf: \n";
-            for (unsigned c = 0; c < sdba->num_states()-1; ++c) {
+            std::cout << "\nAll edges of Conf after: \n";
+            for (unsigned c = 0; c < sdba->num_states(); ++c) {
                 for (auto i: sdba->succ(sdba->state_from_number(c))) {
                     std::cout << " Bdd of edges-label: " << i->cond() << " from " << c
                               << " to " << i->dst();
@@ -413,23 +422,16 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                 }
             }
         }
-
-
 
         if (debug == "1"){std::cout << "\nlaststatenum:" << sdba->num_states()-1 << " phi1: " << p1 << " and 2: " << p2 << ". ";}
     }
 
-
-
-
     // todo create transitions in an R component
 
-
+    
 
 
     // random garbage notes
-        // create state (R, phi1, phi2)
-        // create edge from sdba[ci] to (R, phi1, phi2)
 
     // For every edge going into R, "remove it" since it is accepting?
     // If the transition is looping on a state and it isn't going into F, we turn it into tt edge
