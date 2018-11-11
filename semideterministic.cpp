@@ -174,18 +174,24 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
     sdba->prop_universal(false);
     sdba->prop_complete(false); // todo remove this once we make edges in the deterministic part
-/* xz
-    // xz test: Add a state X into sdba
-    sdba->new_state();
-    std::cout << "New state num" << sdba->num_states()-1 ;//<< " and nameset: " << (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()];
 
-    bdd a;
-    a = bdd_ithvar(sdba->register_ap("W"));
-    sdba->new_edge(1, sdba->num_states() - 1, a, {});
-    sdba->new_edge(sdba->num_states() - 1, sdba->num_states() - 1, a, {});
-*/
+    if (debug == "1") { std::cout << "ND part edge acceptation correction. "; }
+    for (unsigned q = 0; q < nq; ++q) {
+        for (auto& t: pvwaa->out(q))
+        {
+            for (unsigned d: pvwaa->univ_dests(t.dst)) {
+                if (debug == "1") {
+                    std::cout << "\nEdge " << t.src << "-" << d << " accepting labels: " << t.acc << ". ";
+                }
+                if (t.acc == 2) {
+                    t.acc = 0;
+                    if (debug == "1") { std::cout << "We set acc to " << t.acc << ". "; }
+                }
+            }
+        }
+    }
 
-    // todo run through all edges with acceptation "2" and set it to "0"
+    if (debug == "1") { std::cout << "\n\n"; }
 
     return sdba;
 }
@@ -223,7 +229,7 @@ bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std
 void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<std::string> &Valid){
     Valid.insert(q);
     // We add into Valid all states reachable from q too
-    for (auto &t: vwaa->out(std::stoi(q))) {
+    for (auto &t: vwaa->out((unsigned int)std::stoi(q))) {
         for (unsigned d: vwaa->univ_dests(t.dst)) {
             // We exclude loops for effectivity, as they never need to be checked to be added again
             if (std::to_string(d) != q) {
@@ -410,7 +416,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
             RcompR[sdba->num_states() - 1] = R;
             phi1[sdba->num_states() - 1] = p1;
             phi2[sdba->num_states() - 1] = p2;
-            // (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; todo name states
+            //sdba->get_named_prop("state-names")[0] = "wrw";
+            //(*(sdba->get_named_prop(<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; //todo name states
         }
         // We connect the state to this configuration under the currently checked label
         sdba->new_edge(ci, sdba->num_states()-1, bdd_ithvar(label), {});
@@ -587,8 +594,10 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             if (debug == "1") { std::cout << "New edge from C" << statenum << " to C" << sdba->num_states() - 1 << " labeled " << label; }
 
             // If the state is new, add all further successors of this successor to the sdba and connect them
-            if (succrCompStateNum == sdba->num_states()-1) {
-                addRCompStateSuccs(vwaa, sdba, succrCompStateNum, Conf, R, succp1, succp2, debug);
+            if ((succrCompStateNum == sdba->num_states()-1)) {
+                if (debug != "1" ||  sdba->num_states() < 15) { // Debug mode only allows 15 states max for safety
+                    addRCompStateSuccs(vwaa, sdba, succrCompStateNum, Conf, R, succp1, succp2, debug);
+                }
             }
         }
 
