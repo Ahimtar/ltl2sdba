@@ -64,7 +64,9 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
 void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
                  std::set<std::string> R, spot::twa_graph_ptr &sdba, std::string debug);
 
-void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba, std::set<std::string> R,
-                        bdd p1, bdd p2, std::string debug);
+
+// adds r-component states that are successors of a given (R, phi1, phi2)
+void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba,  std::set<std::string> Conf,
+                        std::set<std::string> R, std::set<unsigned> p1, std::set<unsigned> p2, std::string debug);
 
 #endif

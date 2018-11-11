@@ -234,8 +234,8 @@ void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<s
 }
 
 void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
-             std::set<std::string> remaining, std::set<std::string> R, bool isqmay[], bool isqmust[],
-             spot::twa_graph_ptr &sdba, std::string debug){
+                   std::set<std::string> remaining, std::set<std::string> R, bool isqmay[], bool isqmust[],
+                   spot::twa_graph_ptr &sdba, std::string debug){
 
     // We choose first q that comes into way
     auto it = remaining.begin();
@@ -309,7 +309,7 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
 
 void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
                  std::set<std::string> R, spot::twa_graph_ptr &sdba, std::string debug){
-    if (debug == "1"){ // todo remove Conf from this function
+    if (debug == "1"){
         std::cout << " States of Conf: ";
         for (auto x : Conf){
             std::cout << x << ", ";
@@ -328,12 +328,12 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
     // The phis and R for this triplet state
     std::map<unsigned, std::set<std::string>> RcompR;
-    std::map<unsigned, bdd> phi1;
-    std::map<unsigned, bdd> phi2;
+    std::map<unsigned, std::set<unsigned>> phi1;
+    std::map<unsigned, std::set<unsigned>> phi2;
 
-    // The bdds we work with in the algorithm
-    bdd p1 = bdd_true();
-    bdd p2 = bdd_true();
+    // The phis we work with in the algorithm
+    std::set<unsigned> p1;
+    std::set<unsigned> p2;
 
     // First we construct the edges from C into the R component by getting the correct phi1 and phi2
     unsigned nq = vwaa->num_states();
@@ -355,17 +355,17 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                             // Replace the edges ending in R with TT
                             if (R.find(std::to_string(tdst)) != R.end()) {
                                 if (debug == "1") { std::cout << "t.dst is in R. adding TT state to phi1"; }
-                                p1 = bdd_and(p1, bdd_ithvar(vwaa->num_states() - 1));
+                                p1.insert(vwaa->num_states() - 1);
                             } else {
                                 if (debug == "1") { std::cout << "t.dst is not in R. adding t.dst to phi1"; }
-                                p1 = bdd_and(p1, bdd_ithvar(tdst));
+                                p1.insert(tdst);
                             }
                         }
                     }
                 }
             } else {  // q is in R, we are doing phi2 part
                 if (debug == "1") { std::cout << "It's in R. adding q to phi2"; }
-                p2 = bdd_and(p2, bdd_ithvar(q));
+                p2.insert(q);
             }
         }
 
@@ -410,7 +410,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
         // If the state is new, add all successors of this state to the sdba and connect them
         if (rCompStateNum == sdba->num_states()-1) {
-            addRCompStateSuccs(vwaa, sdba, R, p1, p2, debug);
+            addRCompStateSuccs(vwaa, sdba, Conf, R, p1, p2, debug);
         }
 
         if (debug == "1") {
@@ -423,29 +423,36 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                     std::cout << ".\n";
                 }
             }
-            std::cout << "\nlaststatenum:" << sdba->num_states()-1 << " phi1: " << p1 << " and 2: " << p2 << ". ";
+            std::cout << "\nlaststatenum:" << sdba->num_states()-1 << ", phi1: ";
+            for (auto x : p1){
+                std::cout << x << ", ";
+            }
+            std::cout << ", phi2: ";
+            for (auto x : p2){
+                std::cout << x << ", ";
+            }
         }
     }
 }
 
 
 // Adds successors of state (R, phi1, phi2) (and their successors, recursively)
-void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba, std::set<std::string> R,
-                        bdd p1, bdd p2, std::string debug){
+void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba,  std::set<std::string> Conf,
+                        std::set<std::string> R, std::set<unsigned> p1, std::set<unsigned> p2, std::string debug){
 
-    if (debug == "1"){std::cout << "Going into successors\n";}
+    if (debug == "1"){std::cout << " Going into successors\n";}
 
     // The phis and R for the successors triplet state
     std::map<unsigned, std::set<std::string>> RcompR;
-    std::map<unsigned, bdd> phi1;
-    std::map<unsigned, bdd> phi2;
+    std::map<unsigned, std::set<unsigned>> succphi1;
+    std::map<unsigned, std::set<unsigned>> succphi2;
 
     // R remains always the same for successors of a state
     RcompR[sdba->num_states() - 1] = R;
 
     // The bdds we work with in the algorithm
-    bdd succp1 = bdd_true();
-    bdd succp2 = bdd_true();
+    unsigned succp1;
+    unsigned succp2;
 
     const spot::bdd_dict_ptr dict = sdba->get_dict();
 
@@ -454,8 +461,32 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         auto label = labelvar.second;
         // todo calculate succp1 and succp2
 
-        // Go through all states q of p2. For each, if the edge under label is valid, add its follower to succphi2
-
+        /* Go through all states q of p2. For each, if the edge under label is valid, add its follower to succphi2
+        for (auto q : p2){
+            if (!(R.find(std::to_string(q)) != R.end())) {     // q is not in R, we continue
+                if (debug == "1") { std::cout << "It's not in R. "; }
+                // Check if the edge is in the modified transition relation, we only work with those
+                for (auto &t: vwaa->out(q)) {
+                    for (unsigned tdst: vwaa->univ_dests(t.dst)) {
+                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
+                        if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc != 2) {
+                            if (debug == "1") { std::cout << "q is in Conf and e is not acc. "; }
+                            // Replace the edges ending in R with TT
+                            if (R.find(std::to_string(tdst)) != R.end()) {
+                                if (debug == "1") { std::cout << "t.dst is in R. adding TT state to phi1"; }
+                                p1.insert(vwaa->num_states() - 1);
+                            } else {
+                                if (debug == "1") { std::cout << "t.dst is not in R. adding t.dst to phi1"; }
+                                p1.insert(tdst);
+                            }
+                        }
+                    }
+                }
+            } else {  // q is in R, we are doing phi2 part
+                if (debug == "1") { std::cout << "It's in R. adding q to phi2"; }
+                p2.insert(q);
+            }
+        }*/
 
 
         /* todo this part
