@@ -350,11 +350,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
                         // Replace the edges ending in R with TT
-                        if (R.find(std::to_string(tdst)) != R.end()) {
-                            if (debug == "1") { std::cout << "t.dst is in R. adding TT state to phi1"; }
-                            p1.insert(vwaa->num_states() - 1);
-                        } else {
-                            if (debug == "1") { std::cout << "t.dst is not in R. adding t.dst to phi1"; }
+                        if (R.find(std::to_string(tdst)) != R.end()) { // If tdst was in R, we'd add TT
+                            if (debug == "1") { std::cout << "t.dst is not in R. adding to phi1"; }
                             p1.insert(tdst);
                         }
                     }
@@ -367,11 +364,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                         if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc != 2) {  // this is a correct mod. tr.
                             if (debug == "1") { std::cout << "q is in Conf and e is not acc. "; }
                             // Replace the edges ending in R with TT
-                            if (R.find(std::to_string(tdst)) != R.end()) {
-                                if (debug == "1") { std::cout << "t.dst is in R. adding TT state to phi1"; }
-                                p1.insert(vwaa->num_states() - 1);
-                            } else {
-                                if (debug == "1") { std::cout << "t.dst is not in R. adding t.dst to phi1"; }
+                            if (R.find(std::to_string(tdst)) != R.end()) { // If tdst was in R, we'd add TT
+                                if (debug == "1") { std::cout << "t.dst is not in R. adding to phi1"; }
                                 p1.insert(tdst);
                             }
                         }
@@ -413,9 +407,9 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         // If the state doesn't exist yet, we create it with "sdba->num_states()-1" becoming its new number.
         if (rCompStateNum == sdba->num_states()) {
             sdba->new_state();         // rCompStateNum is now equal to sdba->num_states()-1
+            RcompR[sdba->num_states() - 1] = R;
             phi1[sdba->num_states() - 1] = p1;
             phi2[sdba->num_states() - 1] = p2;
-            RcompR[sdba->num_states() - 1] = R;
             // (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; todo name states
         }
         // We connect the state to this configuration under the currently checked label
@@ -424,7 +418,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
         // If the state is new, add all successors of this state to the sdba and connect them
         if (rCompStateNum == sdba->num_states()-1) {
-            addRCompStateSuccs(vwaa, sdba, Conf, R, p1, p2, debug);
+            addRCompStateSuccs(vwaa, sdba, rCompStateNum, Conf, R, p1, p2, debug);
         }
 
         if (debug == "1") {
@@ -451,92 +445,154 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
 
 // Adds successors of state (R, phi1, phi2) (and their successors, recursively)
-void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba,  std::set<std::string> Conf,
-                        std::set<std::string> R, std::set<unsigned> p1, std::set<unsigned> p2, std::string debug){
+void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba, unsigned statenum,
+                        std::set<std::string> Conf, std::set<std::string> R, std::set<unsigned> p1,
+                        std::set<unsigned> p2, std::string debug){
 
     if (debug == "1"){std::cout << " Going into successors\n";}
 
-    // The phis and R for the successors triplet state
+    // The phis and R for the successors triplet state  todo these should not exist at all?
     std::map<unsigned, std::set<std::string>> RcompR;
     std::map<unsigned, std::set<unsigned>> succphi1;
     std::map<unsigned, std::set<unsigned>> succphi2;
 
-    // R remains always the same for successors of a state
-    RcompR[sdba->num_states() - 1] = R;
-
     // The bdds we work with in the algorithm
-    unsigned succp1;
-    unsigned succp2;
+    std::set<unsigned> succp1;
+    std::set<unsigned> succp2;
 
     const spot::bdd_dict_ptr dict = sdba->get_dict();
 
     // For each edge label of the alphabet we compute phis of the reached state (succp1 and succp2)
     for (auto labelvar : dict.get()->var_map) {
         auto label = labelvar.second;
-        // todo calculate succp1 and succp2
 
-        /* Go through all states q of p2. For each, if the edge under label is valid, add its follower to succphi2
-        for (auto q : p2){
-            if (!(R.find(std::to_string(q)) != R.end())) {     // q is not in R, we continue
+        // Go through all states q of p1. For each, if edge under label is a correct m.t., add its follower to succphi1
+        for (auto q : p1){
+            if (debug == "1") { std::cout << "\nChecking p1 q: " << q << " for label: " << label << ". "; }
+            if ((R.find(std::to_string(q)) == R.end())) {  // q is not in R, this is a correct modified transition
                 if (debug == "1") { std::cout << "It's not in R. "; }
-                // Check if the edge is in the modified transition relation, we only work with those
+                // Find the edge under "label"
                 for (auto &t: vwaa->out(q)) {
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
-                        if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc != 2) {
-                            if (debug == "1") { std::cout << "q is in Conf and e is not acc. "; }
-                            // Replace the edges ending in R with TT
-                            if (R.find(std::to_string(tdst)) != R.end()) {
-                                if (debug == "1") { std::cout << "t.dst is in R. adding TT state to phi1"; }
-                                p1.insert(vwaa->num_states() - 1);
-                            } else {
-                                if (debug == "1") { std::cout << "t.dst is not in R. adding t.dst to phi1"; }
-                                p1.insert(tdst);
+                        if (t.data() == bdd_ithvar(label)) {
+                            if (debug == "1") { std::cout << "<-this. "; }
+                            if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
+                                if (debug == "1") { std::cout << "adding to succphi1"; }
+                                succp1.insert(tdst);
                             }
                         }
                     }
                 }
-            } else {  // q is in R, we are doing phi2 part
-                if (debug == "1") { std::cout << "It's in R. adding q to phi2"; }
-                p2.insert(q);
+            } else {
+                if (debug == "1") { std::cout << "It's in R. "; }
+                for (auto &t: vwaa->out(q)) {
+                    for (unsigned tdst: vwaa->univ_dests(t.dst)) {
+                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
+                        if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc != 2) {  // this is a correct m. t..
+                            if (t.data() == bdd_ithvar(label)) {
+                                if (debug == "1") { std::cout << "<-this. "; }
+                                if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
+                                    if (debug == "1") { std::cout << "q is in Conf and e is not acc. adding tdst to succphi1"; }
+                                    succp1.insert(tdst);
+                                }
+                            }
+                        }
+                    }
+                }
             }
-        }*/
+        }
 
+        // Go through all states q of p2. For each, if edge under label is correct m.t., add its follower to succphi2
+        for (auto q : p2){
+            if (debug == "1") { std::cout << "\nChecking p2 q: " << q << " for label: " << label << ". "; }
+            if ((R.find(std::to_string(q)) == R.end())) {  // q is not in R, this is a correct modified transition
+                if (debug == "1") { std::cout << "It's not in R. "; }
+                // Find the edge under "label"
+                for (auto &t: vwaa->out(q)) {
+                    for (unsigned tdst: vwaa->univ_dests(t.dst)) {
+                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
+                        if (t.data() == bdd_ithvar(label)) {
+                            if (debug == "1") { std::cout << " added to succphi2. "; }
+                            succp2.insert(tdst);
+                        }
+                    }
+                }
+            } else {
+                if (debug == "1") { std::cout << "It's in R. "; }
+                for (auto &t: vwaa->out(q)) {
+                    for (unsigned tdst: vwaa->univ_dests(t.dst)) {
+                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
+                        if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc != 2) {  // this is a correct mod. tr.
+                            if (debug == "1") { std::cout << "q is in Conf and e is not acc. "; }
+                            if (t.data() == bdd_ithvar(label)) {
+                                if (debug == "1") { std::cout << " added to succphi2. "; }
+                                succp2.insert(tdst);
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-        /* todo this part
+        bool accepting = false;
+
+        if (succp1.empty()) {
+            // We make this the breakpoint and change phi1 and phi2 completely
+            if (debug == "1") { std::cout << "Succphi1 is empty\n"; }
+            for (auto q : succp2) {
+                if (R.find(std::to_string(q)) == R.end()) { // If q was in R, we'd add TT
+                    if (debug == "1") { std::cout << "Adding q: " << q << " to succphi1"; }
+                    succp1.insert(q);
+                }
+            }
+            succp2.clear();
+            for (auto q : R) {
+                succp2.insert((unsigned int) (stoi(q)));
+            }
+            accepting = true;
+        }
+
         // We need to check if this R-component state exists already
-        // rCompState is the number of the state if it exists, else value remains as a "new state" number:
-        unsigned rCompStateNum = sdba->num_states();
+        // succrCompStateNum is the number of the state if it exists, else value remains as a "new state" number:
+        unsigned succrCompStateNum = sdba->num_states();
 
-        if (rCompStateNum == sdba->num_states()) {
-            sdba->new_state();         // rCompStateNum is now equal to sdba->num_states()-1
-            phi1[sdba->num_states() - 1] = p1;
-            phi2[sdba->num_states() - 1] = p2;
+        for (unsigned c = 0; c < sdba->num_states(); ++c) {
+            if (RcompR[c] == R){
+                if (succphi1[c] == succp1){ // todo these need to be the actual succ values
+                    if (succphi2[c] == succp2){
+                        succrCompStateNum = c;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // If the state doesn't exist yet, we create it with "sdba->num_states()-1" becoming its new number.
+        if (succrCompStateNum == sdba->num_states()) {
+            if (debug == "1") { std::cout << "Making new state\n"; }
+            sdba->new_state();         // succrCompStateNum is now equal to sdba->num_states()-1
             RcompR[sdba->num_states() - 1] = R;
+            succphi1[sdba->num_states() - 1] = succp1; // todo we should be setting "global" phis instead
+            succphi2[sdba->num_states() - 1] = succp2;
             // (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; todo name states
         }
 
-        if (succp1 == T){
-            // Connect the state to the succ state as accepting
-            // sdba->new_edge(ci???, sdba->num_states()-1???, bdd_ithvar(label), {0});
-
+        // We connect the state to this configuration under the currently checked label
+        if (accepting) {
+            sdba->new_edge(statenum, sdba->num_states() - 1, bdd_ithvar(label), {0});
+            if (debug == "1") { std::cout << "New ACCEPTING edge from C" << statenum << " to C" << sdba->num_states() - 1 << " labeled " << label; }
         } else {
-            // Just connect the state to the succ state
-            // sdba->new_edge(ci???, sdba->num_states()-1???, bdd_ithvar(label), {});
+            sdba->new_edge(statenum, sdba->num_states() - 1, bdd_ithvar(label), {});
+            if (debug == "1") { std::cout << "New edge from C" << statenum << " to C" << sdba->num_states() - 1 << " labeled " << label; }
+
+            // If the state is new, add all further successors of this successor to the sdba and connect them
+            if (succrCompStateNum == sdba->num_states()-1) {
+                addRCompStateSuccs(vwaa, sdba, succrCompStateNum, Conf, R, succp1, succp2, debug);
+            }
         }
 
-        // If the state is new, add all successors of this state to the sdba and connect them
-        if (rCompStateNum == sdba->num_states()-1) {
-            addRCompStateSuccs(vwaa, sdba, R, p1, p2, debug);
-        }*/
     }
-
-    // random garbage notes
-
-    // For every edge going into R, "remove it" since it is accepting?
-    // If the transition is looping on a state and it isn't going into F, we turn it into tt edge
-    // Construct the transitions from the phi1 and phi2 successors
-    // Either only add edge, or we add it into acceptance transitions too
 }
 
 
