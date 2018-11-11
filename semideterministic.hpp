@@ -48,14 +48,14 @@ bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std
                              std::set<std::string> Valid, bool isqmay[]);
 
 
-// adds the state q and its successors to the set of valid states
+// adds the state q and its successors to the set of valid states for R set
 void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<std::string> &Valid);
 
 
 // Conf = The configuration C we are creating R for
 // remaining = States Q (of the configuration C) that we still need to check
 // Goes through all states of Conf, checks if they are qmay and qmust, adds corresponding states of VWAA into R
-void createR(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
+void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
              std::set<std::string> remaining, std::set<std::string> R,  bool isqmay[], bool isqmust[],
              spot::twa_graph_ptr &sdba, std::string debug);
 
@@ -64,5 +64,7 @@ void createR(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::s
 void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
                  std::set<std::string> R, spot::twa_graph_ptr &sdba, std::string debug);
 
+void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba, std::set<std::string> R,
+                        bdd p1, bdd p2, std::string debug);
 
 #endif
