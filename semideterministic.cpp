@@ -356,7 +356,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
                         // Replace the edges ending in R with TT
                         if (R.find(std::to_string(tdst)) != R.end()) { // If tdst was in R, we'd add TT
-                            if (debug == "1") { std::cout << "t.dst is not in R. adding to phi1"; }
+                            if (debug == "1") { std::cout << "t.dst is not in R. adding to phi1\n"; }
                             p1.insert(tdst);
                         }
                     }
@@ -370,14 +370,14 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                             if (debug == "1") { std::cout << "q is in Conf and e is not acc. "; }
                             // Replace the edges ending in R with TT
                             if (R.find(std::to_string(tdst)) != R.end()) { // If tdst was in R, we'd add TT
-                                if (debug == "1") { std::cout << "t.dst is not in R. adding to phi1"; }
+                                if (debug == "1") { std::cout << "t.dst is not in R. adding to phi1\n"; }
                                 p1.insert(tdst);
                             }
                         }
                     }
                 }
                 // As q is in R, we always add it to phi2
-                if (debug == "1") { std::cout << "It's in R. adding q to phi2"; }
+                if (debug == "1") { std::cout << "It's in R. adding q to phi2\n"; }
                 p2.insert(q);
             }
         }
@@ -483,7 +483,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                         if (t.data() == bdd_ithvar(label)) {
                             if (debug == "1") { std::cout << "<-this. "; }
                             if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
-                                if (debug == "1") { std::cout << "adding to succphi1"; }
+                                if (debug == "1") { std::cout << "adding to succphi1\n"; }
                                 succp1.insert(tdst);
                             }
                         }
@@ -498,7 +498,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                             if (t.data() == bdd_ithvar(label)) {
                                 if (debug == "1") { std::cout << "<-this. "; }
                                 if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
-                                    if (debug == "1") { std::cout << "q is in Conf and e is not acc. adding tdst to succphi1"; }
+                                    if (debug == "1") { std::cout << "q is in Conf and e is not acc. adding tdst to succphi1\n"; }
                                     succp1.insert(tdst);
                                 }
                             }
@@ -518,7 +518,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
                         if (t.data() == bdd_ithvar(label)) {
-                            if (debug == "1") { std::cout << " added to succphi2. "; }
+                            if (debug == "1") { std::cout << " added to succphi2. \n"; }
                             succp2.insert(tdst);
                         }
                     }
@@ -531,7 +531,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                         if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc != 2) {  // this is a correct mod. tr.
                             if (debug == "1") { std::cout << "q is in Conf and e is not acc. "; }
                             if (t.data() == bdd_ithvar(label)) {
-                                if (debug == "1") { std::cout << " added to succphi2. "; }
+                                if (debug == "1") { std::cout << " added to succphi2. \n"; }
                                 succp2.insert(tdst);
                             }
                         }
@@ -547,7 +547,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             if (debug == "1") { std::cout << "Succphi1 is empty\n"; }
             for (auto q : succp2) {
                 if (R.find(std::to_string(q)) == R.end()) { // If q was in R, we'd add TT
-                    if (debug == "1") { std::cout << "Adding q: " << q << " to succphi1"; }
+                    if (debug == "1") { std::cout << "Adding q: " << q << " to succphi1\n"; }
                     succp1.insert(q);
                 }
             }
