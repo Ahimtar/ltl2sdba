@@ -65,12 +65,6 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                  std::set<std::string> R, spot::twa_graph_ptr &sdba, std::string debug);
 
 
-// fills given phi1 and phi2
-void setPhis(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba, unsigned num_states,
-             std::set<std::string> Conf, std::set<std::string> R, std::set<unsigned> &p1, std::set<unsigned> &p2,
-             unsigned label, std::string debug);
-
-
 // adds r-component states that are successors of a given (R, phi1, phi2)
 void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba,  unsigned statenum,
                         std::set<std::string> Conf, std::set<std::string> R, std::set<unsigned> p1,
