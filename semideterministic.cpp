@@ -344,13 +344,27 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         auto label = labelvar.second;
         for (unsigned q = 0; q < nq; ++q) {
             if (debug == "1") { std::cout << "\nChecking q: " << q << " for label: " << label << ". "; }
-            if (!(R.find(std::to_string(q)) != R.end())) {  // q is not in R, we are doing phi1 part
+            if ((R.find(std::to_string(q)) == R.end())) {  // q is not in R, this is a correct modified transition
                 if (debug == "1") { std::cout << "It's not in R. "; }
-                // Check if each edge is in the modified transition relation, we only work with those
                 for (auto &t: vwaa->out(q)) {
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
-                        if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc != 2) {
+                        // Replace the edges ending in R with TT
+                        if (R.find(std::to_string(tdst)) != R.end()) {
+                            if (debug == "1") { std::cout << "t.dst is in R. adding TT state to phi1"; }
+                            p1.insert(vwaa->num_states() - 1);
+                        } else {
+                            if (debug == "1") { std::cout << "t.dst is not in R. adding t.dst to phi1"; }
+                            p1.insert(tdst);
+                        }
+                    }
+                }
+            } else {
+                if (debug == "1") { std::cout << "It's in R. "; }
+                for (auto &t: vwaa->out(q)) {
+                    for (unsigned tdst: vwaa->univ_dests(t.dst)) {
+                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
+                        if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc != 2) {  // this is a correct mod. tr.
                             if (debug == "1") { std::cout << "q is in Conf and e is not acc. "; }
                             // Replace the edges ending in R with TT
                             if (R.find(std::to_string(tdst)) != R.end()) {
@@ -363,7 +377,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                         }
                     }
                 }
-            } else {  // q is in R, we are doing phi2 part
+                // As q is in R, we always add it to phi2
                 if (debug == "1") { std::cout << "It's in R. adding q to phi2"; }
                 p2.insert(q);
             }
