@@ -354,8 +354,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                             if (debug == "1") { std::cout << "q is in Conf and e is not acc. "; }
                             // Replace the edges ending in R with TT
                             if (R.find(std::to_string(tdst)) != R.end()) {
-                                if (debug == "1") { std::cout << "t.dst is in R. adding TT to phi1"; }
-                                p1 = bdd_and(p1, bdd_ithvar(vwaa->num_states() - 1));  // todo maybe this should be 'T'?
+                                if (debug == "1") { std::cout << "t.dst is in R. adding TT state to phi1"; }
+                                p1 = bdd_and(p1, bdd_ithvar(vwaa->num_states() - 1));
                             } else {
                                 if (debug == "1") { std::cout << "t.dst is not in R. adding t.dst to phi1"; }
                                 p1 = bdd_and(p1, bdd_ithvar(tdst));
@@ -454,8 +454,11 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         auto label = labelvar.second;
         // todo calculate succp1 and succp2
 
+        // Go through all states q of p2. For each, if the edge under label is valid, add its follower to succphi2
 
-/* todo this part
+
+
+        /* todo this part
         // We need to check if this R-component state exists already
         // rCompState is the number of the state if it exists, else value remains as a "new state" number:
         unsigned rCompStateNum = sdba->num_states();

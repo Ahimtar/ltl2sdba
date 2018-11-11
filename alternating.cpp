@@ -44,7 +44,7 @@ bool is_mergeable(VWAA* vwaa, spot::formula f) {
 		auto sf = spot::formula::And(std::vector<spot::formula>(clause.begin(), clause.end()));
 		// create the state for the conjunction
 		unsigned state_id = make_alternating_recursive(vwaa, sf);
-		// Check that any loop label impies alpha(f[0])
+		// Check that any loop label implies alpha(f[0])
 		for (auto& edge_id : vwaa->get_state_edges(state_id)) {
 			auto t = vwaa->get_edge(edge_id);
 			//check t is a loop
