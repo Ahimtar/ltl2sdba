@@ -74,7 +74,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             for (unsigned d: pvwaa->univ_dests(t.dst))
             {
                 if (t.src == d && t.acc.id == 0) {
-                    isqmay[q] = true; // todo p4, p9 confirms same state twice, fix?
+                    isqmay[q] = true;
                     if (debug == "1"){std::cout << "It's Qmay. ";}
                     thereIsALoop = true;
                     break;
@@ -128,7 +128,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
-    sdba->prop_complete() = false; // todo is this right?
 
     unsigned nc = sdba->num_states(); // Number of configurations C (states in the nondeterministic part)
 
@@ -258,8 +257,8 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
             std::cout << "We are in BADSTATE: " << q << ". "; // todo Deal with this
         }
         else {
-            //If the state is {}, we know it is Qmust. todo if this is true we can make R set of unsigneds and refactor code to a nice one
-            if (debug == "1"){std::cout << "q is {} (which is Qmust), adding to R. ";} // todo keep in mind acceptation
+            //If the state is {}, we know it is Qmust. todo we can make R set of unsigneds and refactor code to a nice one
+            if (debug == "1"){std::cout << "q is {} (which is Qmust), adding to R. ";}
             if (R.count(q) == 0) {
                 R.insert(q);
             }
@@ -416,8 +415,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
             RcompR[sdba->num_states() - 1] = R;
             phi1[sdba->num_states() - 1] = p1;
             phi2[sdba->num_states() - 1] = p2;
-            //sdba->get_named_prop("state-names")[0] = "wrw";
-            //(*(sdba->get_named_prop(<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; //todo name states
+            //(*(sdba->get_named_prop(<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; //todo name states?
         }
         // We connect the state to this configuration under the currently checked label
         sdba->new_edge(ci, sdba->num_states()-1, bdd_ithvar(label), {});
@@ -582,12 +580,13 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             RcompR[sdba->num_states() - 1] = R;
             succphi1[sdba->num_states() - 1] = succp1; // todo we should be setting "global" phis instead
             succphi2[sdba->num_states() - 1] = succp2;
-            // (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; todo name states
+            // (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; todo name states?
         }
 
         // We connect the state to this configuration under the currently checked label
         if (accepting) {
             sdba->new_edge(statenum, sdba->num_states() - 1, bdd_ithvar(label), {0});
+            // todo set number of acceptance sets in settings to +1
             if (debug == "1") { std::cout << "New ACCEPTING edge from C" << statenum << " to C" << sdba->num_states() - 1 << " labeled " << label; }
         } else {
             sdba->new_edge(statenum, sdba->num_states() - 1, bdd_ithvar(label), {});
@@ -600,46 +599,5 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 }
             }
         }
-
     }
 }
-
-
-// todo try ltlcross to test this tool. generate random formulae and check them in ltlcross (using ltl2ldba) and this
-
-
-/* Phis work
-// We will map two phi-s to each state so that it is in the form of (R, phi1, phi2)
-std::map<unsigned, std::string> phi1;
-std::map<unsigned, std::string> phi2;
-
-for (unsigned c = 0; c < nc; ++c) {
-
-    // We set the phis
-    phi1[c] = "Phi_1";
-    phi2[c] = "Phi_2"; //Change these two from strings to sets of states
-}*/
-
-/* xz Print from removing acceptance marks loop -------------
-std::cout << "[" << spot::bdd_format_formula(dict, t.cond) << "] ";
-bool notfirst = false;
-for (unsigned d: pvwaa->univ_dests(t.dst))
-{
-    if (notfirst)
-        std::cout << '&';
-    else
-        notfirst = true;
-    std::cout << d;
-}
-std::cout << " " << t.acc << "\n";
-// ---------------------------*/
-
-
-/* Working with vwaa edges - notes
-            xz t.cond is bdd of edges
-            std::cout << "edge(" << t.src << " -> " << t.dst << "), label ";
-            spot::bdd_print_formula(std::cout, dict, t.cond);
-            auto edgelabel = spot::bdd_format_formula(dict, t.cond);
-            std::cout << ", acc sets " << t.acc;
-            std::cout << ", next succ " << (t.next_succ) << " Univ dests:\n";
-            */
