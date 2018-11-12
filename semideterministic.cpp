@@ -175,8 +175,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     sdba->prop_complete(false); // todo remove this once we make edges in the deterministic part
 
     if (debug == "1") { std::cout << "ND part edge acceptation correction. "; }
-    for (unsigned q = 0; q < nq; ++q) {
-        for (auto& t: pvwaa->out(q))
+    for (unsigned ci = 0; ci < nc; ++ci) {
+        for (auto& t: sdba->out(ci))
         {
             for (unsigned d: pvwaa->univ_dests(t.dst)) {
                 if (debug == "1") {
