@@ -399,13 +399,9 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         unsigned rCompStateNum = sdba->num_states();
 
         for (unsigned c = 0; c < sdba->num_states(); ++c) {
-            if (RcompR[c] == R){
-                if (phi1[c] == p1){
-                    if (phi2[c] == p2){
-                        rCompStateNum = c;
-                        break;
-                    }
-                }
+            if (RcompR[c] == R && phi1[c] == p1 && phi2[c] == p2){
+                rCompStateNum = c;
+                break;
             }
         }
 
@@ -418,8 +414,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
             //(*(sdba->get_named_prop(<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; //todo name states?
         }
         // We connect the state to this configuration under the currently checked label
-        sdba->new_edge(ci, sdba->num_states()-1, bdd_ithvar(label), {});
-        if (debug == "1"){std::cout << "New edge from C" << ci << " to C" << sdba->num_states()-1 << " labeled " << label;}
+        sdba->new_edge(ci, rCompStateNum, bdd_ithvar(label), {});
+        if (debug == "1"){std::cout << "New edge from C" << ci << " to C" << rCompStateNum << " labeled " << label;}
 
         // If the state is new, add all successors of this state to the sdba and connect them
         if (rCompStateNum == sdba->num_states()-1) {
@@ -563,13 +559,9 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         unsigned succrCompStateNum = sdba->num_states();
 
         for (unsigned c = 0; c < sdba->num_states(); ++c) {
-            if (RcompR[c] == R){
-                if (succphi1[c] == succp1){ // todo these need to be the actual succ values
-                    if (succphi2[c] == succp2){
-                        succrCompStateNum = c;
-                        break;
-                    }
-                }
+            if (RcompR[c] == R && succphi1[c] == succp1 && succphi2[c] == succp2){ // todo these need to be actual values
+                succrCompStateNum = c;
+                break;
             }
         }
 
@@ -585,11 +577,11 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
         // We connect the state to this configuration under the currently checked label
         if (accepting) {
-            sdba->new_edge(statenum, sdba->num_states() - 1, bdd_ithvar(label), {0});
+            sdba->new_edge(statenum, succrCompStateNum, bdd_ithvar(label), {0});
             // todo set number of acceptance sets in settings to +1
             if (debug == "1") { std::cout << "New ACCEPTING edge from C" << statenum << " to C" << sdba->num_states() - 1 << " labeled " << label; }
         } else {
-            sdba->new_edge(statenum, sdba->num_states() - 1, bdd_ithvar(label), {});
+            sdba->new_edge(statenum, succrCompStateNum, bdd_ithvar(label), {});
             if (debug == "1") { std::cout << "New edge from C" << statenum << " to C" << sdba->num_states() - 1 << " labeled " << label; }
 
             // If the state is new, add all further successors of this successor to the sdba and connect them
