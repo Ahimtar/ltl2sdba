@@ -129,6 +129,12 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
 
+
+    // Definition of the phis and Rs assigned to the states in the deterministic part, for future
+    std::map<unsigned, std::set<std::string>> Rname;
+    std::map<unsigned, std::set<unsigned>> phi1;
+    std::map<unsigned, std::set<unsigned>> phi2;
+
     unsigned nc = sdba->num_states(); // Number of configurations C (states in the nondeterministic part)
 
     // State-names C are in style of "1,2,3", these represent states Q of the former VWAA configuration
@@ -167,7 +173,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
             // todo probably could check if this R doesnt exist already
             // We call this function to judge Q-s of this C and create R-s and R-components based on them
-            createDetPart(pvwaa, ci, C[ci], C[ci], R, isqmay, isqmust, sdba, debug);
+            createDetPart(pvwaa, ci, C[ci], C[ci], R, isqmay, isqmust, sdba, Rname, phi1, phi2, debug);
         }
     }
 
@@ -240,7 +246,9 @@ void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<s
 
 void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
                    std::set<std::string> remaining, std::set<std::string> R, bool isqmay[], bool isqmust[],
-                   spot::twa_graph_ptr &sdba, std::string debug){
+                   spot::twa_graph_ptr &sdba, std::map<unsigned, std::set<std::string>> &Rname,
+                   std::map<unsigned, std::set<unsigned>> &phi1, std::map<unsigned, std::set<unsigned>> &phi2,
+                   std::string debug){
 
     // We choose first q that comes into way
     auto it = remaining.begin();
@@ -284,11 +292,11 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
                 if (!remaining.empty()){
                     // We run the branch that builds the R where this state is added
                     if (debug == "1"){std::cout << " and creating branch including: " << q << ".\n";}
-                    createDetPart(vwaa, ci, Conf, remaining, Rx, isqmay, isqmust, sdba, debug);
+                    createDetPart(vwaa, ci, Conf, remaining, Rx, isqmay, isqmust, sdba, Rname, phi1, phi2, debug);
                 } else{
                     // If this was the last state, we have one R complete. Let's build an R-component from it.
                     if (debug == "1"){std::cout << " and this was lastx state!\n----------> \nCreate Rx comp: \n";}
-                    createRComp(vwaa, ci, Conf, Rx, sdba, debug);
+                    createRComp(vwaa, ci, Conf, Rx, sdba, Rname, phi1, phi2, debug);
                     if (debug == "1"){std::cout << " \n<---------- \n";}
                 }
                 // We also continue this run without adding this state to R - representing the second branch
@@ -302,18 +310,20 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
     // If this was the last state, we have this R complete. Let's build an R-component from it.
     if (remaining.empty()){
         if (debug == "1"){std::cout << " YES!  \n----------> \nCreate R comp: \n";}
-        createRComp(vwaa, ci, Conf, R, sdba, debug);
+        createRComp(vwaa, ci, Conf, R, sdba, Rname, phi1, phi2, debug);
         if (debug == "1"){std::cout << " \n<---------- \n";}
     } else{
         if (debug == "1"){std::cout << " NO! Check another: \n";}
-        createDetPart(vwaa, ci, Conf, remaining, R, isqmay, isqmust, sdba, debug);
+        createDetPart(vwaa, ci, Conf, remaining, R, isqmay, isqmust, sdba, Rname, phi1, phi2, debug);
     }
 
     return;
 }
 
 void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
-                 std::set<std::string> R, spot::twa_graph_ptr &sdba, std::string debug){
+                 std::set<std::string> R, spot::twa_graph_ptr &sdba, std::map<unsigned, std::set<std::string>> &Rname,
+                 std::map<unsigned, std::set<unsigned>> &phi1, std::map<unsigned, std::set<unsigned>> &phi2,
+                 std::string debug){
     if (debug == "1"){
         std::cout << " States of Conf: ";
         for (auto x : Conf){
@@ -331,12 +341,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
     // Note: "vwaa->num_states()-1" is the last state of the vwaa, which is always the TT state.
 
-    // The phis and R for this triplet state
-    std::map<unsigned, std::set<std::string>> RcompR;
-    std::map<unsigned, std::set<unsigned>> phi1;
-    std::map<unsigned, std::set<unsigned>> phi2;
-
-    // The phis we work with in the algorithm
+    // The phis of this state
     std::set<unsigned> p1;
     std::set<unsigned> p2;
 
@@ -395,32 +400,34 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         }
 
         // We need to check if this R-component state exists already
-        // rCompState is the number of the state if it exists, else value remains as a "new state" number:
-        unsigned rCompStateNum = sdba->num_states();
+        // addedStateNum is the number of the state if it exists, else value remains as a "new state" number:
+        unsigned addedStateNum = sdba->num_states();
 
         for (unsigned c = 0; c < sdba->num_states(); ++c) {
-            if (RcompR[c] == R && phi1[c] == p1 && phi2[c] == p2){
-                rCompStateNum = c;
+            if (Rname[c] == R && phi1[c] == p1 && phi2[c] == p2){
+                addedStateNum = c;
                 break;
             }
         }
 
         // If the state doesn't exist yet, we create it with "sdba->num_states()-1" becoming its new number.
-        if (rCompStateNum == sdba->num_states()) {
-            sdba->new_state();         // rCompStateNum is now equal to sdba->num_states()-1
-            RcompR[sdba->num_states() - 1] = R;
+        if (addedStateNum == sdba->num_states()) {
+            sdba->new_state();         // addedStateNum is now equal to sdba->num_states()-1
+            Rname[sdba->num_states() - 1] = R;
             phi1[sdba->num_states() - 1] = p1;
             phi2[sdba->num_states() - 1] = p2;
             //(*(sdba->get_named_prop(<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; //todo name states?
         }
+
         // We connect the state to this configuration under the currently checked label
-        sdba->new_edge(ci, rCompStateNum, bdd_ithvar(label), {});
-        if (debug == "1"){std::cout << "New edge from C" << ci << " to C" << rCompStateNum << " labeled " << label;}
+        sdba->new_edge(ci, addedStateNum, bdd_ithvar(label), {});
+        if (debug == "1"){std::cout << "New edge from C" << ci << " to C" << addedStateNum << " labeled " << label;}
 
         // If the state is new, add all successors of this state to the sdba and connect them
-        if (rCompStateNum == sdba->num_states()-1) {
-            addRCompStateSuccs(vwaa, sdba, rCompStateNum, Conf, R, p1, p2, debug);
+        if (addedStateNum == sdba->num_states()-1) {
+            addRCompStateSuccs(vwaa, sdba, addedStateNum, Conf, Rname, phi1, phi2, debug);
         }
+
 
         if (debug == "1") {
             std::cout << "\nAll edges of Conf after: \n";
@@ -445,19 +452,20 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 }
 
 
-// Adds successors of state (R, phi1, phi2) (and their successors, recursively)
+// Adds successors of state statenum (and their successors, recursively)
 void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba, unsigned statenum,
-                        std::set<std::string> Conf, std::set<std::string> R, std::set<unsigned> p1,
-                        std::set<unsigned> p2, std::string debug){
+                        std::set<std::string> Conf, std::map<unsigned, std::set<std::string>> &Rname,
+                        std::map<unsigned, std::set<unsigned>> &phi1, std::map<unsigned, std::set<unsigned>> &phi2,
+                        std::string debug){
 
     if (debug == "1"){std::cout << " Going into successors\n";}
 
-    // The phis and R for the successors triplet state  todo these should not exist at all?
-    std::map<unsigned, std::set<std::string>> RcompR;
-    std::map<unsigned, std::set<unsigned>> succphi1;
-    std::map<unsigned, std::set<unsigned>> succphi2;
+    // The R and phis of the state we are adding successors of
+    std::set<std::string> R = Rname[statenum];
+    std::set<unsigned> p1 = phi1[statenum];
+    std::set<unsigned> p2 = phi2[statenum];
 
-    // The bdds we work with in the algorithm
+    // The phis for the successor state (will reset for each added state)
     std::set<unsigned> succp1;
     std::set<unsigned> succp2;
 
@@ -467,7 +475,10 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
     for (auto labelvar : dict.get()->var_map) {
         auto label = labelvar.second;
 
-        // Go through all states q of p1. For each, if edge under label is a correct m.t., add its follower to succphi1
+        succp1.clear();
+        succp2.clear();
+
+        // Go through all states q of p1. For each, if edge under label is a correct m.t., add its follower to succp1
         for (auto q : p1){
             if (debug == "1") { std::cout << "\nChecking p1 q: " << q << " for label: " << label << ". "; }
             if ((R.find(std::to_string(q)) == R.end())) {  // q is not in R, this is a correct modified transition
@@ -504,7 +515,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
         }
 
-        // Go through all states q of p2. For each, if edge under label is correct m.t., add its follower to succphi2
+        // Go through all states q of p2. For each, if edge under label is correct m.t., add its follower to succp2
         for (auto q : p2){
             if (debug == "1") { std::cout << "\nChecking p2 q: " << q << " for label: " << label << ". "; }
             if ((R.find(std::to_string(q)) == R.end())) {  // q is not in R, this is a correct modified transition
@@ -539,7 +550,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         bool accepting = false;
 
         if (succp1.empty()) {
-            // We make this the breakpoint and change phi1 and phi2 completely
+            // We make this the breakpoint and change succp1 and succp2 completely
             if (debug == "1") { std::cout << "Succphi1 is empty\n"; }
             for (auto q : succp2) {
                 if (R.find(std::to_string(q)) == R.end()) { // If q was in R, we'd add TT
@@ -555,39 +566,39 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         }
 
         // We need to check if this R-component state exists already
-        // succrCompStateNum is the number of the state if it exists, else value remains as a "new state" number:
-        unsigned succrCompStateNum = sdba->num_states();
+        // succStateNum is the number of the state if it exists, else value remains as a "new state" number:
+        unsigned succStateNum = sdba->num_states();
 
         for (unsigned c = 0; c < sdba->num_states(); ++c) {
-            if (RcompR[c] == R && succphi1[c] == succp1 && succphi2[c] == succp2){ // todo these need to be actual values
-                succrCompStateNum = c;
+            if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2){
+                succStateNum = c;
                 break;
             }
         }
 
         // If the state doesn't exist yet, we create it with "sdba->num_states()-1" becoming its new number.
-        if (succrCompStateNum == sdba->num_states()) {
+        if (succStateNum == sdba->num_states()) {
             if (debug == "1") { std::cout << "Making new state\n"; }
             sdba->new_state();         // succrCompStateNum is now equal to sdba->num_states()-1
-            RcompR[sdba->num_states() - 1] = R;
-            succphi1[sdba->num_states() - 1] = succp1; // todo we should be setting "global" phis instead
-            succphi2[sdba->num_states() - 1] = succp2;
+            Rname[sdba->num_states() - 1] = R;
+            phi1[sdba->num_states() - 1] = succp1;
+            phi2[sdba->num_states() - 1] = succp2;
             // (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; todo name states?
         }
 
         // We connect the state to this configuration under the currently checked label
         if (accepting) {
-            sdba->new_edge(statenum, succrCompStateNum, bdd_ithvar(label), {0});
+            sdba->new_edge(statenum, succStateNum, bdd_ithvar(label), {0});
             // todo set number of acceptance sets in settings to +1
             if (debug == "1") { std::cout << "New ACCEPTING edge from C" << statenum << " to C" << sdba->num_states() - 1 << " labeled " << label; }
         } else {
-            sdba->new_edge(statenum, succrCompStateNum, bdd_ithvar(label), {});
+            sdba->new_edge(statenum, succStateNum, bdd_ithvar(label), {});
             if (debug == "1") { std::cout << "New edge from C" << statenum << " to C" << sdba->num_states() - 1 << " labeled " << label; }
 
             // If the state is new, add all further successors of this successor to the sdba and connect them
-            if ((succrCompStateNum == sdba->num_states()-1)) {
+            if ((succStateNum == sdba->num_states()-1)) {
                 if (debug != "1" ||  sdba->num_states() < 15) { // Debug mode only allows 15 states max for safety
-                    addRCompStateSuccs(vwaa, sdba, succrCompStateNum, Conf, R, succp1, succp2, debug);
+                    addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
                 }
             }
         }

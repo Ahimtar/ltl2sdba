@@ -57,17 +57,22 @@ void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<s
 // Goes through all states of Conf, checks if they are qmay and qmust, adds corresponding states of VWAA into R
 void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
              std::set<std::string> remaining, std::set<std::string> R,  bool isqmay[], bool isqmust[],
-             spot::twa_graph_ptr &sdba, std::string debug);
+             spot::twa_graph_ptr &sdba, std::map<unsigned, std::set<std::string>> &Rname,
+             std::map<unsigned, std::set<unsigned>> &phi1, std::map<unsigned, std::set<unsigned>> &phi2,
+             std::string debug);
 
 
 // creates r-components from a given R
 void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
-                 std::set<std::string> R, spot::twa_graph_ptr &sdba, std::string debug);
+                 std::set<std::string> R, spot::twa_graph_ptr &sdba, std::map<unsigned, std::set<std::string>> &Rname,
+                 std::map<unsigned, std::set<unsigned>> &phi1, std::map<unsigned, std::set<unsigned>> &phi2,
+                 std::string debug);
 
 
 // adds r-component states that are successors of a given (R, phi1, phi2)
 void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba,  unsigned statenum,
-                        std::set<std::string> Conf, std::set<std::string> R, std::set<unsigned> p1,
-                        std::set<unsigned> p2, std::string debug);
+                        std::set<std::string> Conf, std::map<unsigned, std::set<std::string>> &Rname,
+                        std::map<unsigned, std::set<unsigned>> &phi1, std::map<unsigned, std::set<unsigned>> &phi2,
+                        std::string debug);
 
 #endif
