@@ -177,6 +177,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
         }
     }
 
+    sdba->prop_state_acc(true);
     sdba->prop_universal(false);
     sdba->prop_complete(false); // todo remove this once we make edges in the deterministic part
 
@@ -560,7 +561,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
             succp2.clear();
             for (auto q : R) {
-                succp2.insert((unsigned int) (stoi(q)));
+                succp2.insert((unsigned int) (std::stoi(q)));
             }
             accepting = true;
         }
@@ -597,7 +598,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
             // If the state is new, add all further successors of this successor to the sdba and connect them
             if ((succStateNum == sdba->num_states()-1)) {
-                if (debug != "1" ||  sdba->num_states() < 15) { // Debug mode only allows 15 states max for safety
+                if (debug != "1" ||  sdba->num_states() < 10) { // Debug mode only allows 15 states max for safety
                     addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
                 }
             }
