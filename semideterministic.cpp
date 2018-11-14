@@ -365,11 +365,11 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                         for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                             if (debug == "1") { std::cout << "E_ " << t.src << "-" << tdst << " bdd:" << t.cond << " bddithvarlabel" << bdd_ithvar(label) << ". \n"; }
                             if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
-                                if (debug == "1") { std::cout << "this label is the same as label: " << label; }
+                                if (debug == "1") { std::cout << "This label is the same as label: " << label << ". "; }
                                 // Replace the edges ending in R with TT
                                 if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
                                     if (debug == "1") {
-                                        std::cout << "t.dst is not in R - adding" << tdst << " to phi1\n";
+                                        std::cout << "t.dst is not in R - adding " << tdst << " to phi1\n";
                                     }
                                     p1.insert(tdst);
                                 }
@@ -383,8 +383,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " bdd:" << t.cond << " bddithvarlabel" << bdd_ithvar(label) << ". \n"; }
                         if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
-                            if (debug == "1") { std::cout << "this label is the same as label: " << label; }
-                            if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc != 2) {  // this is a correct mod. tr.
+                            if (debug == "1") { std::cout << "This label is the same as label: " << label << ". "; }
+                            if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc == 0) {  // this is a correct mod. tr.
                                 if (debug == "1") { std::cout << "q is in Conf and e is not acc. \n"; }
                                 // Replace the edges ending in R with TT
                                 if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
@@ -404,7 +404,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         }
 
         if (debug == "1") {
-            std::cout << "\nlaststatenumm:" << sdba->num_states()-1 << ", phi1: ";
+            std::cout << "\nThe phis we just made: phi1: ";
             for (auto x : p1){
                 std::cout << x << ", ";
             }
@@ -426,13 +426,30 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         // We need to check if this R-component state exists already
         // addedStateNum is the number of the state if it exists, else value remains as a "new state" number:
         unsigned addedStateNum = sdba->num_states();
+        if (debug == "1") { std::cout << "Checking if it exists: R: ";}
 
         for (unsigned c = 0; c < sdba->num_states(); ++c) {
+            if (debug == "1") {
+                std::cout << "\nTry c: " << c << " Rname: ";
+                for (auto x : Rname[c]){
+                    std::cout << x << ", ";
+                }
+                std::cout << "phi1: ";
+                for (auto x : phi1[c]){
+                    std::cout << x << ", ";
+                }
+                std::cout << "phi2: ";
+                for (auto x : phi2[c]){
+                    std::cout << x << ", ";
+                }
+            }
             if (Rname[c] == R && phi1[c] == p1 && phi2[c] == p2){
                 addedStateNum = c;
+                if (debug == "1") { std::cout << "<- this! it exists already.";}
                 break;
             }
         }
+        if (debug == "1") { std::cout << "\nThe statenum is: " << addedStateNum << "\n";}
 
         // If the state doesn't exist yet, we create it with "sdba->num_states()-1" becoming its new number.
         if (addedStateNum == sdba->num_states()) {
@@ -484,7 +501,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                         std::map<unsigned, std::set<unsigned>> &phi1, std::map<unsigned, std::set<unsigned>> &phi2,
                         std::string debug){
 
-    if (debug == "1"){std::cout << "\n\nFunction addRCompStateSuccs";}
+    if (debug == "1"){std::cout << "\n\n>>>>>>  Function addRCompStateSuccs";}
 
     // The R and phis of the state we are adding successors of
     std::set<std::string> R = Rname[statenum];
@@ -519,9 +536,9 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
                         if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
-                            if (debug == "1") { std::cout << "\n<-this. "; }
+                            if (debug == "1") { std::cout << "\n<-the label is right. "; }
                             if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
-                                if (debug == "1") { std::cout << "adding to succphi1\n"; }
+                                if (debug == "1") { std::cout << "adding tdst (" << tdst << ") to succphi1\n"; }
                                 succp1.insert(tdst);
                             }
                         }
@@ -533,12 +550,12 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                     for (auto &t: vwaa->out(q)) {
                         for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                             if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
-                            if (t.acc != 2) {
+                            if (t.acc == 0) {
                                 if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
-                                    if (debug == "1") { std::cout << "\n<-this. "; }
+                                    if (debug == "1") { std::cout << "\n<- not accepting and the label is right. "; }
                                     if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
                                         if (debug == "1") {
-                                            std::cout << "q is in Conf and e is not acc. adding tdst to succphi1\n";
+                                            std::cout << "adding tdst (" << tdst << ") to succphi1\n";
                                         }
                                         succp1.insert(tdst);
                                     }
@@ -562,7 +579,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". ";}
                         if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
-                            if (debug == "1") { std::cout << " added to succphi2. \n"; }
+                            if (debug == "1") { std::cout << " added tdst (" << tdst << ") to succphi2. \n"; }
                             succp2.insert(tdst);
                         }
                     }
@@ -573,11 +590,11 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                     for (auto &t: vwaa->out(q)) {
                         for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                             if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
-                            if (t.acc != 2) {
+                            if (t.acc == 0) {
                                 if (debug == "1") { std::cout << "q is in Conf and e is not acc. Tcond " << t.cond
                                                               << " bddlabel " << bdd_ithvar(label) << ".\n";}
                                 if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
-                                    if (debug == "1") { std::cout << " added to succphi2. \n"; }
+                                    if (debug == "1") { std::cout << " added tdst (" << tdst << ")  to succphi2. \n"; }
                                     succp2.insert(tdst);
                                 }
                             }
@@ -605,7 +622,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
             accepting = true;
 
-            std::cout << "New values: succphi1: ";  // todo i got error here, succphi1 does not correspond to the one after laststatenum:
+            std::cout << "New values: succphi1: ";
             for (auto x : succp1){
                 std::cout << x << ", ";
             }
@@ -634,7 +651,8 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 std::cout << "phi2: ";
                 for (auto x : phi2[c]){
                     std::cout << x << ", ";
-                }}
+                }
+            }
             if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2){
                 succStateNum = c;
                 existsAlready = true;
@@ -642,7 +660,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 break;
             }
         }
-        if (debug == "1") { std::cout << "\nSuccstatenum: " << succStateNum; }
+        if (debug == "1") { std::cout << "\nSuccstatenum: " << succStateNum << "\n"; }
 
         // If the state doesn't exist yet, we create it with "sdba->num_states()-1" becoming its new number.
         if (succStateNum == sdba->num_states()) {   // the same as "if !existsAlready"
@@ -673,10 +691,12 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         if (accepting) {
             sdba->new_edge(statenum, succStateNum, bdd_ithvar(label), {0});
             // todo set number of acceptance sets in settings to +1
-            if (debug == "1") { std::cout << "New ACCEPTING edge from C" << statenum << " to C" << succStateNum << " labeled " << label; }
+            if (debug == "1") { std::cout << "New ACCEPTING edge from C" << statenum << " to C" << succStateNum
+                                          << " labeled " << label; }
         } else {
             sdba->new_edge(statenum, succStateNum, bdd_ithvar(label), {});
-            if (debug == "1") { std::cout << "New edge from C" << statenum << " to C" << succStateNum << " labeled " << label; }
+            if (debug == "1") { std::cout << "New edge from C" << statenum << " to C" << succStateNum
+                                          << " labeled " << label; }
 
             // If the state is new, add all further successors of this successor to the sdba and connect them
             if (!existsAlready) {
@@ -686,5 +706,6 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 }
             }
         }
+        if (debug == "1") { std::cout << "\n<<<<<<   End of function addRCompStateSuccs \n"; }
     }
 }
