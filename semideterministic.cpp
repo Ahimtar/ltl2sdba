@@ -75,7 +75,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             {
                 if (t.src == d && t.acc.id == 0) {
                     isqmay[q] = true;
-                    if (debug == "1"){std::cout << "It's Qmay. ";}
+                    if (debug == "1"){std::cout << "It's Qmay. ";} // It also may be Qmust
                     thereIsALoop = true;
                     break;
                 }
@@ -96,7 +96,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             }
             if (!thereIsALoop){
                 isqmust[q] = false;
-                if (debug == "1"){std::cout << "It's not Qmust. ";}
+                if (debug == "1"){std::cout << "It's not Qmust. ";} // If this is not printed, it is Qmust
                 break;
             }
         }
@@ -638,26 +638,29 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         if (debug == "1") { std::cout << "Succstatenum = sdbanumstates: " << succStateNum; }
         bool existsAlready = false;
 
-        for (unsigned c = 0; c < sdba->num_states(); ++c) {
-            if (debug == "1") {
-                std::cout << "\nTry c: " << c << " Rname: ";
-                for (auto x : Rname[c]){
-                    std::cout << x << ", ";
+        // todo create a state for when R and both phis are empty (current version would create multiple of these)
+        if (!(R == {} && succp1 == {} && succp2 == {})) {
+            for (unsigned c = 0; c < sdba->num_states(); ++c) {
+                if (debug == "1") {
+                    std::cout << "\nTry c: " << c << " Rname: ";
+                    for (auto x : Rname[c]) {
+                        std::cout << x << ", ";
+                    }
+                    std::cout << "phi1: ";
+                    for (auto x : phi1[c]) {
+                        std::cout << x << ", ";
+                    }
+                    std::cout << "phi2: ";
+                    for (auto x : phi2[c]) {
+                        std::cout << x << ", ";
+                    }
                 }
-                std::cout << "phi1: ";
-                for (auto x : phi1[c]){
-                    std::cout << x << ", ";
+                if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2) {
+                    succStateNum = c;
+                    existsAlready = true;
+                    if (debug == "1") { std::cout << " < this!\n"; }
+                    break;
                 }
-                std::cout << "phi2: ";
-                for (auto x : phi2[c]){
-                    std::cout << x << ", ";
-                }
-            }
-            if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2){
-                succStateNum = c;
-                existsAlready = true;
-                if (debug == "1") { std::cout << " < this!\n"; }
-                break;
             }
         }
         if (debug == "1") { std::cout << "\nSuccstatenum: " << succStateNum << "\n"; }
@@ -700,8 +703,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
             // If the state is new, add all further successors of this successor to the sdba and connect them
             if (!existsAlready) {
-                if (debug == "1") { std::cout << " Last state ";}
-                if (debug != "1" ||  sdba->num_states() < 10) { // Debug mode only allows 10 states max for safety
+                if (debug != "1" ||  sdba->num_states() < 14) { // Debug mode limits states number for safety
                     addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
                 }
             }
