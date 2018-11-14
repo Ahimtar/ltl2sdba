@@ -465,14 +465,14 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                 }
             }
             std::cout << "\nlaststatenum:" << sdba->num_states()-1 << ", phi1: ";
-            for (auto x : p1){
+            for (auto x : phi1[sdba->num_states()-1]){
                 std::cout << x << ", ";
             }
             std::cout << "phi2: ";
-            for (auto x : p2){
+            for (auto x : phi2[sdba->num_states()-1]){
                 std::cout << x << ", ";
             }
-            std::cout << "\nEnd of run for this label.\n";
+            std::cout << "\nEnd of run of function createRComp for this label.\n";
         }
     }
 }
@@ -587,12 +587,12 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
         }
 
-        if (debug == "1") { std::cout << " Done foralling. "; }
+        if (debug == "1") { std::cout << " Done foralling. \n"; }
         bool accepting = false;
 
         if (succp1.empty()) {
             // We make this the breakpoint and change succp1 and succp2 completely
-            if (debug == "1") { std::cout << "\nSuccphi1 is empty, changing succp1 and 2 a lot\n"; }
+            if (debug == "1") { std::cout << "Succphi1 is empty, changing succp1 and 2 a lot\n"; }
             for (auto q : succp2) {
                 if (R.find(std::to_string(q)) == R.end()) { // If q was in R, we'd add TT
                     if (debug == "1") { std::cout << "Adding q: " << q << " to succphi1\n"; }
@@ -605,7 +605,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
             accepting = true;
 
-            std::cout << "\nNew values: succphi1: ";  // todo i got error here, succphi1 does not correspond to the one after laststatenum:
+            std::cout << "New values: succphi1: ";  // todo i got error here, succphi1 does not correspond to the one after laststatenum:
             for (auto x : succp1){
                 std::cout << x << ", ";
             }
@@ -618,7 +618,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         // We need to check if this R-component state exists already
         // succStateNum is the number of the state if it exists, else value remains as a "new state" number:
         unsigned succStateNum = sdba->num_states();
-        if (debug == "1") { std::cout << "Succstatenum = sdba num states: " << succStateNum; }
+        if (debug == "1") { std::cout << "Succstatenum = sdbanumstates: " << succStateNum; }
         bool existsAlready = false;
 
         for (unsigned c = 0; c < sdba->num_states(); ++c) {
@@ -627,11 +627,11 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 for (auto x : Rname[c]){
                     std::cout << x << ", ";
                 }
-                std::cout << "succphi1: ";
+                std::cout << "phi1: ";
                 for (auto x : phi1[c]){
                     std::cout << x << ", ";
                 }
-                std::cout << "succphi2: ";
+                std::cout << "phi2: ";
                 for (auto x : phi2[c]){
                     std::cout << x << ", ";
                 }}
@@ -648,11 +648,23 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         if (succStateNum == sdba->num_states()) {   // the same as "if !existsAlready"
             if (debug == "1") { std::cout << " Making new state\n"; }
             sdba->new_state();         // succStateNum is now equal to sdba->num_states()-1
-            Rname[sdba->num_states() - 1] = R;
-            phi1[sdba->num_states() - 1] = succp1;
-            phi2[sdba->num_states() - 1] = succp2;
-            if (debug == "1") { std::cout << "Newly added state num: " << succStateNum << ", sdba num states: " << sdba->num_states() << "\n"; }
-
+            Rname[succStateNum] = R;
+            phi1[succStateNum] = succp1;
+            phi2[succStateNum] = succp2;
+            if (debug == "1") { std::cout << "Newly added state num: " << succStateNum << ", R: ";
+                for (auto x : R){
+                    std::cout << x << ", ";
+                }
+                std::cout << "succp1: ";
+                for (auto x : succp1) {
+                    std::cout << x << ", ";
+                }
+                std::cout << "succp2: ";
+                for (auto x : succp2) {
+                    std::cout << x << ", ";
+                }
+                std::cout << " sdba num states: " << sdba->num_states() << "\n";
+            }
             // (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; todo name states?
         }
 
