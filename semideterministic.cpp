@@ -363,11 +363,16 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                     if (debug == "1") { std::cout << "q is in Conf\n"; }
                     for (auto &t: vwaa->out(q)) {
                         for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                            if (debug == "1") { std::cout << "E_ " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
-                            // Replace the edges ending in R with TT
-                            if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
-                                if (debug == "1") { std::cout << "t.dst is not in R - adding" << tdst << " to phi1\n"; }
-                                p1.insert(tdst);
+                            if (debug == "1") { std::cout << "E_ " << t.src << "-" << tdst << " bdd:" << t.cond << " bddithvarlabel" << bdd_ithvar(label) << ". "; }
+                            if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
+                                if (debug == "1") { std::cout << "this label is the same as label: " << label; }
+                                // Replace the edges ending in R with TT
+                                if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
+                                    if (debug == "1") {
+                                        std::cout << "t.dst is not in R - adding" << tdst << " to phi1\n";
+                                    }
+                                    p1.insert(tdst);
+                                }
                             }
                         }
                     }
@@ -376,13 +381,18 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                 if (debug == "1") { std::cout << "q is in R. \n"; }
                 for (auto &t: vwaa->out(q)) {
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
-                        if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc != 2) {  // this is a correct mod. tr.
-                            if (debug == "1") { std::cout << "q is in Conf and e is not acc. \n"; }
-                            // Replace the edges ending in R with TT
-                            if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
-                                if (debug == "1") { std::cout << "t.dst is not in R - adding " << tdst << " to phi1\n"; }
-                                p1.insert(tdst);
+                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " bdd:" << t.cond << " bddithvarlabel" << bdd_ithvar(label) << ". "; }
+                        if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
+                            if (debug == "1") { std::cout << "this label is the same as label: " << label; }
+                            if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc != 2) {  // this is a correct mod. tr.
+                                if (debug == "1") { std::cout << "q is in Conf and e is not acc. \n"; }
+                                // Replace the edges ending in R with TT
+                                if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
+                                    if (debug == "1") {
+                                        std::cout << "t.dst is not in R - adding " << tdst << " to phi1\n";
+                                    }
+                                    p1.insert(tdst);
+                                }
                             }
                         }
                     }
@@ -506,7 +516,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 for (auto &t: vwaa->out(q)) {
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
-                        if (t.data() == bdd_ithvar(label)) { // todo does this condition work?
+                        if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
                             if (debug == "1") { std::cout << "\n<-this. "; }
                             if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
                                 if (debug == "1") { std::cout << "adding to succphi1\n"; }
@@ -522,7 +532,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                         for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                             if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
                             if (t.acc != 2) {
-                                if (t.data() == bdd_ithvar(label)) { // todo does this condition work?
+                                if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
                                     if (debug == "1") { std::cout << "\n<-this. "; }
                                     if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
                                         if (debug == "1") {
@@ -549,7 +559,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 for (auto &t: vwaa->out(q)) {
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". ";}
-                        if (t.data() == bdd_ithvar(label)) { // todo does this condition work?
+                        if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
                             if (debug == "1") { std::cout << " added to succphi2. \n"; }
                             succp2.insert(tdst);
                         }
@@ -562,8 +572,9 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                         for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                             if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
                             if (t.acc != 2) {
-                                if (debug == "1") { std::cout << "q is in Conf and e is not acc. \n";}
-                                if (t.data() == bdd_ithvar(label)) { // todo does this condition work?
+                                if (debug == "1") { std::cout << "q is in Conf and e is not acc LABELLL TCOND" << t.cond
+                                                              << " whereas bddlabel is " << bdd_ithvar(label) << ".\n";}
+                                if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
                                     if (debug == "1") { std::cout << " added to succphi2. \n"; }
                                     succp2.insert(tdst);
                                 }
