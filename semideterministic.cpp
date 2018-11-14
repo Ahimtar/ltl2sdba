@@ -256,7 +256,7 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
     std::string q;
     if (it != remaining.end()) q = *it;
 
-    if (debug == "1"){std::cout << "We chose q: " << q << ". ";}
+    if (debug == "1"){std::cout << "\nFunction createDetPart\nWe chose q: " << q << ". ";}
     // Erase it from remaining as we are checking it now
     remaining.erase(q);
 
@@ -326,7 +326,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                  std::map<unsigned, std::set<unsigned>> &phi1, std::map<unsigned, std::set<unsigned>> &phi2,
                  std::string debug){
     if (debug == "1"){
-        std::cout << " States of Conf: ";
+        std::cout << "\nFunction createRComp\nStates of Conf: ";
         for (auto x : Conf){
             std::cout << x << ", ";
         }
@@ -354,21 +354,26 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
     for (auto labelvar : dict.get()->var_map){
         auto label = labelvar.second;
         for (unsigned q = 0; q < nq; ++q) {
-            if (debug == "1") { std::cout << "\nChecking q: " << q << " for label: " << label << ". "; }
-            if ((R.find(std::to_string(q)) == R.end())) {  // q is not in R, this is a correct modified transition
-                if (debug == "1") { std::cout << "It's not in R. \n"; }
-                for (auto &t: vwaa->out(q)) {
-                    for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
-                        // Replace the edges ending in R with TT
-                        if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
-                            if (debug == "1") { std::cout << "t.dst is not in R. adding to phi1\n"; }
-                            p1.insert(tdst);
+            if (debug == "1") { std::cout << "\nFor label: " << label << ", checking q: " << q << ". "; }
+            // To deal with phi1, q either needs to not be in R, or see below *
+            if (R.find(std::to_string(q)) == R.end()) {
+                if (debug == "1") { std::cout << "q is not in R. \n"; }
+                // q has to be in Conf to deal with phi1
+                if (Conf.find(std::to_string(q)) != Conf.end()){
+                    if (debug == "1") { std::cout << "q is in Conf\n"; }
+                    for (auto &t: vwaa->out(q)) {
+                        for (unsigned tdst: vwaa->univ_dests(t.dst)) {
+                            if (debug == "1") { std::cout << "E_ " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
+                            // Replace the edges ending in R with TT
+                            if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
+                                if (debug == "1") { std::cout << "t.dst is not in R - adding" << tdst << " to phi1\n"; }
+                                p1.insert(tdst);
+                            }
                         }
                     }
                 }
-            } else {
-                if (debug == "1") { std::cout << "It's in R, adding to phi2. \n"; }
+            } else { // * or q must be in Conf && edge must not be accepting
+                if (debug == "1") { std::cout << "q is in R. \n"; }
                 for (auto &t: vwaa->out(q)) {
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
@@ -376,18 +381,27 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                             if (debug == "1") { std::cout << "q is in Conf and e is not acc. \n"; }
                             // Replace the edges ending in R with TT
                             if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
-                                if (debug == "1") { std::cout << "t.dst is not in R. adding to phi1\n"; }
+                                if (debug == "1") { std::cout << "t.dst is not in R - adding " << tdst << " to phi1\n"; }
                                 p1.insert(tdst);
                             }
                         }
                     }
                 }
-                // As q is in R, we always add it to phi2
+                if (debug == "1") { std::cout << "Adding q to phi2. \n"; }
+                // When q is in R, we always add it to phi2
                 p2.insert(q);
             }
         }
 
         if (debug == "1") {
+            std::cout << "\nlaststatenumm:" << sdba->num_states()-1 << ", phi1: ";
+            for (auto x : p1){
+                std::cout << x << ", ";
+            }
+            std::cout << "phi2: ";
+            for (auto x : p2){
+                std::cout << x << ", ";
+            }
             std::cout << "\nAll edges of Conf before: \n";
             for (unsigned c = 0; c < sdba->num_states(); ++c) {
                 for (auto i: sdba->succ(sdba->state_from_number(c))) {
@@ -443,7 +457,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
             for (auto x : p1){
                 std::cout << x << ", ";
             }
-            std::cout << ", phi2: ";
+            std::cout << "phi2: ";
             for (auto x : p2){
                 std::cout << x << ", ";
             }
@@ -458,7 +472,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                         std::map<unsigned, std::set<unsigned>> &phi1, std::map<unsigned, std::set<unsigned>> &phi2,
                         std::string debug){
 
-    if (debug == "1"){std::cout << " Going into successors\n";}
+    if (debug == "1"){std::cout << "\n\nFunction addRCompStateSuccs";}
 
     // The R and phis of the state we are adding successors of
     std::set<std::string> R = Rname[statenum];
@@ -478,16 +492,21 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         succp1.clear();
         succp2.clear();
 
+        if (debug == "1") { if (debug == "1") { std::cout << "\nWe check label: " << label; }
+        }
+
+        if (debug == "1") { std::cout << "\nFor all states of p1: "; }
         // Go through all states q of p1. For each, if edge under label is a correct m.t., add its follower to succp1
         for (auto q : p1){
-            if (debug == "1") { std::cout << "\nChecking p1 q: " << q << " for label: " << label << ". "; }
-            if ((R.find(std::to_string(q)) == R.end())) {  // q is not in R, this is a correct modified transition
+            if (debug == "1") { std::cout << "\nChecking q: " << q << ". "; }
+            // To deal with phi1, q either needs to not be in R, or see below *
+            if ((R.find(std::to_string(q)) == R.end())) {
                 if (debug == "1") { std::cout << "It's not in R. \n"; }
                 // Find the edge under "label"
                 for (auto &t: vwaa->out(q)) {
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
-                        if (t.data() == bdd_ithvar(label)) {
+                        if (t.data() == bdd_ithvar(label)) { // todo does this condition work?
                             if (debug == "1") { std::cout << "\n<-this. "; }
                             if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
                                 if (debug == "1") { std::cout << "adding to succphi1\n"; }
@@ -496,17 +515,21 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                         }
                     }
                 }
-            } else {
+            } else { // * or q must be in C && edge must not be accepting
                 if (debug == "1") { std::cout << "It's in R. \n"; }
-                for (auto &t: vwaa->out(q)) {
-                    for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
-                        if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc != 2) {  // this is a correct m. t..
-                            if (t.data() == bdd_ithvar(label)) {
-                                if (debug == "1") { std::cout << "\n<-this. "; }
-                                if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
-                                    if (debug == "1") { std::cout << "q is in Conf and e is not acc. adding tdst to succphi1\n"; }
-                                    succp1.insert(tdst);
+                if (Conf.find(std::to_string(q)) != Conf.end()) {
+                    for (auto &t: vwaa->out(q)) {
+                        for (unsigned tdst: vwaa->univ_dests(t.dst)) {
+                            if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
+                            if (t.acc != 2) {
+                                if (t.data() == bdd_ithvar(label)) { // todo does this condition work?
+                                    if (debug == "1") { std::cout << "\n<-this. "; }
+                                    if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
+                                        if (debug == "1") {
+                                            std::cout << "q is in Conf and e is not acc. adding tdst to succphi1\n";
+                                        }
+                                        succp1.insert(tdst);
+                                    }
                                 }
                             }
                         }
@@ -515,31 +538,35 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
         }
 
+        if (debug == "1") { std::cout << "\nFor all states of p2: "; }
         // Go through all states q of p2. For each, if edge under label is correct m.t., add its follower to succp2
         for (auto q : p2){
-            if (debug == "1") { std::cout << "\nChecking p2 q: " << q << " for label: " << label << ". "; }
-            if ((R.find(std::to_string(q)) == R.end())) {  // q is not in R, this is a correct modified transition
-                if (debug == "1") { std::cout << "It's not in R. "; }
+            if (debug == "1") { std::cout << "\nChecking q: " << q << ". "; }
+            // To deal with phi1, q either needs to not be in R, or see below *
+            if ((R.find(std::to_string(q)) == R.end())) {
+                if (debug == "1") { std::cout << "It's not in R. \n"; }
                 // Find the edge under "label"
                 for (auto &t: vwaa->out(q)) {
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
-                        if (t.data() == bdd_ithvar(label)) {
+                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". ";}
+                        if (t.data() == bdd_ithvar(label)) { // todo does this condition work?
                             if (debug == "1") { std::cout << " added to succphi2. \n"; }
                             succp2.insert(tdst);
                         }
                     }
                 }
-            } else {
-                if (debug == "1") { std::cout << "It's in R. "; }
-                for (auto &t: vwaa->out(q)) {
-                    for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
-                        if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc != 2) {  // this is a correct mod. tr.
-                            if (debug == "1") { std::cout << "q is in Conf and e is not acc. \n"; }
-                            if (t.data() == bdd_ithvar(label)) {
-                                if (debug == "1") { std::cout << " added to succphi2. \n"; }
-                                succp2.insert(tdst);
+            } else { // * or q must be in C && edge must not be accepting
+                if (debug == "1") { std::cout << "It's in R. \n"; }
+                if (Conf.find(std::to_string(q)) != Conf.end()) {
+                    for (auto &t: vwaa->out(q)) {
+                        for (unsigned tdst: vwaa->univ_dests(t.dst)) {
+                            if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
+                            if (t.acc != 2) {
+                                if (debug == "1") { std::cout << "q is in Conf and e is not acc. \n";}
+                                if (t.data() == bdd_ithvar(label)) { // todo does this condition work?
+                                    if (debug == "1") { std::cout << " added to succphi2. \n"; }
+                                    succp2.insert(tdst);
+                                }
                             }
                         }
                     }
@@ -547,11 +574,12 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
         }
 
+        if (debug == "1") { std::cout << "\nDone foralling. "; }
         bool accepting = false;
 
         if (succp1.empty()) {
             // We make this the breakpoint and change succp1 and succp2 completely
-            if (debug == "1") { std::cout << "Succphi1 is empty\n"; }
+            if (debug == "1") { std::cout << "Succphi1 is empty, changing succp1 and 2 a lot\n"; }
             for (auto q : succp2) {
                 if (R.find(std::to_string(q)) == R.end()) { // If q was in R, we'd add TT
                     if (debug == "1") { std::cout << "Adding q: " << q << " to succphi1\n"; }
@@ -563,6 +591,15 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 succp2.insert((unsigned int) (std::stoi(q)));
             }
             accepting = true;
+
+            std::cout << "\nNew values: succphi1: ";  // todo i got error here, succphi1 does not correspond to the one after laststatenum:
+            for (auto x : succp1){
+                std::cout << x << ", ";
+            }
+            std::cout << "succphi2: ";
+            for (auto x : succp2){
+                std::cout << x << ", ";
+            }
         }
 
         // We need to check if this R-component state exists already
