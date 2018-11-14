@@ -363,7 +363,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                     if (debug == "1") { std::cout << "q is in Conf\n"; }
                     for (auto &t: vwaa->out(q)) {
                         for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                            if (debug == "1") { std::cout << "E_ " << t.src << "-" << tdst << " bdd:" << t.cond << " bddithvarlabel" << bdd_ithvar(label) << ". "; }
+                            if (debug == "1") { std::cout << "E_ " << t.src << "-" << tdst << " bdd:" << t.cond << " bddithvarlabel" << bdd_ithvar(label) << ". \n"; }
                             if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
                                 if (debug == "1") { std::cout << "this label is the same as label: " << label; }
                                 // Replace the edges ending in R with TT
@@ -381,7 +381,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                 if (debug == "1") { std::cout << "q is in R. \n"; }
                 for (auto &t: vwaa->out(q)) {
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " bdd:" << t.cond << " bddithvarlabel" << bdd_ithvar(label) << ". "; }
+                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " bdd:" << t.cond << " bddithvarlabel" << bdd_ithvar(label) << ". \n"; }
                         if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
                             if (debug == "1") { std::cout << "this label is the same as label: " << label; }
                             if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc != 2) {  // this is a correct mod. tr.
@@ -445,7 +445,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
         // We connect the state to this configuration under the currently checked label
         sdba->new_edge(ci, addedStateNum, bdd_ithvar(label), {});
-        if (debug == "1"){std::cout << "New edge from C" << ci << " to C" << addedStateNum << " labeled " << label;}
+        if (debug == "1"){std::cout << "New edge from C" << ci << " to C" << addedStateNum << " labeled " << label
+                    << " (" << bdd_ithvar(label) << ").";}
 
         // If the state is new, add all successors of this state to the sdba and connect them
         if (addedStateNum == sdba->num_states()-1) {
@@ -454,7 +455,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
 
         if (debug == "1") {
-            std::cout << "\nAll edges of Conf after: \n";
+            std::cout << "\nAll edges of Conf after adding successors: (back in function createRComp)\n";
             for (unsigned c = 0; c < sdba->num_states(); ++c) {
                 for (auto i: sdba->succ(sdba->state_from_number(c))) {
                     std::cout << " Bdd of edges-label: " << i->cond() << " from " << c
@@ -471,6 +472,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
             for (auto x : p2){
                 std::cout << x << ", ";
             }
+            std::cout << "\nEnd of run for this label.\n";
         }
     }
 }
@@ -572,8 +574,8 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                         for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                             if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
                             if (t.acc != 2) {
-                                if (debug == "1") { std::cout << "q is in Conf and e is not acc LABELLL TCOND" << t.cond
-                                                              << " whereas bddlabel is " << bdd_ithvar(label) << ".\n";}
+                                if (debug == "1") { std::cout << "q is in Conf and e is not acc. Tcond " << t.cond
+                                                              << " bddlabel " << bdd_ithvar(label) << ".\n";}
                                 if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
                                     if (debug == "1") { std::cout << " added to succphi2. \n"; }
                                     succp2.insert(tdst);
@@ -585,12 +587,12 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
         }
 
-        if (debug == "1") { std::cout << "\nDone foralling. "; }
+        if (debug == "1") { std::cout << " Done foralling. "; }
         bool accepting = false;
 
         if (succp1.empty()) {
             // We make this the breakpoint and change succp1 and succp2 completely
-            if (debug == "1") { std::cout << "Succphi1 is empty, changing succp1 and 2 a lot\n"; }
+            if (debug == "1") { std::cout << "\nSuccphi1 is empty, changing succp1 and 2 a lot\n"; }
             for (auto q : succp2) {
                 if (R.find(std::to_string(q)) == R.end()) { // If q was in R, we'd add TT
                     if (debug == "1") { std::cout << "Adding q: " << q << " to succphi1\n"; }
@@ -616,35 +618,57 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         // We need to check if this R-component state exists already
         // succStateNum is the number of the state if it exists, else value remains as a "new state" number:
         unsigned succStateNum = sdba->num_states();
+        if (debug == "1") { std::cout << "Succstatenum = sdba num states: " << succStateNum; }
+        bool existsAlready = false;
 
         for (unsigned c = 0; c < sdba->num_states(); ++c) {
+            if (debug == "1") {
+                std::cout << "\nTry c: " << c << " Rname: ";
+                for (auto x : Rname[c]){
+                    std::cout << x << ", ";
+                }
+                std::cout << "succphi1: ";
+                for (auto x : phi1[c]){
+                    std::cout << x << ", ";
+                }
+                std::cout << "succphi2: ";
+                for (auto x : phi2[c]){
+                    std::cout << x << ", ";
+                }}
             if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2){
                 succStateNum = c;
+                existsAlready = true;
+                if (debug == "1") { std::cout << " < this!\n"; }
                 break;
             }
         }
+        if (debug == "1") { std::cout << "\nSuccstatenum: " << succStateNum; }
 
         // If the state doesn't exist yet, we create it with "sdba->num_states()-1" becoming its new number.
-        if (succStateNum == sdba->num_states()) {
-            if (debug == "1") { std::cout << "Making new state\n"; }
-            sdba->new_state();         // succrCompStateNum is now equal to sdba->num_states()-1
+        if (succStateNum == sdba->num_states()) {   // the same as "if !existsAlready"
+            if (debug == "1") { std::cout << " Making new state\n"; }
+            sdba->new_state();         // succStateNum is now equal to sdba->num_states()-1
             Rname[sdba->num_states() - 1] = R;
             phi1[sdba->num_states() - 1] = succp1;
             phi2[sdba->num_states() - 1] = succp2;
+            if (debug == "1") { std::cout << "Newly added state num: " << succStateNum << ", sdba num states: " << sdba->num_states() << "\n"; }
+
             // (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; todo name states?
         }
+
 
         // We connect the state to this configuration under the currently checked label
         if (accepting) {
             sdba->new_edge(statenum, succStateNum, bdd_ithvar(label), {0});
             // todo set number of acceptance sets in settings to +1
-            if (debug == "1") { std::cout << "New ACCEPTING edge from C" << statenum << " to C" << sdba->num_states() - 1 << " labeled " << label; }
+            if (debug == "1") { std::cout << "New ACCEPTING edge from C" << statenum << " to C" << succStateNum << " labeled " << label; }
         } else {
             sdba->new_edge(statenum, succStateNum, bdd_ithvar(label), {});
-            if (debug == "1") { std::cout << "New edge from C" << statenum << " to C" << sdba->num_states() - 1 << " labeled " << label; }
+            if (debug == "1") { std::cout << "New edge from C" << statenum << " to C" << succStateNum << " labeled " << label; }
 
             // If the state is new, add all further successors of this successor to the sdba and connect them
-            if ((succStateNum == sdba->num_states()-1)) {
+            if (!existsAlready) {
+                if (debug == "1") { std::cout << " Last state ";}
                 if (debug != "1" ||  sdba->num_states() < 10) { // Debug mode only allows 10 states max for safety
                     addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
                 }
