@@ -39,11 +39,11 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     // Parsing the helper, acquiring spot format
     spot::parsed_aut_ptr pvwaaptr = parse_aut("helper.hoa", spot::make_bdd_dict());
     if (pvwaaptr->format_errors(std::cerr))
-        return vwaa->spot_aut;  // todo returning random error, the file from printfile didnt create successfully
+        return vwaa->spot_aut;  // todo Better error message
     if (pvwaaptr->aborted)
     {
         std::cerr << "--ABORT-- read\n";
-        return vwaa->spot_aut;  // todo returning random error, the file from printfile didnt create successfully
+        return vwaa->spot_aut;  // todo Better error message
     }
     auto pvwaa = pvwaaptr->aut;
 
@@ -175,8 +175,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
         if (checkMayReachableStates(pvwaa, C[ci], R, isqmay)){  // We are using R just as a placeholder empty set here
             R.clear();
             if (debug == "1"){std::cout << "Yes! \n";}
-
-            // todo probably could check if this R doesnt exist already
             // We call this function to judge Q-s of this C and create R-s and R-components based on them
             createDetPart(pvwaa, ci, C[ci], C[ci], R, isqmay, isqmust, sdba, Rname, phi1, phi2, debug);
         }
@@ -268,7 +266,7 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
     // Checking state correctness
     if (q.empty() || !isdigit(q.at(0))){
         if (q != "{}") {
-            std::cout << "We are in BADSTATE: " << q << ". "; // todo Deal with this
+            std::cout << "We are in BADSTATE: " << q << ". "; // todo Better error message
         }
         else {
             //If the state is {}, we know it is Qmust.
@@ -539,9 +537,9 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 // Find the edge under "label"
                 for (auto &t: vwaa->out(q)) {
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
+                        if (debug == "1") { std::cout << "E_ " << t.src << "-" << tdst << " bdd:" << t.cond << " bddithvarlabel" << bdd_ithvar(label) << ". \n"; }
                         if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
-                            if (debug == "1") { std::cout << "\n<-the label is right. "; }
+                            if (debug == "1") { std::cout << "<-the label is right. "; }
                             if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
                                 if (debug == "1") { std::cout << "adding tdst (" << tdst << ") to succphi1\n"; }
                                 succp1.insert(tdst);
@@ -554,10 +552,10 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 if (Conf.find(std::to_string(q)) != Conf.end()) {
                     for (auto &t: vwaa->out(q)) {
                         for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                            if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
+                            if (debug == "1") { std::cout << "E_ " << t.src << "-" << tdst << " bdd:" << t.cond << " bddithvarlabel" << bdd_ithvar(label) << ". \n"; }
                             if (t.acc == 0) {
                                 if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
-                                    if (debug == "1") { std::cout << "\n<- not accepting and the label is right. "; }
+                                    if (debug == "1") { std::cout << "<- not accepting and the label is right. "; }
                                     if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
                                         if (debug == "1") {
                                             std::cout << "adding tdst (" << tdst << ") to succphi1\n";
@@ -582,7 +580,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 // Find the edge under "label"
                 for (auto &t: vwaa->out(q)) {
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". ";}
+                        if (debug == "1") { std::cout << "E_ " << t.src << "-" << tdst << " bdd:" << t.cond << " bddithvarlabel" << bdd_ithvar(label) << ". \n"; }
                         if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
                             if (debug == "1") { std::cout << " added tdst (" << tdst << ") to succphi2. \n"; }
                             succp2.insert(tdst);
@@ -594,7 +592,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 if (Conf.find(std::to_string(q)) != Conf.end()) {
                     for (auto &t: vwaa->out(q)) {
                         for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                            if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
+                            if (debug == "1") { std::cout << "E_ " << t.src << "-" << tdst << " bdd:" << t.cond << " bddithvarlabel" << bdd_ithvar(label) << ". \n"; }
                             if (t.acc == 0) {
                                 if (debug == "1") { std::cout << "q is in Conf and e is not acc. Tcond " << t.cond
                                                               << "(the label we check), bddlabel we are looking for: " << bdd_ithvar(label) << ".\n";}
@@ -698,11 +696,11 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             // todo set number of acceptance sets in settings to +1
             if (debug == "1") { std::cout << "New ACCEPTING edge from C" << statenum << " to C" << succStateNum
                                           << " labeled " << label; }
-            /*if (!existsAlready) {
+            if (!existsAlready) {
                 if (debug != "1" ||  sdba->num_states() < 14) { // Debug mode limits states number for safety
                     addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
                 }
-            }*/
+            }
         } else {
             sdba->new_edge(statenum, succStateNum, bdd_ithvar(label), {});
             if (debug == "1") { std::cout << "New edge from C" << statenum << " to C" << succStateNum
