@@ -506,7 +506,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                         std::map<unsigned, std::set<unsigned>> &phi1, std::map<unsigned, std::set<unsigned>> &phi2,
                         std::string debug){
 
-    if (debug == "1"){std::cout << "\n\n>>>>>>  Function addRCompStateSuccs";}
+    if (debug == "1"){std::cout << "\n\n>>>>>>  Function addRCompStateSuccs for state " << statenum;}
 
     // The R and phis of the state we are adding successors of
     std::set<std::string> R = Rname[statenum];
@@ -597,7 +597,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                             if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " acc:" << t.acc << ". "; }
                             if (t.acc == 0) {
                                 if (debug == "1") { std::cout << "q is in Conf and e is not acc. Tcond " << t.cond
-                                                              << " bddlabel " << bdd_ithvar(label) << ".\n";}
+                                                              << "(the label we check), bddlabel we are looking for: " << bdd_ithvar(label) << ".\n";}
                                 if (t.cond == bdd_ithvar(label)) { // todo does it need to be this exact label, or just part of it?
                                     if (debug == "1") { std::cout << " added tdst (" << tdst << ")  to succphi2. \n"; }
                                     succp2.insert(tdst);
@@ -698,11 +698,15 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             // todo set number of acceptance sets in settings to +1
             if (debug == "1") { std::cout << "New ACCEPTING edge from C" << statenum << " to C" << succStateNum
                                           << " labeled " << label; }
+            /*if (!existsAlready) {
+                if (debug != "1" ||  sdba->num_states() < 14) { // Debug mode limits states number for safety
+                    addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
+                }
+            }*/
         } else {
             sdba->new_edge(statenum, succStateNum, bdd_ithvar(label), {});
             if (debug == "1") { std::cout << "New edge from C" << statenum << " to C" << succStateNum
                                           << " labeled " << label; }
-
             // If the state is new, add all further successors of this successor to the sdba and connect them
             if (!existsAlready) {
                 if (debug != "1" ||  sdba->num_states() < 14) { // Debug mode limits states number for safety
@@ -710,6 +714,6 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 }
             }
         }
-        if (debug == "1") { std::cout << "\n<<<<<<   End of function addRCompStateSuccs of state " << statenum << "\n"; }
     }
+    if (debug == "1") { std::cout << "\n<<<<<<   End of function addRCompStateSuccs of state " << statenum << "\n"; }
 }
