@@ -141,6 +141,11 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     auto sn = sdba->get_named_prop<std::vector<std::string>>("state-names");
     std::set<std::string> C[nc];
 
+    // We mark the Rs of the states of ND part so we differ them from D part states with empty R, phi1 and phi2 later on
+    for (unsigned ci = 0; ci < nc; ++ci) {
+        Rname[ci] = {"ND-part state"};
+    }
+
     // Choosing the R
 
     // We go through all the states in C
@@ -266,7 +271,7 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
             std::cout << "We are in BADSTATE: " << q << ". "; // todo Deal with this
         }
         else {
-            //If the state is {}, we know it is Qmust. todo we can make R set of unsigneds and refactor code to a nice one
+            //If the state is {}, we know it is Qmust.
             if (debug == "1"){std::cout << "q is {} (which is Qmust), adding to R. ";}
             if (R.count(q) == 0) {
                 R.insert(q);
@@ -638,29 +643,26 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         if (debug == "1") { std::cout << "Succstatenum = sdbanumstates: " << succStateNum; }
         bool existsAlready = false;
 
-        // todo create a state for when R and both phis are empty (current version would create multiple of these)
-        if (!(R == {} && succp1 == {} && succp2 == {})) {
-            for (unsigned c = 0; c < sdba->num_states(); ++c) {
-                if (debug == "1") {
-                    std::cout << "\nTry c: " << c << " Rname: ";
-                    for (auto x : Rname[c]) {
-                        std::cout << x << ", ";
-                    }
-                    std::cout << "phi1: ";
-                    for (auto x : phi1[c]) {
-                        std::cout << x << ", ";
-                    }
-                    std::cout << "phi2: ";
-                    for (auto x : phi2[c]) {
-                        std::cout << x << ", ";
-                    }
+        for (unsigned c = 0; c < sdba->num_states(); ++c) {
+            if (debug == "1") {
+                std::cout << "\nTry c: " << c << " Rname: ";
+                for (auto x : Rname[c]) {
+                    std::cout << x << ", ";
                 }
-                if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2) {
-                    succStateNum = c;
-                    existsAlready = true;
-                    if (debug == "1") { std::cout << " < this!\n"; }
-                    break;
+                std::cout << "phi1: ";
+                for (auto x : phi1[c]) {
+                    std::cout << x << ", ";
                 }
+                std::cout << "phi2: ";
+                for (auto x : phi2[c]) {
+                    std::cout << x << ", ";
+                }
+            }
+            if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2) {
+                succStateNum = c;
+                existsAlready = true;
+                if (debug == "1") { std::cout << " < this!\n"; }
+                break;
             }
         }
         if (debug == "1") { std::cout << "\nSuccstatenum: " << succStateNum << "\n"; }
@@ -708,6 +710,6 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 }
             }
         }
-        if (debug == "1") { std::cout << "\n<<<<<<   End of function addRCompStateSuccs \n"; }
+        if (debug == "1") { std::cout << "\n<<<<<<   End of function addRCompStateSuccs of state " << statenum << "\n"; }
     }
 }
