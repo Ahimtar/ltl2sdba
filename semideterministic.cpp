@@ -19,7 +19,7 @@
 
 #include "semideterministic.hpp"
 
-unsigned gLabel;
+int gLabel;
 bool gExact = false;
 void allSatExactHandler(char* varset, int size) {
     if (!gExact) {
@@ -431,7 +431,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
                                                       << " label: " << bdd_ithvar(label) << ". \n"; }
                         // If t.cond contains this label as one of the conjunctions
-                        gLabel = label;
+                        gLabel = (unsigned)label;
                         gExact = false;
                         bdd_allsat(t.cond, allSatExactHandler); // browse t.cond to see if it is "x OR glabel". updates gExact
                         if (gExact || t.cond == bdd_true()) {
