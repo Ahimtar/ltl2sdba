@@ -36,6 +36,25 @@ void allSatExactHandler(char* varset, int size) {
     }
 }
 
+std::vector<bdd> gAlphabet;
+void allSatAlphabetHandler(char* varset, int size) {
+    bdd thisVarsetbdd = bdd_true();
+    for (int v = 0; v < size; ++v) {
+        if (varset[v] == 1) {
+            thisVarsetbdd = bdd_and(thisVarsetbdd, bdd_ithvar(v));
+        }
+        if (varset[v] == 0){
+            thisVarsetbdd = bdd_and(thisVarsetbdd, bdd_not(bdd_ithvar(v)));
+        }
+    }
+    bool wasThere = false;
+    for (auto i = gAlphabet.begin(); i != gAlphabet.end(); i++)
+        if (*i == thisVarsetbdd)
+            wasThere = true;
+    if (!wasThere)
+        gAlphabet.push_back(thisVarsetbdd);
+}
+
 // Converts a given VWAA to sDBA;
 spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
@@ -135,12 +154,16 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
                     if (debug == "1") { std::cout << "We set acc to " << t.acc << ". "; }
                 }
             }
+
+            // Unrelated
+            // In gAlphabet variable, we store the set of all edge labels
+            // (not only "a", "b", but also "and"-formulae: "a&b". not "a|b".)
+            bdd_allsat(t.cond, allSatAlphabetHandler); // add t.cond into gAlphabet if it is not already there
         }
         if (debug == "1"){std::cout << "\n";}
 
         // todo how to handle automata that dont accept at all? do we need to bother with them?
     }
-
 
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
@@ -782,7 +805,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
         // If the state is new, add all further successors of this successor to the sdba and connect them
         if (!existsAlready) {
-            if (debug != "1" ||  sdba->num_states() < 14) { // Debug mode limits states number for safety
+            if (debug != "1" ||  sdba->num_states() < 10) { // Debug mode limits states number for safety
                 addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
             }
         }
