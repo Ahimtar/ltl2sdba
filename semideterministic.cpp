@@ -19,8 +19,66 @@
 
 #include "semideterministic.hpp"
 
-int gLabel;
+// Check if input contains a varset = gBdd
+bdd gBdd;
 bool gExact = false;
+void allSatExactBddHandler(char* varset, int size) {
+    std::cout << "working for varset:" << varset << "\n";
+    // Check if the gBdd is this varset of input
+    if (!gExact) {
+        bdd varsetbdd = bdd_true();
+        bdd newinner = bdd_true();
+        for (int v = 0; v < size; ++v) {
+            std::cout << "v: " << v << ", varset[v]: " << varset[v] << "\n";
+            if (varset[v] == 1) {
+                std::cout << "its1";
+                newinner = bdd_and(varsetbdd, bdd_ithvar(v));
+                varsetbdd = newinner;
+            }
+            if (varset[v] == 0){
+                std::cout << "its0";
+                newinner = bdd_and(varsetbdd, bdd_not(bdd_ithvar(v)));
+                varsetbdd = newinner;
+            }
+        }
+        std::cout << "varset after parsing " << varsetbdd << " gbdd: " << gBdd << "\n";
+        if (gBdd == varsetbdd){
+            std::cout << "yesesyesey: gbdd " << gBdd << " varsetbdd" << varsetbdd << "\n";
+            gExact = true;
+        }
+    }
+}
+
+/*
+// Finds out whether any OR expression of varset (input) is in gBdd
+void allSatTwoORSetHandler(char* varset, int size) {
+    std::cout << "go, size: " << size << "\n";
+    // For each OR expression, create a separate bdd "thisVarsetbdd"
+    bdd outerVarsetbdd = bdd_true();
+    bdd newouter = bdd_true();
+    for (int v = 0; v < size; ++v) {
+        std::cout << " V: " << v << ", bdd ithvar: " << bdd_ithvar(v) << ", varset[v] " << varset[v] << " out " << outerVarsetbdd << "\n";
+        if (varset[v] == 1) {
+            std::cout << "v1111";
+            newouter = bdd_and(outerVarsetbdd, bdd_ithvar(v));
+            outerVarsetbdd = newouter;
+        }
+        if (varset[v] == 0){
+            std::cout << "v2222";
+            outerVarsetbdd = bdd_and(outerVarsetbdd, bdd_not(bdd_ithvar(v)));
+            outerVarsetbdd = newouter;
+        }
+    }
+    // Check if thisVarsetbdd is an OR subexpression of gBdd
+    gORSet = outerVarsetbdd;
+    std::cout << "all ok for outerVarsetbdd " << outerVarsetbdd << "\n";
+    bdd_allsat(bdd_ithvar(0), allSatExactBddHandler);
+    std::cout << "finished for outerVarsetbdd " << outerVarsetbdd << "\n";
+}*/
+
+
+// Finds out whether gLabel is a part of the varset as one of OR-expressions, returns in gExact
+int gLabel;
 void allSatExactHandler(char* varset, int size) {
     if (!gExact) {
         if (varset[gLabel] == 1) {
@@ -36,6 +94,7 @@ void allSatExactHandler(char* varset, int size) {
     }
 }
 
+// Adds varsets into gAlphabet
 std::vector<bdd> gAlphabet;
 void allSatAlphabetHandler(char* varset, int size) {
     bdd thisVarsetbdd = bdd_true();
@@ -164,6 +223,16 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
         // todo how to handle automata that dont accept at all? do we need to bother with them?
     }
+
+    // todo create allSatTwoORSetHandler to handle whole bdds, not just labels
+    bdd b = bdd_ithvar(1);
+    bdd bna = bdd_and(bdd_ithvar(1), bdd_not(bdd_ithvar(0)));
+    gBdd = bna;
+    gExact = false;
+    std::cout << "Check if " << bna << " is in " << b << ", \n";
+    bdd_allsat(b, allSatExactBddHandler);
+    std::cout << " konec\n\n";
+
 
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
@@ -392,7 +461,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
     unsigned nq = vwaa->num_states();
     const spot::bdd_dict_ptr dict = sdba->get_dict();
 
-    // For each edge label of the alphabet
+    // For each edge label of the alphabet // todo change labels to bdds as alphabet contains those
     for (auto labelvar : dict.get()->var_map){
         auto label = labelvar.second;
         for (unsigned q = 0; q < nq; ++q) {
@@ -412,7 +481,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                             gExact = false;
                             bdd_allsat(t.cond, allSatExactHandler); // browse t.cond to see if it is "x OR glabel". updates gExact
                             if (gExact || t.cond == bdd_true()) {
-                            if (debug == "1") { std::cout << "This label is the same as label: " << label << ". "; }
+                                if (debug == "1") { std::cout << "This label is the same as label: " << label << ". "; }
                                 // Replace the edges ending in R with TT
                                 if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
                                     if (debug == "1") {
@@ -712,13 +781,15 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
             accepting = true;
 
-            std::cout << "New values: succphi1: ";
-            for (auto x : succp1){
-                std::cout << x << ", ";
-            }
-            std::cout << "succphi2: ";
-            for (auto x : succp2){
-                std::cout << x << ", ";
+            if (debug == "1") {
+                std::cout << "New values: succphi1: ";
+                for (auto x : succp1) {
+                    std::cout << x << ", ";
+                }
+                std::cout << "succphi2: ";
+                for (auto x : succp2) {
+                    std::cout << x << ", ";
+                }
             }
         }
 
@@ -805,7 +876,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
         // If the state is new, add all further successors of this successor to the sdba and connect them
         if (!existsAlready) {
-            if (debug != "1" ||  sdba->num_states() < 10) { // Debug mode limits states number for safety
+            if (sdba->num_states() < 10) { // todo remove limit of states!
                 addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
             }
         }
