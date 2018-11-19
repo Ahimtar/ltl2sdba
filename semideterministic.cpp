@@ -21,101 +21,6 @@
 
 std::vector<bdd> gAlphabet;
 
-/* Check if input contains a varset = gBdd
-bdd gBdd;
-bool gExact = false;
-void allSatExactBddHandler(char* varset, int size) {
-    std::cout << "working for varset:" << varset << "\n";
-    // Check if the gBdd is this varset of input
-    if (!gExact) {
-        bdd varsetbdd = bdd_true();
-        bdd newinner = bdd_true();
-        for (int v = 0; v < size; ++v) {
-            std::cout << "v: " << v << ", varset[v]: " << varset[v] << "\n";
-            if (varset[v] == 1) {
-                std::cout << "its1";
-                newinner = bdd_and(varsetbdd, bdd_ithvar(v));
-                varsetbdd = newinner;
-            }
-            if (varset[v] == 0){
-                std::cout << "its0";
-                newinner = bdd_and(varsetbdd, bdd_not(bdd_ithvar(v)));
-                varsetbdd = newinner;
-            }
-        }
-        std::cout << "varset after parsing " << varsetbdd << " gbdd: " << gBdd << "\n";
-        if (gBdd == varsetbdd){
-            std::cout << "yesesyesey: gbdd " << gBdd << " varsetbdd" << varsetbdd << "\n";
-            gExact = true;
-        }
-    }
-}*/
-
-/*
-// Finds out whether any OR expression of varset (input) is in gBdd
-void allSatTwoORSetHandler(char* varset, int size) {
-    std::cout << "go, size: " << size << "\n";
-    // For each OR expression, create a separate bdd "thisVarsetbdd"
-    bdd outerVarsetbdd = bdd_true();
-    bdd newouter = bdd_true();
-    for (int v = 0; v < size; ++v) {
-        std::cout << " V: " << v << ", bdd ithvar: " << bdd_ithvar(v) << ", varset[v] " << varset[v] << " out " << outerVarsetbdd << "\n";
-        if (varset[v] == 1) {
-            std::cout << "v1111";
-            newouter = bdd_and(outerVarsetbdd, bdd_ithvar(v));
-            outerVarsetbdd = newouter;
-        }
-        if (varset[v] == 0){
-            std::cout << "v2222";
-            outerVarsetbdd = bdd_and(outerVarsetbdd, bdd_not(bdd_ithvar(v)));
-            outerVarsetbdd = newouter;
-        }
-    }
-    // Check if thisVarsetbdd is an OR subexpression of gBdd
-    gORSet = outerVarsetbdd;
-    std::cout << "all ok for outerVarsetbdd " << outerVarsetbdd << "\n";
-    bdd_allsat(bdd_ithvar(0), allSatExactBddHandler);
-    std::cout << "finished for outerVarsetbdd " << outerVarsetbdd << "\n";
-}*/
-
-
-// Finds out whether gLabel is a part of the varset as one of OR-expressions, returns in gExact
-/*int gLabel;
-void allSatExactHandler(char* varset, int size) {
-    if (!gExact) {
-        if (varset[gLabel] == 1) {
-            gExact = true;
-            for (int v = 0; v < size; ++v) {
-                if (varset[v] == 1) {
-                    if (v != gLabel) {
-                        gExact = false;
-                    }
-                }
-            }
-        }
-    }
-}*/
-
-/* Adds varsets into gAlphabet
-std::vector<bdd> gAlphabet;
-void allSatAlphabetHandler(char* varset, int size) {
-    bdd thisVarsetbdd = bdd_true();
-    for (int v = 0; v < size; ++v) {
-        if (varset[v] == 1) {
-            thisVarsetbdd = bdd_and(thisVarsetbdd, bdd_ithvar(v));
-        }
-        if (varset[v] == 0){
-            thisVarsetbdd = bdd_and(thisVarsetbdd, bdd_not(bdd_ithvar(v)));
-        }
-    }
-    bool wasThere = false;
-    for (auto i = gAlphabet.begin(); i != gAlphabet.end(); i++)
-        if (*i == thisVarsetbdd)
-            wasThere = true;
-    if (!wasThere)
-        gAlphabet.push_back(thisVarsetbdd);
-}*/
-
 // Converts a given VWAA to sDBA;
 spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
@@ -893,7 +798,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
         // If the state is new, add all further successors of this successor to the sdba and connect them
         if (!existsAlready) {
-            if (sdba->num_states() < 5) { // todo remove limit of states!
+            if (sdba->num_states() < 8) { // todo remove limit of states!
                 addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
             }
         }
@@ -907,9 +812,6 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
 
 // BDD notes:
-
-// to add a label into a BDD, like add {a} into {b & c}
-// bdd_or(a, (b & c))
 
 // to find out whether label is positive somewhere in BDD, like whether {a} is in {b | (a & !c)}
 // the allsathandler
@@ -998,3 +900,98 @@ if (gExact || x == bdd_true()) {
             }
         }
     }*/
+
+/* Check if input contains a varset = gBdd
+bdd gBdd;
+bool gExact = false;
+void allSatExactBddHandler(char* varset, int size) {
+    std::cout << "working for varset:" << varset << "\n";
+    // Check if the gBdd is this varset of input
+    if (!gExact) {
+        bdd varsetbdd = bdd_true();
+        bdd newinner = bdd_true();
+        for (int v = 0; v < size; ++v) {
+            std::cout << "v: " << v << ", varset[v]: " << varset[v] << "\n";
+            if (varset[v] == 1) {
+                std::cout << "its1";
+                newinner = bdd_and(varsetbdd, bdd_ithvar(v));
+                varsetbdd = newinner;
+            }
+            if (varset[v] == 0){
+                std::cout << "its0";
+                newinner = bdd_and(varsetbdd, bdd_not(bdd_ithvar(v)));
+                varsetbdd = newinner;
+            }
+        }
+        std::cout << "varset after parsing " << varsetbdd << " gbdd: " << gBdd << "\n";
+        if (gBdd == varsetbdd){
+            std::cout << "yesesyesey: gbdd " << gBdd << " varsetbdd" << varsetbdd << "\n";
+            gExact = true;
+        }
+    }
+}*/
+
+/*
+// Finds out whether any OR expression of varset (input) is in gBdd
+void allSatTwoORSetHandler(char* varset, int size) {
+    std::cout << "go, size: " << size << "\n";
+    // For each OR expression, create a separate bdd "thisVarsetbdd"
+    bdd outerVarsetbdd = bdd_true();
+    bdd newouter = bdd_true();
+    for (int v = 0; v < size; ++v) {
+        std::cout << " V: " << v << ", bdd ithvar: " << bdd_ithvar(v) << ", varset[v] " << varset[v] << " out " << outerVarsetbdd << "\n";
+        if (varset[v] == 1) {
+            std::cout << "v1111";
+            newouter = bdd_and(outerVarsetbdd, bdd_ithvar(v));
+            outerVarsetbdd = newouter;
+        }
+        if (varset[v] == 0){
+            std::cout << "v2222";
+            outerVarsetbdd = bdd_and(outerVarsetbdd, bdd_not(bdd_ithvar(v)));
+            outerVarsetbdd = newouter;
+        }
+    }
+    // Check if thisVarsetbdd is an OR subexpression of gBdd
+    gORSet = outerVarsetbdd;
+    std::cout << "all ok for outerVarsetbdd " << outerVarsetbdd << "\n";
+    bdd_allsat(bdd_ithvar(0), allSatExactBddHandler);
+    std::cout << "finished for outerVarsetbdd " << outerVarsetbdd << "\n";
+}*/
+
+
+// Finds out whether gLabel is a part of the varset as one of OR-expressions, returns in gExact
+/*int gLabel;
+void allSatExactHandler(char* varset, int size) {
+    if (!gExact) {
+        if (varset[gLabel] == 1) {
+            gExact = true;
+            for (int v = 0; v < size; ++v) {
+                if (varset[v] == 1) {
+                    if (v != gLabel) {
+                        gExact = false;
+                    }
+                }
+            }
+        }
+    }
+}*/
+
+/* Adds varsets into gAlphabet
+std::vector<bdd> gAlphabet;
+void allSatAlphabetHandler(char* varset, int size) {
+    bdd thisVarsetbdd = bdd_true();
+    for (int v = 0; v < size; ++v) {
+        if (varset[v] == 1) {
+            thisVarsetbdd = bdd_and(thisVarsetbdd, bdd_ithvar(v));
+        }
+        if (varset[v] == 0){
+            thisVarsetbdd = bdd_and(thisVarsetbdd, bdd_not(bdd_ithvar(v)));
+        }
+    }
+    bool wasThere = false;
+    for (auto i = gAlphabet.begin(); i != gAlphabet.end(); i++)
+        if (*i == thisVarsetbdd)
+            wasThere = true;
+    if (!wasThere)
+        gAlphabet.push_back(thisVarsetbdd);
+}*/

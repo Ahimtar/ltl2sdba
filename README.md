@@ -14,5 +14,5 @@ Installation
 
 Usage
 =====
-Use `./ltl2sdba -f 'formula to translate' -p 2`, for example `./ltl2sdba -f "F(b | GFa)" -p 2`  
+Use `./ltl2sdba -f 'formula to translate'`, for example `./ltl2sdba -f "F(b | GFa)"`  
 See `./ltl2sdba -h` for more information.
