@@ -19,7 +19,9 @@
 
 #include "semideterministic.hpp"
 
-// Check if input contains a varset = gBdd
+std::vector<bdd> gAlphabet;
+
+/* Check if input contains a varset = gBdd
 bdd gBdd;
 bool gExact = false;
 void allSatExactBddHandler(char* varset, int size) {
@@ -47,7 +49,7 @@ void allSatExactBddHandler(char* varset, int size) {
             gExact = true;
         }
     }
-}
+}*/
 
 /*
 // Finds out whether any OR expression of varset (input) is in gBdd
@@ -78,7 +80,7 @@ void allSatTwoORSetHandler(char* varset, int size) {
 
 
 // Finds out whether gLabel is a part of the varset as one of OR-expressions, returns in gExact
-int gLabel;
+/*int gLabel;
 void allSatExactHandler(char* varset, int size) {
     if (!gExact) {
         if (varset[gLabel] == 1) {
@@ -92,9 +94,9 @@ void allSatExactHandler(char* varset, int size) {
             }
         }
     }
-}
+}*/
 
-// Adds varsets into gAlphabet
+/* Adds varsets into gAlphabet
 std::vector<bdd> gAlphabet;
 void allSatAlphabetHandler(char* varset, int size) {
     bdd thisVarsetbdd = bdd_true();
@@ -112,7 +114,7 @@ void allSatAlphabetHandler(char* varset, int size) {
             wasThere = true;
     if (!wasThere)
         gAlphabet.push_back(thisVarsetbdd);
-}
+}*/
 
 // Converts a given VWAA to sDBA;
 spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
@@ -214,24 +216,39 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
                 }
             }
 
-            // Unrelated
+            // Unrelated todo remove this?
             // In gAlphabet variable, we store the set of all edge labels
             // (not only "a", "b", but also "and"-formulae: "a&b". not "a|b".)
-            bdd_allsat(t.cond, allSatAlphabetHandler); // add t.cond into gAlphabet if it is not already there
+            //bdd_allsat(t.cond, allSatAlphabetHandler); // add t.cond into gAlphabet if it is not already there
         }
         if (debug == "1"){std::cout << "\n";}
 
         // todo how to handle automata that dont accept at all? do we need to bother with them?
     }
 
-    // todo create allSatTwoORSetHandler to handle whole bdds, not just labels
+    /* todo create allSatTwoORSetHandler to handle whole bdds, not just labels
     bdd b = bdd_ithvar(1);
     bdd bna = bdd_and(bdd_ithvar(1), bdd_not(bdd_ithvar(0)));
     gBdd = bna;
     gExact = false;
     std::cout << "Check if " << bna << " is in " << b << ", \n";
     bdd_allsat(b, allSatExactBddHandler);
-    std::cout << " konec\n\n";
+    std::cout << " konec\n\n";*/
+
+    // create alphabet by adding all possible signs using powerset construction
+    for (int i = 0; i < pow(2, pvwaa->ap().size()); i++){
+        bdd thisbdd = bdd_true();
+        // for all digits in binary form of i
+        for (int digit = 0; digit < pvwaa->ap().size(); digit++){
+            if ((i & (int)pow(2, digit)) != 0){
+                // add atomic proposition number digit
+                thisbdd = bdd_and(thisbdd, bdd_ithvar(digit));
+            } else {
+                thisbdd = bdd_and(thisbdd, bdd_not(bdd_ithvar(digit)));
+            }
+        }
+        gAlphabet.push_back(thisbdd);
+    }
 
 
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
@@ -461,9 +478,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
     unsigned nq = vwaa->num_states();
     const spot::bdd_dict_ptr dict = sdba->get_dict();
 
-    // For each edge label of the alphabet // todo change labels to bdds as alphabet contains those
-    for (auto labelvar : dict.get()->var_map){
-        auto label = labelvar.second;
+    // For each edge label ("a,b,c", "a,b,!c", "a,!b,c"...) of the alphabet
+    for (auto label : gAlphabet){
         for (unsigned q = 0; q < nq; ++q) {
             if (debug == "1") { std::cout << "\nFor label: " << label << ", checking q: " << q << ". "; }
             // To deal with phi1, q either needs to not be in R, or see below *
@@ -475,12 +491,10 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                     for (auto &t: vwaa->out(q)) {
                         for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                             if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " t.cond: " << t.cond
-                                                          << " label: " << bdd_ithvar(label) << ". \n"; }
-                            // If t.cond contains this label as one of the conjunctions
-                            gLabel = label;
-                            gExact = false;
-                            bdd_allsat(t.cond, allSatExactHandler); // browse t.cond to see if it is "x OR glabel". updates gExact
-                            if (gExact || t.cond == bdd_true()) {
+                                                          << " label: " << label << ". \n"; }
+                            if (bdd_implies(label, t.cond)) {
+                                std::cout << "glabel implies tcond\n";
+                            //if (gExact || t.cond == bdd_true()) {
                                 if (debug == "1") { std::cout << "This label is the same as label: " << label << ". "; }
                                 // Replace the edges ending in R with TT
                                 if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
@@ -498,12 +512,9 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                 for (auto &t: vwaa->out(q)) {
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
-                                                      << " label: " << bdd_ithvar(label) << ". \n"; }
+                                                      << " label: " << label << ". \n"; }
                         // If t.cond contains this label as one of the conjunctions
-                        gLabel = (unsigned)label;
-                        gExact = false;
-                        bdd_allsat(t.cond, allSatExactHandler); // browse t.cond to see if it is "x OR glabel". updates gExact
-                        if (gExact || t.cond == bdd_true()) {
+                        if (bdd_implies(label, t.cond)) {
                             if (debug == "1") { std::cout << "This label is the same as label: " << label << ". "; }
                             if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc == 0) {  // this is a correct mod. tr.
                                 if (debug == "1") { std::cout << "q is in Conf and e is not acc. \n"; }
@@ -579,31 +590,31 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
             phi1[sdba->num_states() - 1] = p1;
             phi2[sdba->num_states() - 1] = p2;
             //(*(sdba->get_named_prop(<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; //todo name states?
-            sdba->new_edge(ci, addedStateNum, bdd_ithvar(label), {});
+            sdba->new_edge(ci, addedStateNum, label, {});
         } else {
             bool connected = false;
             // If the state already exists, we check if there is an edge leading there from the current state
             for (auto &t: sdba->out(ci)) {
                 if (debug == "1") {
                     std::cout << "Adding new label to the edge under OR: " << t.src << "-" << t.dst
-                              << " bdd:" << t.cond << " label: " << bdd_ithvar(label) << ". \n";
+                              << " bdd:" << t.cond << " label: " << label << ". \n";
                 }
                 // If there is such an edge, we add this label via "OR" to the bdd
                 if (t.dst == addedStateNum) {
                     connected = true;
-                    t.cond = bdd_or(t.cond, bdd_ithvar(label));
+                    t.cond = bdd_or(t.cond, label);
                 }
             }
             // If there isn't such an edge, we create a new one
             if (!connected){
-                sdba->new_edge(ci, addedStateNum, bdd_ithvar(label), {});
+                sdba->new_edge(ci, addedStateNum, label, {});
             }
         }
 
 
         // We connect the state to this configuration under the currently checked label
         if (debug == "1"){std::cout << "New edge from C" << ci << " to C" << addedStateNum << " labeled " << label
-                    << " (" << bdd_ithvar(label) << ").";}
+                    << " (" << label << ").";}
 
         // If the state is new, add all successors of this state to the sdba and connect them
         if (addedStateNum == sdba->num_states()-1) {
@@ -654,8 +665,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
     const spot::bdd_dict_ptr dict = sdba->get_dict();
 
     // For each edge label of the alphabet we compute phis of the reached state (succp1 and succp2)
-    for (auto labelvar : dict.get()->var_map) {
-        auto label = labelvar.second;
+    for (auto label : gAlphabet) {
 
         succp1.clear();
         succp2.clear();
@@ -674,12 +684,9 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 for (auto &t: vwaa->out(q)) {
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
-                                                      << " label: " << bdd_ithvar(label) << ". \n"; }
+                                                      << " label: " << label << ". \n"; }
                         // If t.cond contains this label as one of the conjunctions
-                        gLabel = label;
-                        gExact = false;
-                        bdd_allsat(t.cond, allSatExactHandler); // browse t.cond to see if it is "x OR glabel". updates gExact
-                        if (gExact || t.cond == bdd_true()) {
+                        if (bdd_implies(label, t.cond)) {
                             if (debug == "1") { std::cout << "<-the label is right. "; }
                             if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
                                 if (debug == "1") { std::cout << "adding tdst (" << tdst << ") to succphi1\n"; }
@@ -694,13 +701,10 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                     for (auto &t: vwaa->out(q)) {
                         for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                             if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
-                                                          << " label: " << bdd_ithvar(label) << ". \n"; }
+                                                          << " label: " << label << ". \n"; }
                             if (t.acc == 0) {
                                 // If t.cond contains this label as one of the conjunctions
-                                gLabel = label;
-                                gExact = false;
-                                bdd_allsat(t.cond, allSatExactHandler); // browse t.cond to see if it is "x OR glabel". updates gExact
-                                if (gExact || t.cond == bdd_true()) {
+                                if (bdd_implies(label, t.cond)) {
                                     if (debug == "1") { std::cout << "<- not accepting and the label is right. "; }
                                     if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
                                         if (debug == "1") {
@@ -727,12 +731,9 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 for (auto &t: vwaa->out(q)) {
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
-                                                      << " label: " << bdd_ithvar(label) << ". \n"; }
+                                                      << " label: " << label << ". \n"; }
                         // If t.cond contains this label as one of the conjunctions
-                        gLabel = label;
-                        gExact = false;
-                        bdd_allsat(t.cond, allSatExactHandler); // browse t.cond to see if it is "x OR glabel". updates gExact
-                        if (gExact || t.cond == bdd_true()) {
+                        if (bdd_implies(label, t.cond)) {
                             if (debug == "1") { std::cout << " added tdst (" << tdst << ") to succphi2. \n"; }
                             succp2.insert(tdst);
                         }
@@ -744,15 +745,13 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                     for (auto &t: vwaa->out(q)) {
                         for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                             if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
-                                                          << " label: " << bdd_ithvar(label) << ". \n"; }
+                                                          << " label: " << label << ". \n"; }
                             if (t.acc == 0) {
                                 if (debug == "1") { std::cout << "q is in Conf and e is not acc. Tcond " << t.cond
-                                                              << "(the label we check), bddlabel we are looking for: " << bdd_ithvar(label) << ".\n";}
+                                                              << "(the label we check), bddlabel we are looking for: "
+                                                                 << label << ".\n";}
                                 // If t.cond contains this label as one of the conjunctions
-                                gLabel = label;
-                                gExact = false;
-                                bdd_allsat(t.cond, allSatExactHandler); // browse t.cond to see if it is "x OR glabel". updates gExact
-                                if (gExact || t.cond == bdd_true()) {
+                                if (bdd_implies(label, t.cond)) {
                                     if (debug == "1") { std::cout << " added tdst (" << tdst << ")  to succphi2. \n"; }
                                     succp2.insert(tdst);
                                 }
@@ -846,9 +845,9 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
             // (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; todo name states?
             if (accepting) {
-                sdba->new_edge(statenum, succStateNum, bdd_ithvar(label), {0});
+                sdba->new_edge(statenum, succStateNum, label, {0});
             } else {
-                sdba->new_edge(statenum, succStateNum, bdd_ithvar(label), {});
+                sdba->new_edge(statenum, succStateNum, label, {});
             }
          } else {
             bool connected = false;
@@ -856,20 +855,20 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             for (auto &t: sdba->out(statenum)) {
                 if (debug == "1") {
                     std::cout << "Adding new label to the edge under OR: " << t.src << "-" << t.dst
-                              << " bdd:" << t.cond << " bddithvarlabel" << bdd_ithvar(label) << ". \n";
+                              << " bdd:" << t.cond << " bddithvarlabel" << label << ". \n";
                 }
                 // If there is such an edge, we add this label via "OR" to the bdd
                 if (t.dst == succStateNum) {
                     connected = true;
-                    t.cond = bdd_or(t.cond, bdd_ithvar(label)); //todo is this right, is acceptance always the same?
+                    t.cond = bdd_or(t.cond, label); //todo is this right, is acceptance always the same?
                 }
             }
             // If there isn't such an edge, we create a new one
             if (!connected){
                 if (accepting) {
-                    sdba->new_edge(statenum, succStateNum, bdd_ithvar(label), {0});
+                    sdba->new_edge(statenum, succStateNum, label, {0});
                 } else {
-                    sdba->new_edge(statenum, succStateNum, bdd_ithvar(label), {});
+                    sdba->new_edge(statenum, succStateNum, label, {});
                 }
             }
         }
