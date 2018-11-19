@@ -120,30 +120,20 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
                     if (debug == "1") { std::cout << "We set acc to " << t.acc << ". "; }
                 }
             }
-
-            // Unrelated todo remove this?
-            // In gAlphabet variable, we store the set of all edge labels
-            // (not only "a", "b", but also "and"-formulae: "a&b". not "a|b".)
-            //bdd_allsat(t.cond, allSatAlphabetHandler); // add t.cond into gAlphabet if it is not already there
         }
         if (debug == "1"){std::cout << "\n";}
 
         // todo how to handle automata that dont accept at all? do we need to bother with them?
     }
 
-    /* todo create allSatTwoORSetHandler to handle whole bdds, not just labels
-    bdd b = bdd_ithvar(1);
-    bdd bna = bdd_and(bdd_ithvar(1), bdd_not(bdd_ithvar(0)));
-    gBdd = bna;
-    gExact = false;
-    std::cout << "Check if " << bna << " is in " << b << ", \n";
-    bdd_allsat(b, allSatExactBddHandler);
-    std::cout << " konec\n\n";*/
+    // In gAlphabet variable, we store the set of all edge labels
+    // (not only "a", "b", but also "and"-formulae: "a&b". not "a|b".)
+    // Here, we create the alphabet by adding all possible labels using power-set construction
 
-    // create alphabet by adding all possible signs using powerset construction
+    // pow(2, pvwaa->ap().size()) is the amount of all combinations of labels = num of letters in the final alphabet
     for (int i = 0; i < pow(2, pvwaa->ap().size()); i++){
         bdd thisbdd = bdd_true();
-        // for all digits in binary form of i
+        // for all digits in the binary form of i
         for (int digit = 0; digit < pvwaa->ap().size(); digit++){
             if ((i & (int)pow(2, digit)) != 0){
                 // add atomic proposition number digit
