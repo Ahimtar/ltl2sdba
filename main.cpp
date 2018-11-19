@@ -168,8 +168,9 @@ int main(int argc, char* argv[])
 	} catch (std::runtime_error& e) {
 		std::string what(e.what());
 
+		// This should not happen since we are not working with acceptance marks, but it is left in just in case
 		if (what == "Too many acceptance sets used.") {
-			std::cerr << "LTL2sDBA is unable to set more than 32 acceptance marks.\n";
+			std::cerr << "LTL2SDBA is unable to set more than 32 acceptance marks.\n";
 			return 32;
 		}
 	}
