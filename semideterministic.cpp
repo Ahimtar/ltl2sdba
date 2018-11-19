@@ -265,12 +265,12 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
 
-    //std::cout << "THISdba: " << sdba->prop_state_acc() << "\n";
+    /*//std::cout << "THISdba: " << sdba->prop_state_acc() << "\n";
     sdba->prop_state_acc(spot::trival::value_t::no_value);
     sdba->prop_universal(spot::trival::value_t::no_value);
     sdba->prop_complete(spot::trival::value_t::no_value); // todo remove this once we make edges in the deterministic part
 
-    /*if (sdba->prop_state_acc() == spot::trival::value_t::yes_value){
+    if (sdba->prop_state_acc() == spot::trival::value_t::yes_value){
         std::cout << "y: " << sdba->prop_state_acc() << "\n";
     } else {
         std::cout << "n: " << sdba->prop_state_acc() << "\n";
@@ -344,6 +344,9 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     }
 
     if (debug == "1") { std::cout << "\n\n"; }
+
+    // Call spot's merge edges function
+    sdba->merge_edges();
 
     return sdba;
 }
@@ -868,17 +871,14 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
          } else {
             bool connected = false;
-            // If the state already exists, we check if there is an edge leading there from the current state
+            // If the state already exists, we check if there is a same-acc edge leading there from the current state
             for (auto &t: sdba->out(statenum)) {
-                if (debug == "1") {
-                    std::cout << "Adding new label to the edge under OR: " << t.src << "-" << t.dst
-                              << " bdd:" << t.cond << " bddithvarlabel" << label << ". \n";
-                }
-                // If there is such an edge, we add this label via "OR" to the bdd
-                if (t.dst == succStateNum) {
+                // If there is such an edge, we add it as OR to the existing edge instead of creating a new edge
+                if (t.dst == succStateNum && (((t.acc != 0 && accepting) || (t.acc == 0 && !accepting)))){
+                    if (debug == "1") { std::cout << "Adding new label to the edge under OR: " << t.src << "-" << t.dst
+                              << " bdd:" << t.cond << " bddithvarlabel" << label << ". \n"; }
                     connected = true;
-                    t.cond = bdd_or(t.cond, label); //todo add differentiation based on acceptation
-                   // if (t.acc != 0)
+                    t.cond = bdd_or(t.cond, label);
                 }
             }
             // If there isn't such an edge, we create a new one
