@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
 			<< "\t-o [hoa|dot]\ttype of output\n"
 			<< "\t\thoa\tprint automaton in HOA format (default)\n"
 			<< "\t\tdot\tprint dot format\n"
-			<< "\t-p[1|2|3]\tphase of translation\n"
+			<< "\t-p[1|2|3]\tphase of translation (default 2)\n"
 			<< "\t\t1\tprint VWAA\n"
 			<< "\t\t2\tprint NA with removed alternation\n"
 			<< "\t\t3\tprint both\n"

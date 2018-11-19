@@ -250,9 +250,31 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
         gAlphabet.push_back(thisbdd);
     }
 
+   /* std::cout << "THIS: " << pvwaa->prop_state_acc() << "\n";
+    pvwaa->prop_state_acc(false);
+    //pvwaa->prop_universal(spot::trival::value_t::no_value);
+    //pvwaa->prop_complete(spot::trival::value_t::no_value); // todo remove this once we make edges in the deterministic part
 
+    if (pvwaa->prop_state_acc() == spot::trival::value_t::yes_value){
+        std::cout << "y: " << pvwaa->prop_state_acc() << "\n";
+    } else {
+        std::cout << "n: " << pvwaa->prop_state_acc() << "\n";
+    }
+
+*/
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
+
+    //std::cout << "THISdba: " << sdba->prop_state_acc() << "\n";
+    sdba->prop_state_acc(spot::trival::value_t::no_value);
+    sdba->prop_universal(spot::trival::value_t::no_value);
+    sdba->prop_complete(spot::trival::value_t::no_value); // todo remove this once we make edges in the deterministic part
+
+    /*if (sdba->prop_state_acc() == spot::trival::value_t::yes_value){
+        std::cout << "y: " << sdba->prop_state_acc() << "\n";
+    } else {
+        std::cout << "n: " << sdba->prop_state_acc() << "\n";
+    }*/
 
 
     // Definition of the phis and Rs assigned to the states in the deterministic part, for future
@@ -304,10 +326,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             createDetPart(pvwaa, ci, C[ci], C[ci], R, isqmay, isqmust, sdba, Rname, phi1, phi2, debug);
         }
     }
-
-    sdba->prop_state_acc(true);
-    sdba->prop_universal(false);
-    sdba->prop_complete(false); // todo remove this once we make edges in the deterministic part
 
     if (debug == "1") { std::cout << "ND part edge acceptation correction. "; }
     for (unsigned ci = 0; ci < nc; ++ci) {
@@ -493,7 +511,6 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                             if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " t.cond: " << t.cond
                                                           << " label: " << label << ". \n"; }
                             if (bdd_implies(label, t.cond)) {
-                                std::cout << "glabel implies tcond\n";
                             //if (gExact || t.cond == bdd_true()) {
                                 if (debug == "1") { std::cout << "This label is the same as label: " << label << ". "; }
                                 // Replace the edges ending in R with TT
@@ -860,7 +877,8 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 // If there is such an edge, we add this label via "OR" to the bdd
                 if (t.dst == succStateNum) {
                     connected = true;
-                    t.cond = bdd_or(t.cond, label); //todo is this right, is acceptance always the same?
+                    t.cond = bdd_or(t.cond, label); //todo add differentiation based on acceptation
+                   // if (t.acc != 0)
                 }
             }
             // If there isn't such an edge, we create a new one
@@ -875,7 +893,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
         // If the state is new, add all further successors of this successor to the sdba and connect them
         if (!existsAlready) {
-            if (sdba->num_states() < 10) { // todo remove limit of states!
+            if (sdba->num_states() < 5) { // todo remove limit of states!
                 addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
             }
         }
