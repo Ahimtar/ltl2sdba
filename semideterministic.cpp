@@ -104,7 +104,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
         // Setting acceptance
 
-        // Since we only work with "yes / no" acceptance, we can use the numbers differently:
+        // Since we only work with "yes / no" (Buchi) acceptance, we can use the numbers differently:
         //  {} = 0 Means edge is not accepting
         // {0} = 1 Means edge is accepting
         // {1} = 2 Means edge was accepting in vwaa, but will not be accepting in sdba
@@ -145,31 +145,9 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
         gAlphabet.push_back(thisbdd);
     }
 
-   /* std::cout << "THIS: " << pvwaa->prop_state_acc() << "\n";
-    pvwaa->prop_state_acc(false);
-    //pvwaa->prop_universal(spot::trival::value_t::no_value);
-    //pvwaa->prop_complete(spot::trival::value_t::no_value); // todo remove this once we make edges in the deterministic part
 
-    if (pvwaa->prop_state_acc() == spot::trival::value_t::yes_value){
-        std::cout << "y: " << pvwaa->prop_state_acc() << "\n";
-    } else {
-        std::cout << "n: " << pvwaa->prop_state_acc() << "\n";
-    }
-
-*/
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
-
-    /*//std::cout << "THISdba: " << sdba->prop_state_acc() << "\n";
-    sdba->prop_state_acc(spot::trival::value_t::no_value);
-    sdba->prop_universal(spot::trival::value_t::no_value);
-    sdba->prop_complete(spot::trival::value_t::no_value); // todo remove this once we make edges in the deterministic part
-
-    if (sdba->prop_state_acc() == spot::trival::value_t::yes_value){
-        std::cout << "y: " << sdba->prop_state_acc() << "\n";
-    } else {
-        std::cout << "n: " << sdba->prop_state_acc() << "\n";
-    }*/
 
 
     // Definition of the phis and Rs assigned to the states in the deterministic part, for future
@@ -239,6 +217,11 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     }
 
     if (debug == "1") { std::cout << "\n\n"; }
+
+    sdba->set_buchi();
+    sdba->prop_state_acc(spot::trival(false));
+    sdba->prop_universal(spot::trival(false));
+    sdba->prop_complete(spot::trival(false)); // todo remove this once we make edges in the deterministic part?
 
     // Call spot's merge edges function
     sdba->merge_edges();
