@@ -113,7 +113,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
         {
             for (unsigned d: pvwaa->univ_dests(t.dst)) {
                 if (debug == "1") {
-                    std::cout << "\nEdge " << t.src << "-" << d << " accepting labels: " << t.acc << ". ";
+                    std::cout << "\nEdge " << t.src << "-" << d << " label: " << t.cond << " acceptance: " << t.acc << ". ";
                 }
                 if (t.acc != 0) {
                     t.acc = 2;
@@ -144,6 +144,15 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
         }
         gAlphabet.push_back(thisbdd);
     }
+
+    if (debug == "1"){
+        std::cout << "The alphabet: ";
+        for (auto le : gAlphabet){
+            std::cout << le;
+        }
+        std::cout << "\n";
+    }
+
 
 
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
@@ -220,8 +229,10 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
     sdba->set_buchi();
     sdba->prop_state_acc(spot::trival(false));
+
+    // Automaton is universal if the conjunction between the labels of two transitions leaving a state is always false.
     sdba->prop_universal(spot::trival(false));
-    sdba->prop_complete(spot::trival(false)); // todo remove this once we make edges in the deterministic part?
+    //sdba->prop_complete(spot::trival(false)); // todo remove this once we make edges in the deterministic part?
 
     // Call spot's merge edges function
     sdba->merge_edges();
@@ -456,7 +467,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         // We need to check if this R-component state exists already
         // addedStateNum is the number of the state if it exists, else value remains as a "new state" number:
         unsigned addedStateNum = sdba->num_states();
-        if (debug == "1") { std::cout << "Checking if it exists: R: ";}
+        if (debug == "1") { std::cout << "Checking if the R-comp state exists: ";}
 
         for (unsigned c = 0; c < sdba->num_states(); ++c) {
             if (debug == "1") {
@@ -483,6 +494,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
         // If the state doesn't exist yet, we create it with "sdba->num_states()-1" becoming its new number.
         if (addedStateNum == sdba->num_states()) {
+            if (debug == "1"){std::cout << "\nThis state is new, creating it.";}
             sdba->new_state();         // addedStateNum is now equal to sdba->num_states()-1
             Rname[sdba->num_states() - 1] = R;
             phi1[sdba->num_states() - 1] = p1;
@@ -493,29 +505,29 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
             bool connected = false;
             // If the state already exists, we check if there is an edge leading there from the current state
             for (auto &t: sdba->out(ci)) {
-                if (debug == "1") {
-                    std::cout << "Adding new label to the edge under OR: " << t.src << "-" << t.dst
-                              << " bdd:" << t.cond << " label: " << label << ". \n";
-                }
                 // If there is such an edge, we add this label via "OR" to the bdd
                 if (t.dst == addedStateNum) {
+                    if (debug == "1") {
+                        std::cout << "Adding new label to the edge under OR: " << t.src << "-" << t.dst
+                                  << " bdd:" << t.cond << " label: " << label << ". \n";
+                    }
                     connected = true;
                     t.cond = bdd_or(t.cond, label);
                 }
             }
             // If there isn't such an edge, we create a new one
             if (!connected){
+                // We connect the state to this configuration under the currently checked label
+                if (debug == "1"){std::cout << "New edge from C" << ci << " to C" << addedStateNum << " labeled "
+                                                                                                      << label;}
                 sdba->new_edge(ci, addedStateNum, label, {});
             }
         }
 
 
-        // We connect the state to this configuration under the currently checked label
-        if (debug == "1"){std::cout << "New edge from C" << ci << " to C" << addedStateNum << " labeled " << label
-                    << " (" << label << ").";}
-
         // If the state is new, add all successors of this state to the sdba and connect them
         if (addedStateNum == sdba->num_states()-1) {
+            if (debug == "1"){std::cout << "\nAs the state is new, adding all succs";}
             addRCompStateSuccs(vwaa, sdba, addedStateNum, Conf, Rname, phi1, phi2, debug);
         }
 
@@ -549,7 +561,21 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                         std::map<unsigned, std::set<unsigned>> &phi1, std::map<unsigned, std::set<unsigned>> &phi2,
                         std::string debug){
 
-    if (debug == "1"){std::cout << "\n\n>>>>>>  Function addRCompStateSuccs for state " << statenum;}
+    if (debug == "1"){
+        std::cout << "\n\n>>>>>>  Function addRCompStateSuccs for state " << statenum << "  (Rname: ";
+        for (auto x : Rname[statenum]){
+            std::cout << x << ", ";
+        }
+        std::cout << "phi1: ";
+        for (auto x : phi1[statenum]){
+            std::cout << x << ", ";
+        }
+        std::cout << "phi2: ";
+        for (auto x : phi2[statenum]){
+            std::cout << x << ", ";
+        }
+        std::cout << ".)\n";
+    }
 
     // The R and phis of the state we are adding successors of
     std::set<std::string> R = Rname[statenum];
@@ -571,6 +597,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         if (debug == "1") { if (debug == "1") { std::cout << "\nWe check label: " << label; }
         }
 
+        // todo only check states of p1 and p2 that belong to Q!
         if (debug == "1") { std::cout << "\nFor all states of p1: "; }
         // Go through all states q of p1. For each, if edge under label is a correct m.t., add its follower to succp1
         for (auto q : p1){
@@ -771,7 +798,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
         // If the state is new, add all further successors of this successor to the sdba and connect them
         if (!existsAlready) {
-            if (sdba->num_states() < 8) { // todo remove limit of states!
+            if (sdba->num_states() < 25) { // todo remove limit of states!
                 addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
             }
         }
