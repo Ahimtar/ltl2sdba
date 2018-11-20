@@ -17,9 +17,11 @@
     along with LTL3TELA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <cstring>
 #include "semideterministic.hpp"
 
-std::vector<bdd> gAlphabet;
+std::vector<bdd> gAlphabet; // All the combinations of atomic propositions
+unsigned gnc; // Number of states of non-deterministic part of sdba
 
 // Converts a given VWAA to sDBA;
 spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
@@ -147,8 +149,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
     if (debug == "1"){
         std::cout << "The alphabet: ";
-        for (auto le : gAlphabet){
-            std::cout << le;
+        for (auto letter : gAlphabet){
+            std::cout << letter;
         }
         std::cout << "\n";
     }
@@ -164,14 +166,14 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     std::map<unsigned, std::set<unsigned>> phi1;
     std::map<unsigned, std::set<unsigned>> phi2;
 
-    unsigned nc = sdba->num_states(); // Number of configurations C (states in the nondeterministic part)
+    gnc = sdba->num_states(); // Number of configurations C (states in the nondeterministic part)
 
     // State-names C are in style of "1,2,3", these represent states Q of the former VWAA configuration
     auto sn = sdba->get_named_prop<std::vector<std::string>>("state-names");
-    std::set<std::string> C[nc];
+    std::set<std::string> C[gnc];
 
     // We mark the Rs of the states of ND part so we differ them from D part states with empty R, phi1 and phi2 later on
-    for (unsigned ci = 0; ci < nc; ++ci) {
+    for (unsigned ci = 0; ci < gnc; ++ci) {
         Rname[ci] = {"ND-part state"};
     }
 
@@ -180,7 +182,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     // We go through all the states in C
     // In each one, we go through all its Q-s and build all possible R-s based on what types of states Q-s are
     // For each R - if it is a new R, we build an R-component
-    for (unsigned ci = 0; ci < nc; ++ci) {
+    for (unsigned ci = 0; ci < gnc; ++ci) {
 
         // We parse the statename ((*sn)[ci]) to create a set of states
         if (sn && ci < sn->size() && !(*sn)[ci].empty()) {
@@ -210,7 +212,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     }
 
     if (debug == "1") { std::cout << "ND part edge acceptation correction. "; }
-    for (unsigned ci = 0; ci < nc; ++ci) {
+    for (unsigned ci = 0; ci < gnc; ++ci) {
         for (auto& t: sdba->out(ci))
         {
             for (unsigned d: pvwaa->univ_dests(t.dst)) {
@@ -597,45 +599,50 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         if (debug == "1") { if (debug == "1") { std::cout << "\nWe check label: " << label; }
         }
 
-        // todo only check states of p1 and p2 that belong to Q!
         if (debug == "1") { std::cout << "\nFor all states of p1: "; }
         // Go through all states q of p1. For each, if edge under label is a correct m.t., add its follower to succp1
         for (auto q : p1){
-            if (debug == "1") { std::cout << "\nChecking q: " << q << ". "; }
-            // To deal with phi1, q either needs to not be in R, or see below *
-            if ((R.find(std::to_string(q)) == R.end())) {
-                if (debug == "1") { std::cout << "It's not in R. \n"; }
-                // Find the edge under "label"
-                for (auto &t: vwaa->out(q)) {
-                    for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
-                                                      << " label: " << label << ". \n"; }
-                        // If t.cond contains this label as one of the conjunctions
-                        if (bdd_implies(label, t.cond)) {
-                            if (debug == "1") { std::cout << "<-the label is right. "; }
-                            if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
-                                if (debug == "1") { std::cout << "adding tdst (" << tdst << ") to succphi1\n"; }
-                                succp1.insert(tdst);
+            if (q < gnc){ // Only check states from Q
+                if (debug == "1") { std::cout << "\nChecking q: " << q << ". "; }
+                // To deal with phi1, q either needs to not be in R, or see below *
+                if ((R.find(std::to_string(q)) == R.end())) {
+                    if (debug == "1") { std::cout << "It's not in R. \n"; }
+                    // Find the edge under "label"
+                    for (auto &t: vwaa->out(q)) {
+                        for (unsigned tdst: vwaa->univ_dests(t.dst)) {
+                            if (debug == "1") {
+                                std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
+                                          << " label: " << label << ". \n";
+                            }
+                            // If t.cond contains this label as one of the conjunctions
+                            if (bdd_implies(label, t.cond)) {
+                                if (debug == "1") { std::cout << "<-the label is right. "; }
+                                if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
+                                    if (debug == "1") { std::cout << "adding tdst (" << tdst << ") to succphi1\n"; }
+                                    succp1.insert(tdst);
+                                }
                             }
                         }
                     }
-                }
-            } else { // * or q must be in C && edge must not be accepting
-                if (debug == "1") { std::cout << "It's in R. \n"; }
-                if (Conf.find(std::to_string(q)) != Conf.end()) {
-                    for (auto &t: vwaa->out(q)) {
-                        for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                            if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
-                                                          << " label: " << label << ". \n"; }
-                            if (t.acc == 0) {
-                                // If t.cond contains this label as one of the conjunctions
-                                if (bdd_implies(label, t.cond)) {
-                                    if (debug == "1") { std::cout << "<- not accepting and the label is right. "; }
-                                    if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
-                                        if (debug == "1") {
-                                            std::cout << "adding tdst (" << tdst << ") to succphi1\n";
+                } else { // * or q must be in C && edge must not be accepting
+                    if (debug == "1") { std::cout << "It's in R. \n"; }
+                    if (Conf.find(std::to_string(q)) != Conf.end()) {
+                        for (auto &t: vwaa->out(q)) {
+                            for (unsigned tdst: vwaa->univ_dests(t.dst)) {
+                                if (debug == "1") {
+                                    std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
+                                              << " label: " << label << ". \n";
+                                }
+                                if (t.acc == 0) {
+                                    // If t.cond contains this label as one of the conjunctions
+                                    if (bdd_implies(label, t.cond)) {
+                                        if (debug == "1") { std::cout << "<- not accepting and the label is right. "; }
+                                        if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
+                                            if (debug == "1") {
+                                                std::cout << "adding tdst (" << tdst << ") to succphi1\n";
+                                            }
+                                            succp1.insert(tdst);
                                         }
-                                        succp1.insert(tdst);
                                     }
                                 }
                             }
@@ -648,37 +655,47 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         if (debug == "1") { std::cout << "\nFor all states of p2: "; }
         // Go through all states q of p2. For each, if edge under label is correct m.t., add its follower to succp2
         for (auto q : p2){
-            if (debug == "1") { std::cout << "\nChecking q: " << q << ". "; }
-            // To deal with phi1, q either needs to not be in R, or see below *
-            if ((R.find(std::to_string(q)) == R.end())) {
-                if (debug == "1") { std::cout << "It's not in R. \n"; }
-                // Find the edge under "label"
-                for (auto &t: vwaa->out(q)) {
-                    for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                        if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
-                                                      << " label: " << label << ". \n"; }
-                        // If t.cond contains this label as one of the conjunctions
-                        if (bdd_implies(label, t.cond)) {
-                            if (debug == "1") { std::cout << " added tdst (" << tdst << ") to succphi2. \n"; }
-                            succp2.insert(tdst);
-                        }
-                    }
-                }
-            } else { // * or q must be in C && edge must not be accepting
-                if (debug == "1") { std::cout << "It's in R. \n"; }
-                if (Conf.find(std::to_string(q)) != Conf.end()) {
+            if (q < gnc) {
+                if (debug == "1") { std::cout << "\nChecking q: " << q << ". "; }
+                // To deal with phi1, q either needs to not be in R, or see below *
+                if ((R.find(std::to_string(q)) == R.end())) {
+                    if (debug == "1") { std::cout << "It's not in R. \n"; }
+                    // Find the edge under "label"
                     for (auto &t: vwaa->out(q)) {
                         for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                            if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
-                                                          << " label: " << label << ". \n"; }
-                            if (t.acc == 0) {
-                                if (debug == "1") { std::cout << "q is in Conf and e is not acc. Tcond " << t.cond
-                                                              << "(the label we check), bddlabel we are looking for: "
-                                                                 << label << ".\n";}
-                                // If t.cond contains this label as one of the conjunctions
-                                if (bdd_implies(label, t.cond)) {
-                                    if (debug == "1") { std::cout << " added tdst (" << tdst << ")  to succphi2. \n"; }
-                                    succp2.insert(tdst);
+                            if (debug == "1") {
+                                std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
+                                          << " label: " << label << ". \n";
+                            }
+                            // If t.cond contains this label as one of the conjunctions
+                            if (bdd_implies(label, t.cond)) {
+                                if (debug == "1") { std::cout << " added tdst (" << tdst << ") to succphi2. \n"; }
+                                succp2.insert(tdst);
+                            }
+                        }
+                    }
+                } else { // * or q must be in C && edge must not be accepting
+                    if (debug == "1") { std::cout << "It's in R. \n"; }
+                    if (Conf.find(std::to_string(q)) != Conf.end()) {
+                        for (auto &t: vwaa->out(q)) {
+                            for (unsigned tdst: vwaa->univ_dests(t.dst)) {
+                                if (debug == "1") {
+                                    std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
+                                              << " label: " << label << ". \n";
+                                }
+                                if (t.acc == 0) {
+                                    if (debug == "1") {
+                                        std::cout << "q is in Conf and e is not acc. Tcond " << t.cond
+                                                  << "(the label we check), bddlabel we are looking for: "
+                                                  << label << ".\n";
+                                    }
+                                    // If t.cond contains this label as one of the conjunctions
+                                    if (bdd_implies(label, t.cond)) {
+                                        if (debug == "1") {
+                                            std::cout << " added tdst (" << tdst << ")  to succphi2. \n";
+                                        }
+                                        succp2.insert(tdst);
+                                    }
                                 }
                             }
                         }
@@ -798,7 +815,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
         // If the state is new, add all further successors of this successor to the sdba and connect them
         if (!existsAlready) {
-            if (sdba->num_states() < 25) { // todo remove limit of states!
+            if (sdba->num_states() < 50) { // todo remove limit of states!
                 addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
             }
         }
@@ -995,3 +1012,6 @@ void allSatAlphabetHandler(char* varset, int size) {
     if (!wasThere)
         gAlphabet.push_back(thisVarsetbdd);
 }*/
+
+// Alternative way of deciding if state is in ND part:
+//if (std::strcmp((*Rname[q].begin()).c_str(), "ND-part state") == 0) {
