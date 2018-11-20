@@ -229,15 +229,17 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
     if (debug == "1") { std::cout << "\n\n"; }
 
-    sdba->set_buchi();
-    sdba->prop_state_acc(spot::trival(false));
-
-    // Automaton is universal if the conjunction between the labels of two transitions leaving a state is always false.
-    sdba->prop_universal(spot::trival(false));
-    //sdba->prop_complete(spot::trival(false)); // todo remove this once we make edges in the deterministic part?
-
     // Call spot's merge edges function
     sdba->merge_edges();
+
+    sdba->set_buchi();
+    sdba->prop_state_acc(spot::trival(false));
+    // Automaton is universal if the conjunction between the labels of two transitions leaving a state is
+    // always false.
+    sdba->prop_universal(spot::trival(false)); // todo if formula = "0", we still get universal automaton
+    // automaton is complete if for each state the union of the labels of its outgoing transitions
+    // is always true.
+    sdba->prop_complete(spot::trival()); // todo is this correct?
 
     return sdba;
 }
