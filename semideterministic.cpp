@@ -236,7 +236,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     sdba->prop_state_acc(spot::trival(false));
     // Automaton is universal if the conjunction between the labels of two transitions leaving a state is
     // always false.
-    sdba->prop_universal(spot::trival(false)); // todo if formula = "0", we still get universal automaton
+    sdba->prop_universal(spot::trival()); // todo if formula = "0", we still get universal automaton
     // automaton is complete if for each state the union of the labels of its outgoing transitions
     // is always true.
     sdba->prop_complete(spot::trival()); // todo is this correct?
