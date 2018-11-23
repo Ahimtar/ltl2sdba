@@ -160,6 +160,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
 
+    sdba->set_buchi();
+    sdba->prop_state_acc(spot::trival(false));
 
     // Definition of the phis and Rs assigned to the states in the deterministic part, for future
     std::map<unsigned, std::set<std::string>> Rname;
@@ -234,6 +236,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
     sdba->set_buchi();
     sdba->prop_state_acc(spot::trival(false));
+
     // Automaton is universal if the conjunction between the labels of two transitions leaving a state is
     // always false.
     sdba->prop_universal(spot::trival());
@@ -408,7 +411,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                                                           << " label: " << label << ". \n"; }
                             if (bdd_implies(label, t.cond)) {
                             //if (gExact || t.cond == bdd_true()) {
-                                if (debug == "1") { std::cout << "This label is the same as label: " << label << ". "; }
+                                if (debug == "1") { std::cout << "This t.cond is the same as label. "; }
                                 // Replace the edges ending in R with TT
                                 if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
                                     if (debug == "1") {
@@ -428,7 +431,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                                                       << " label: " << label << ". \n"; }
                         // If t.cond contains this label as one of the conjunctions
                         if (bdd_implies(label, t.cond)) {
-                            if (debug == "1") { std::cout << "This label is the same as label: " << label << ". "; }
+                            if (debug == "1") { std::cout << "This t.cond is the same as label. "; }
                             if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc == 0) {  // this is a correct mod. tr.
                                 if (debug == "1") { std::cout << "q is in Conf and e is not acc. \n"; }
                                 // Replace the edges ending in R with TT
@@ -498,7 +501,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
         // If the state doesn't exist yet, we create it with "sdba->num_states()-1" becoming its new number.
         if (addedStateNum == sdba->num_states()) {
-            if (debug == "1"){std::cout << "\nThis state is new, creating it.";}
+            if (debug == "1"){std::cout << "\nThis state is new, creating it, with edge from C" << ci << " to C"
+                                                                         << addedStateNum << " labeled " << label;}
             sdba->new_state();         // addedStateNum is now equal to sdba->num_states()-1
             Rname[sdba->num_states() - 1] = R;
             phi1[sdba->num_states() - 1] = p1;
@@ -601,7 +605,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         if (debug == "1") { if (debug == "1") { std::cout << "\nWe check label: " << label; }
         }
 
-        if (debug == "1") { std::cout << "\nFor all states of p1: "; }
+        if (debug == "1") { std::cout << "\nFor all q states of p1: "; }
         // Go through all states q of p1. For each, if edge under label is a correct m.t., add its follower to succp1
         for (auto q : p1){
             if (q < gnc){ // Only check states from Q
@@ -654,7 +658,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
         }
 
-        if (debug == "1") { std::cout << "\nFor all states of p2: "; }
+        if (debug == "1") { std::cout << "\nFor all q states of p2: "; }
         // Go through all states q of p2. For each, if edge under label is correct m.t., add its follower to succp2
         for (auto q : p2){
             if (q < gnc) {
@@ -760,7 +764,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2) {
                 succStateNum = c;
                 existsAlready = true;
-                if (debug == "1") { std::cout << " < this!\n"; }
+                if (debug == "1") { std::cout << " < this!"; }
                 break;
             }
         }
@@ -768,12 +772,11 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
         // If the state doesn't exist yet, we create it with "sdba->num_states()-1" becoming its new number.
         if (succStateNum == sdba->num_states()) {   // the same as "if !existsAlready"
-            if (debug == "1") { std::cout << " Making new state\n"; }
             sdba->new_state();         // succStateNum is now equal to sdba->num_states()-1
             Rname[succStateNum] = R;
             phi1[succStateNum] = succp1;
             phi2[succStateNum] = succp2;
-            if (debug == "1") { std::cout << "Newly added state num: " << succStateNum << ", R: ";
+            if (debug == "1") { std::cout << "This state is new. State num: " << succStateNum << ", R: ";
                 for (auto x : R){
                     std::cout << x << ", ";
                 }
@@ -787,14 +790,19 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 }
                 std::cout << " sdba num states: " << sdba->num_states() << "\n";
             }
+            if (debug == "1") { std::cout << "Also creating edge from C" << statenum << " to C"
+                                          << succStateNum << " labeled " << label;}
             // (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; todo name states?
             if (accepting) {
                 sdba->new_edge(statenum, succStateNum, label, {0});
+                if (debug == "1") { std::cout << ", acc {0}. "; }
             } else {
                 sdba->new_edge(statenum, succStateNum, label, {});
+                if (debug == "1") { std::cout << ", acc {}. "; }
             }
          } else {
             bool connected = false;
+            if (debug == "1") { std::cout << "This state exists, checking if this edge is new\n"; }
             // If the state already exists, we check if there is a same-acc edge leading there from the current state
             for (auto &t: sdba->out(statenum)) {
                 // If there is such an edge, we add it as OR to the existing edge instead of creating a new edge
@@ -808,8 +816,12 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             // If there isn't such an edge, we create a new one
             if (!connected){
                 if (accepting) {
+                    if (debug == "1") { std::cout << "There is not an edge " << statenum << "-" << succStateNum
+                        << " under label " << label << ", acc {0}. Creating it.\n"; }
                     sdba->new_edge(statenum, succStateNum, label, {0});
                 } else {
+                    if (debug == "1") { std::cout << "There is not an edge " << statenum << "-" << succStateNum
+                                                  << " under label " << label << ", acc {}. Creating it.\n"; }
                     sdba->new_edge(statenum, succStateNum, label, {});
                 }
             }
@@ -817,6 +829,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
         // If the state is new, add all further successors of this successor to the sdba and connect them
         if (!existsAlready) {
+            if (debug == "1") { std::cout << "As this state is new, we are adding it's succs.\n"; }
             if (sdba->num_states() < 50) { // todo remove limit of states!
                 addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
             }
