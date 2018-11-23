@@ -50,8 +50,14 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     }
     auto pvwaa = pvwaaptr->aut;
 
+    // We have VWAA parsed.
 
-    // We have VWAA parsed. Now, we assign Qmays and Qmusts and remove acceptance marks
+    if (pvwaa->prop_semi_deterministic()){
+        if (debug == "1"){std::cout << "The vwaa is already semideterministic.\n";}
+        return pvwaa;
+    }
+
+    // Now, we assign Qmays and Qmusts and remove acceptance marks
 
     int nq = pvwaa->num_states();
 
@@ -155,10 +161,14 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
         std::cout << "\n";
     }
 
-
-
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
+
+    // We check if this dealternated vwaa is not semideterministic already
+    if (sdba->prop_semi_deterministic()){
+        if (debug == "1"){std::cout << "The dealternated vwaa is already semideterministic.\n";}
+        return sdba;
+    }
 
     sdba->set_buchi();
     sdba->prop_state_acc(spot::trival(false));
