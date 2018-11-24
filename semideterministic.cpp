@@ -161,14 +161,34 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     sdba->set_buchi();
     sdba->prop_state_acc(spot::trival(false));
 
-    // Definition of the phis and Rs assigned to the states in the deterministic part, for future
-    std::map<unsigned, std::set<std::string>> Rname;
-    std::map<unsigned, std::set<unsigned>> phi1;
-    std::map<unsigned, std::set<unsigned>> phi2;
+    // First, we check whether this automaton is not already semideterministic
+    // Since our VWAA uses co-Buchi acceptation, we need to negate the edges first
+    spot::twa_graph_ptr negsdba = sdba;
+
+    if (debug == "1"){ std::cout << "Testing if automaton is not semideterministic already.\n"; }
+    for (auto& nedge : negsdba->edges())
+    {
+        if (debug == "1"){ std::cout << "Edge" << nedge.src << "-" << nedge.dst << ", acc: " << nedge.acc; }
+        if (nedge.acc != 0){
+            nedge.acc = 0;
+        } else {
+            nedge.acc = 1;
+        }
+        if (debug == "1"){ std::cout << ", new acc: " << nedge.acc << "\n"; }
+    }
+    if (negsdba->prop_semi_deterministic())
+    {
+        if (debug == "1"){ std::cout << "Automaton is already semideterministic.\n"; }
+        return negsdba;
+    }
 
     // Number of configurations C (states in the nondeterministic part)
     gnc = sdba->num_states();
 
+    // Definition of the phis and Rs assigned to the states in the deterministic part, for future
+    std::map<unsigned, std::set<std::string>> Rname;
+    std::map<unsigned, std::set<unsigned>> phi1;
+    std::map<unsigned, std::set<unsigned>> phi2;
     // State-names C are in style of "1,2,3", these represent states Q of the former VWAA configuration
     auto sn = sdba->get_named_prop<std::vector<std::string>>("state-names");
     std::set<std::string> C[gnc];
