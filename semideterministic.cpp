@@ -178,8 +178,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     }
     if (negsdba->prop_semi_deterministic())
     {
-        if (debug == "1"){ std::cout << "Automaton is already semideterministic.\n"; }
-        return negsdba;
+        if (debug == "1"){ std::cout << "Automaton is already semideterministic. Continuing only because of debug mode.\n"; }
+        else { return negsdba; }
     }
 
     // Number of configurations C (states in the nondeterministic part)
