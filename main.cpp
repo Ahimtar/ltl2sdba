@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
 				vwaa->remove_unnecessary_marks();
 			}
 
-			if (print_phase & 1) {     // if print_phase is 1 or 3
+			if (print_phase & 1) { // If print_phase is 1 or 3
 				if (args["o"] == "dot") {
 					vwaa->print_dot();
 				} else {
@@ -157,7 +157,7 @@ int main(int argc, char* argv[])
 				}
 			}
 
-			if (print_phase & 2) {       // if print_phase is 2 or 3
+			if (print_phase & 2) { // If print_phase is 2 or 3
 
 				if (!o_spot_scc_filter && print_phase != 2) {
 					vwaa->remove_unreachable_states();
@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	//removing alternation and printing sDBA
+	// Removing alternation and printing SDBA
 	if (print_phase & 2) {
 
 		if (args["o"] == "dot") {
@@ -191,7 +191,6 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	// do not call bdd_done(), we use libbddx
-
+	// We do not call bdd_done(), as we use libbddx
 	return 0;
 }

@@ -21,9 +21,9 @@
 #include "semideterministic.hpp"
 
 std::vector<bdd> gAlphabet; // All the combinations of atomic propositions
-unsigned gnc; // Number of states of non-deterministic part of sdba
+unsigned gnc; // Number of states of non-deterministic part of SDBA
 
-// Converts a given VWAA to sDBA;
+// Converts a given VWAA to SDBA;
 spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
     // We first transform the VWAA into spot format
@@ -110,7 +110,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
         // Since we only work with "yes / no" (Buchi) acceptance, we can use the numbers differently:
         //  {} = 0 Means edge is not accepting
         // {0} = 1 Means edge is accepting
-        // {1} = 2 Means edge was accepting in vwaa, but will not be accepting in sdba
+        // {1} = 2 Means edge was accepting in vwaa, but will not be accepting in SDBA
         // We remove acceptance marks from all the edges, since no edge in the nondeterministic part is accepting
         for (auto& t: pvwaa->out(q))
         {
@@ -125,8 +125,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             }
         }
         if (debug == "1"){std::cout << "\n\n";}
-
-        // todo how to handle automata that dont accept at all? do we need to bother with them?
     }
 
 
@@ -399,11 +397,9 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         for (auto y : R){
             std::cout << y << ", ";
         }
-        std::cout << " Num of states of sdba: " << sdba->num_states();
+        std::cout << " Num of states of SDBA: " << sdba->num_states();
         std::cout << " Go:\n";
     }
-
-    // todo optimalization, if R is empty?
 
     // Note: "vwaa->num_states()-1" is the last state of the vwaa, which is always the TT state.
 
@@ -577,7 +573,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         }
 
 
-        // If the state is new, add all successors of this state to the sdba and connect them
+        // If the state is new, add all successors of this state to the SDBA and connect them
         if (addedStateNum == sdba->num_states()-1) {
             if (debug == "1"){std::cout << "\nAs the state is new, adding all succs";}
             addRCompStateSuccs(vwaa, sdba, addedStateNum, Conf, Rname, phi1, phi2, debug);
@@ -792,7 +788,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         // We need to check if this R-component state exists already
         // succStateNum is the number of the state if it exists, else value remains as a "new state" number:
         unsigned succStateNum = sdba->num_states();
-        if (debug == "1") { std::cout << "Succstatenum = sdbanumstates: " << succStateNum; }
+        if (debug == "1") { std::cout << "Succstatenum ( = number of SDBA states): " << succStateNum; }
         bool existsAlready = false;
 
         for (unsigned c = 0; c < sdba->num_states(); ++c) {
@@ -823,7 +819,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 for (auto x : R){
                     std::cout << x << ", ";
                 }
-                std::cout << "succp1: " << succp1 << "succp2: " << succp2 << " sdba num states: "
+                std::cout << "succp1: " << succp1 << "succp2: " << succp2 << " SDBA num states: "
                                                                              << sdba->num_states() << "\n";
             }
             if (debug == "1") { std::cout << "Also creating edge from C" << statenum << " to C"
@@ -863,7 +859,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
         }
 
-        // If the state is new, add all further successors of this successor to the sdba and connect them
+        // If the state is new, add all further successors of this successor to the SDBA and connect them
         if (!existsAlready) {
             if (debug == "1") { std::cout << "As this state is new, we are adding it's succs.\n"; }
             addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
