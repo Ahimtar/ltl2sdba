@@ -863,9 +863,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         // If the state is new, add all further successors of this successor to the sdba and connect them
         if (!existsAlready) {
             if (debug == "1") { std::cout << "As this state is new, we are adding it's succs.\n"; }
-            if (sdba->num_states() < 50) { // todo remove limit of states!
-                addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
-            }
+            addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
         }
 
     }
