@@ -405,8 +405,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
     // Note: "vwaa->num_states()-1" is the last state of the vwaa, which is always the TT state.
 
     // The phis of this state
-    bdd p1 = bdd_true(); // todo fix these to be EMPTY (by default false. when adding something, if p1 is false, replace it with that, else just bdd_add)
-    bdd p2 = bdd_true();
+    bdd p1 = bdd_false();
+    bdd p2 = bdd_false();
 
     // First we construct the edges from C into the R component by getting the correct phi1 and phi2
     unsigned nq = vwaa->num_states();
@@ -438,11 +438,22 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                                 if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
                                     if (debug == "1") { std::cout << "t.dst is not in R - adding " << tdst << " to phi1\n";
                                     std::cout << "phi1 before: " << p1; }
-                                    p1 = bdd_and(p1, bdd_ithvar(tdst));
-                                if (debug == "1") { std::cout << ", phi1 after: " << p1 << ".\n"; }
+
+                                    if (p1 == bdd_false()){
+                                        p1 = bdd_ithvar(tdst);
+                                    } else {
+                                        p1 = bdd_and(p1, bdd_ithvar(tdst));
+                                    }
+                                    if (debug == "1") { std::cout << ", phi1 after: " << p1 << ".\n"; }
+
                                 } else {
                                     if (debug == "1") {std::cout << "Adding true to phi1\n"; }
-                                    p1 = bdd_and(p1, bdd_true());
+
+                                    if (p1 == bdd_false()){
+                                        p1 = bdd_true();
+                                    } else {
+                                        p1 = bdd_and(p1, bdd_true());
+                                    }
                                 }
                             }
                         }
@@ -465,10 +476,20 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                                 // Replace the edges ending in R with TT
                                 if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
                                     if (debug == "1") { std::cout << "t.dst is not in R - adding " << tdst << " to phi1. "; }
-                                    p1 = bdd_and(p1, bdd_ithvar(tdst));
+
+                                    if (p1 == bdd_false()) {
+                                        p1 = bdd_ithvar(tdst);
+                                    } else {
+                                        p1 = bdd_and(p1, bdd_ithvar(tdst));
+                                    }
                                 } else {
                                     if (debug == "1") {std::cout << "Adding true to phi1\n"; }
-                                    p1 = bdd_and(p1, bdd_true());
+
+                                    if (p1 == bdd_false()){
+                                        p1 = bdd_true();
+                                    } else {
+                                        p1 = bdd_and(p1, bdd_true());
+                                    }
                                 }
                             }
                         }
@@ -476,7 +497,11 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                 }
                 if (debug == "1") { std::cout << "Adding q to phi2. \n"; }
                 // When q is in R, we always add it to phi2
-                p2 = bdd_and(p2, bdd_ithvar(q));
+                if (p2 == bdd_false()) {
+                    p2 = bdd_ithvar(q);
+                } else {
+                    p2 = bdd_and(p2, bdd_ithvar(q));
+                }
             }
         }
 
@@ -599,8 +624,8 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
     // For each edge label of the alphabet we compute phis of the reached state (succp1 and succp2)
     for (auto label : gAlphabet) {
 
-        succp1 = bdd_true(); // todo fix these to be EMPTY
-        succp2 = bdd_true();
+        succp1 = bdd_false();
+        succp2 = bdd_false();
 
         if (debug == "1") { std::cout << "\nWe check label: " << label << " for all q states: "; }
 
@@ -631,16 +656,31 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                 if (bdd_implies(bdd_ithvar(q), p1)) {
                                     if (R.find(std::to_string(tdst)) == R.end()) {
                                         if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi1\n"; }
-                                        succp1 = bdd_and(succp1, bdd_ithvar(tdst));
+
+                                        if (succp1 == bdd_false()){
+                                            succp1 = bdd_ithvar(tdst);
+                                        } else {
+                                            succp1 = bdd_and(succp1, bdd_ithvar(tdst));
+                                        }
                                     } else {
                                         if (debug == "1") {std::cout << "Adding true to succphi1\n"; }
-                                        succp1 = bdd_and(succp1, bdd_true());
+
+                                        if (succp1 == bdd_false()){
+                                            succp1 = bdd_true();
+                                        } else {
+                                            succp1 = bdd_and(succp1, bdd_true());
+                                        }
                                     }
                                 }
 
                                 if (bdd_implies(bdd_ithvar(q), p2)) {
                                     if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi2. \n"; }
-                                    succp2 = bdd_and(succp2, bdd_ithvar(tdst));
+
+                                    if (succp2 == bdd_false()) {
+                                        succp2 = bdd_ithvar(tdst);
+                                    } else {
+                                        succp2 = bdd_and(succp2, bdd_ithvar(tdst));
+                                    }
                                 }
                             }
                         }
@@ -664,16 +704,31 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                         if (bdd_implies(bdd_ithvar(q), p1)) {
                                             if (R.find(std::to_string(tdst)) == R.end()) {
                                                 if (debug == "1") {std::cout << "Adding tdst (" << tdst << ") to succphi1\n"; }
-                                                succp1 = bdd_and(succp1, bdd_ithvar(tdst));
+
+                                                if (succp1 == bdd_false()){
+                                                    succp1 = bdd_ithvar(tdst);
+                                                } else {
+                                                    succp1 = bdd_and(succp1, bdd_ithvar(tdst));
+                                                }
                                             } else {
                                                 if (debug == "1") {std::cout << "Adding true to succphi1\n"; }
-                                                succp1 = bdd_and(succp1, bdd_true());
+
+                                                if (succp1 == bdd_false()){
+                                                    succp1 = bdd_true();
+                                                } else {
+                                                    succp1 = bdd_and(succp1, bdd_true());
+                                                }
                                             }
                                         }
 
                                         if (bdd_implies(bdd_ithvar(q), p2)) {
                                             if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi2. \n"; }
-                                            succp2 = bdd_and(succp2, bdd_ithvar(tdst));
+
+                                            if (succp2 == bdd_false()) {
+                                                succp2 = bdd_ithvar(tdst);
+                                            } else {
+                                                succp2 = bdd_and(succp2, bdd_ithvar(tdst));
+                                            }
                                         }
                                     }
                                 }
@@ -691,21 +746,38 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             // We make this the breakpoint and change succp1 and succp2 completely
             if (debug == "1") { std::cout << "Succphi1 is true, changing succp1 and 2 a lot\n"; }
 
-            succp1 = bdd_true(); // todo change this into EMPTY
+            succp1 = bdd_false();
+
             for (unsigned q = 0; q < gnc; q++){
                 if (bdd_implies(bdd_ithvar(q), succp2)) {
                     if (R.find(std::to_string(q)) == R.end()) {
                         if (debug == "1") { std::cout << "Adding q: " << q << " to succphi1\n"; }
-                        succp1 = bdd_and(succp1, bdd_ithvar(q));
+
+                        if (succp1 == bdd_false()){
+                            succp1 = bdd_ithvar(q);
+                        } else {
+                            succp1 = bdd_and(succp1, bdd_ithvar(q));
+                        }
                     } else {
-                        if (debug == "1") {std::cout << "Adding not q: " << q << ", but true to succphi1\n"; }
-                        succp1 = bdd_and(succp1, bdd_true());
+                        if (debug == "1") {std::cout << "Not adding q: " << q << ", but true to succphi1\n"; }
+
+                        if (succp1 == bdd_false()){
+                            succp1 = bdd_true();
+                        } else {
+                            succp1 = bdd_and(succp1, bdd_true());
+                        }
                     }
                 }
             }
-            succp2 = bdd_true(); // todo change this into EMPTY
+            succp2 = bdd_false();
+
             for (auto qs : R) {
-                succp2 = bdd_and(succp2, bdd_ithvar(stoi(qs)));
+
+                if (succp2 == bdd_false()){
+                    succp2 = bdd_ithvar(stoi(qs));
+                } else {
+                    succp2 = bdd_and(succp2, bdd_ithvar(stoi(qs)));
+                }
             }
             accepting = true;
 
