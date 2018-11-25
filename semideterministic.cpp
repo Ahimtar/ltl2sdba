@@ -104,6 +104,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             }
         }
 
+        if (debug == "1"){ std::cout << "Setting acceptance."; }
         // Setting acceptance
 
         // Since we only work with "yes / no" (Buchi) acceptance, we can use the numbers differently:
@@ -123,14 +124,16 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
                 }
             }
         }
-        if (debug == "1"){std::cout << "\n";}
+        if (debug == "1"){std::cout << "\n\n";}
 
         // todo how to handle automata that dont accept at all? do we need to bother with them?
     }
 
+
     // In gAlphabet variable, we store the set of all edge labels
     // (not only "a", "b", but also "and"-formulae: "a&b". not "a|b".)
     // Here, we create the alphabet by adding all possible labels using power-set construction
+    if (debug == "1"){ std::cout << "Setting the alphabet. "; }
 
     // pow(2, pvwaa->ap().size()) is the amount of all combinations of labels = num of letters in the final alphabet
     for (int i = 0; i < pow(2, pvwaa->ap().size()); i++){
@@ -148,7 +151,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     }
 
     if (debug == "1"){
-        std::cout << "The alphabet: ";
+        std::cout << "It is: ";
         for (auto letter : gAlphabet){
             std::cout << letter;
         }

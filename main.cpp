@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
 			<< "\t\t2\tltl3ba's improved check (default)\n"
 			<< "\t-g[0|1]\tprint debug messages (default off)\n"
 			<< "\t-h, -?\tprint this help\n"
-			<< "\t-i[0|1]\tproduce VWAA with one initial state (default off)\n"
+			<< "\t-i[0|1]\tproduce VWAA with one initial state (default off for printing phase 1, otherwise fixed as on)\n"
 			<< "\t-m[0|1]\tcheck formula for containment of some alpha-mergeable U (default off)\n"
 			<< "\t-n[0|1]\ttry translating !f and complementing the automaton (default on) -currently disabled function\n"
 			<< "\t-o [hoa|dot]\ttype of output\n"
@@ -105,7 +105,6 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	o_single_init_state = std::stoi(args["i"]);
 	o_vwaa_determ = std::stoi(args["d"]);
 	o_eq_level = std::stoi(args["e"]);
 	o_mergeable_info = std::stoi(args["m"]);
@@ -117,6 +116,12 @@ int main(int argc, char* argv[])
 
 	unsigned int print_phase = std::stoi(args["p"]);
 	unsigned int try_negation = std::stoi(args["n"]);
+
+    if (print_phase & 1) {
+        o_single_init_state = std::stoi(args["i"]);
+    } else {
+        o_single_init_state = 1;
+    }
 
 	spot::twa_graph_ptr sdba = nullptr;
 
