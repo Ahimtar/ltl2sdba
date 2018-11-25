@@ -405,17 +405,20 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
     // Note: "vwaa->num_states()-1" is the last state of the vwaa, which is always the TT state.
 
     // The phis of this state
-    bdd p1;
-    bdd p2;
+    bdd p1 = bdd_true(); // todo fix these to be EMPTY (by default false. when adding something, if p1 is false, replace it with that, else just bdd_add)
+    bdd p2 = bdd_true();
 
     // First we construct the edges from C into the R component by getting the correct phi1 and phi2
     unsigned nq = vwaa->num_states();
+
+    bdd_setvarnum(sdba->num_states());
 
     // For each edge label ("a,b,c", "a,b,!c", "a,!b,c"...) of the alphabet
     for (auto label : gAlphabet){
 
         for (unsigned q = 0; q < nq; ++q) {
             if (debug == "1") { std::cout << "\nFor label: " << label << ", checking q: " << q << ". "; }
+
             // To deal with phi1, q either needs to not be in R, or see below *
             if (R.find(std::to_string(q)) == R.end()) {
                 if (debug == "1") { std::cout << "q is not in R. \n"; }
@@ -426,17 +429,20 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                         for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                             if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " t.cond: " << t.cond
                                                           << " label: " << label << ". \n"; }
+
+                            // If t.cond contains this label as one of the conjunctions
                             if (bdd_implies(label, t.cond)) {
-                            //if (gExact || t.cond == bdd_true()) {
                                 if (debug == "1") { std::cout << "This t.cond is the same as label. "; }
+
                                 // Replace the edges ending in R with TT
                                 if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
-                                    if (debug == "1") {
-                                        std::cout << "t.dst is not in R - adding " << tdst << " to phi1\n";
-                                    }
-                                    p1.bdd_and(p1, bdd_ithvar(tdst));
+                                    if (debug == "1") { std::cout << "t.dst is not in R - adding " << tdst << " to phi1\n";
+                                    std::cout << "phi1 before: " << p1; }
+                                    p1 = bdd_and(p1, bdd_ithvar(tdst));
+                                if (debug == "1") { std::cout << ", phi1 after: " << p1 << ".\n"; }
                                 } else {
-                                    p1.bdd_and(p1, bdd_true());
+                                    if (debug == "1") {std::cout << "Adding true to phi1\n"; }
+                                    p1 = bdd_and(p1, bdd_true());
                                 }
                             }
                         }
@@ -448,19 +454,21 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                     for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                         if (debug == "1") { std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
                                                       << " label: " << label << ". \n"; }
+
                         // If t.cond contains this label as one of the conjunctions
                         if (bdd_implies(label, t.cond)) {
                             if (debug == "1") { std::cout << "This t.cond is the same as label. "; }
+
                             if ((Conf.find(std::to_string(q)) != Conf.end()) && t.acc == 0) {  // this is a correct mod. tr.
                                 if (debug == "1") { std::cout << "q is in Conf and e is not acc. \n"; }
+
                                 // Replace the edges ending in R with TT
                                 if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
-                                    if (debug == "1") {
-                                        std::cout << "t.dst is not in R - adding " << tdst << " to phi1\n";
-                                    }
-                                    p1.bdd_and(p1, bdd_ithvar(tdst));
+                                    if (debug == "1") { std::cout << "t.dst is not in R - adding " << tdst << " to phi1. "; }
+                                    p1 = bdd_and(p1, bdd_ithvar(tdst));
                                 } else {
-                                    p1.bdd_and(p1, bdd_true());
+                                    if (debug == "1") {std::cout << "Adding true to phi1\n"; }
+                                    p1 = bdd_and(p1, bdd_true());
                                 }
                             }
                         }
@@ -468,7 +476,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                 }
                 if (debug == "1") { std::cout << "Adding q to phi2. \n"; }
                 // When q is in R, we always add it to phi2
-                p2.bdd_and(p2, bdd_ithvar(q));
+                p2 = bdd_and(p2, bdd_ithvar(q));
             }
         }
 
@@ -516,6 +524,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
             phi2[sdba->num_states() - 1] = p2;
             //(*(sdba->get_named_prop(<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; //todo name states?
             sdba->new_edge(ci, addedStateNum, label, {});
+            bdd_setvarnum(sdba->num_states());
         } else {
             bool connected = false;
             // If the state already exists, we check if there is an edge leading there from the current state
@@ -593,16 +602,14 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         succp1 = bdd_true(); // todo fix these to be EMPTY
         succp2 = bdd_true();
 
-        if (debug == "1") { if (debug == "1") { std::cout << "\nWe check label: " << label; }
-        }
-
-        if (debug == "1") { std::cout << "\nFor all q states: "; }
+        if (debug == "1") { std::cout << "\nWe check label: " << label << " for all q states: "; }
 
         // We are checking all states of q that are in phi1 or phi2
         for (unsigned q = 0; q < gnc; q++){
+
             if (debug == "1") { std::cout << "\nChecking q: " << q << ". "; }
             if ((bdd_implies(bdd_ithvar(q), p1)) || (bdd_implies(bdd_ithvar(q), p2))){
-                if (debug == "1") { std::cout << " It implies p1 or p2.\n"; }
+                if (debug == "1") { std::cout << " It implies (is in) p1 (" << p1 << ") or p2 (" << p2 << ") .\n"; }
 
                 // If edge under label is a correct m.t., add its follower to succp1 and/or succp2
 
@@ -623,15 +630,17 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                 // Add the successors of p1 and p2
                                 if (bdd_implies(bdd_ithvar(q), p1)) {
                                     if (R.find(std::to_string(tdst)) == R.end()) {
-                                        if (debug == "1") { std::cout << "adding tdst (" << tdst << ") to succphi1\n"; }
-                                        succp1.bdd_and(succp1, bdd_ithvar(tdst));
+                                        if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi1\n"; }
+                                        succp1 = bdd_and(succp1, bdd_ithvar(tdst));
                                     } else {
-                                        succp1.bdd_and(succp1, bdd_true());
+                                        if (debug == "1") {std::cout << "Adding true to succphi1\n"; }
+                                        succp1 = bdd_and(succp1, bdd_true());
                                     }
                                 }
 
                                 if (bdd_implies(bdd_ithvar(q), p2)) {
-                                        succp2.bdd_and(succp2, bdd_true());
+                                    if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi2. \n"; }
+                                    succp2 = bdd_and(succp2, bdd_ithvar(tdst));
                                 }
                             }
                         }
@@ -639,6 +648,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 } else { // * or q must be in Conf && edge must not be accepting
                     if (debug == "1") { std::cout << "It's in R. \n"; }
                     if (Conf.find(std::to_string(q)) != Conf.end()) {
+                        // Find the edge under "label"
                         for (auto &t: vwaa->out(q)) {
                             for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                                 if (debug == "1") {
@@ -653,16 +663,17 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                         // Add the successors of p1 and p2
                                         if (bdd_implies(bdd_ithvar(q), p1)) {
                                             if (R.find(std::to_string(tdst)) == R.end()) {
-                                                if (debug == "1") {std::cout << "adding tdst (" << tdst << ") to succphi1\n"; }
-                                                succp1.bdd_and(succp1, bdd_ithvar(tdst));
+                                                if (debug == "1") {std::cout << "Adding tdst (" << tdst << ") to succphi1\n"; }
+                                                succp1 = bdd_and(succp1, bdd_ithvar(tdst));
                                             } else {
-                                                succp1.bdd_and(succp1, bdd_true());
+                                                if (debug == "1") {std::cout << "Adding true to succphi1\n"; }
+                                                succp1 = bdd_and(succp1, bdd_true());
                                             }
                                         }
 
                                         if (bdd_implies(bdd_ithvar(q), p2)) {
-                                            if (debug == "1") { std::cout << " added tdst (" << tdst << ")  to succphi2. \n"; }
-                                            succp2.bdd_and(succp2, bdd_ithvar(tdst));
+                                            if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi2. \n"; }
+                                            succp2 = bdd_and(succp2, bdd_ithvar(tdst));
                                         }
                                     }
                                 }
@@ -676,18 +687,25 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         if (debug == "1") { std::cout << " Done foralling. \n"; }
         bool accepting = false;
 
-        if (succp1 = bdd_true()) {
+        if (succp1 == bdd_true()) {
             // We make this the breakpoint and change succp1 and succp2 completely
-            if (debug == "1") { std::cout << "Succphi1 is empty, changing succp1 and 2 a lot\n"; }
-            for (auto q : succp2) { // todo fix
-                if (R.find(std::to_string(q)) == R.end()) { // If q was in R, we'd add TT
-                    if (debug == "1") { std::cout << "Adding q: " << q << " to succphi1\n"; }
-                    succp1.bdd_and(succp1, bdd_ithvar(q));
+            if (debug == "1") { std::cout << "Succphi1 is true, changing succp1 and 2 a lot\n"; }
+
+            succp1 = bdd_true(); // todo change this into EMPTY
+            for (unsigned q = 0; q < gnc; q++){
+                if (bdd_implies(bdd_ithvar(q), succp2)) {
+                    if (R.find(std::to_string(q)) == R.end()) {
+                        if (debug == "1") { std::cout << "Adding q: " << q << " to succphi1\n"; }
+                        succp1 = bdd_and(succp1, bdd_ithvar(q));
+                    } else {
+                        if (debug == "1") {std::cout << "Adding not q: " << q << ", but true to succphi1\n"; }
+                        succp1 = bdd_and(succp1, bdd_true());
+                    }
                 }
             }
             succp2 = bdd_true(); // todo change this into EMPTY
-            for (auto q : R) {
-                succp2.bdd_and(succp2, bdd_ithvar(q));
+            for (auto qs : R) {
+                succp2 = bdd_and(succp2, bdd_ithvar(stoi(qs)));
             }
             accepting = true;
 
@@ -725,6 +743,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             Rname[succStateNum] = R;
             phi1[succStateNum] = succp1;
             phi2[succStateNum] = succp2;
+            bdd_setvarnum(sdba->num_states());
             if (debug == "1") { std::cout << "This state is new. State num: " << succStateNum << ", R: ";
                 for (auto x : R){
                     std::cout << x << ", ";
