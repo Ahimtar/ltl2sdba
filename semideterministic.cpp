@@ -412,10 +412,10 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
     // First we construct the edges from C into the R component by getting the correct phi1 and phi2
     unsigned nq = vwaa->num_states();
-    const spot::bdd_dict_ptr dict = sdba->get_dict();
 
     // For each edge label ("a,b,c", "a,b,!c", "a,!b,c"...) of the alphabet
     for (auto label : gAlphabet){
+
         for (unsigned q = 0; q < nq; ++q) {
             if (debug == "1") { std::cout << "\nFor label: " << label << ", checking q: " << q << ". "; }
             // To deal with phi1, q either needs to not be in R, or see below *
@@ -612,8 +612,6 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
     // The phis for the successor state (will reset for each added state)
     std::set<unsigned> succp1;
     std::set<unsigned> succp2;
-
-    const spot::bdd_dict_ptr dict = sdba->get_dict();
 
     // For each edge label of the alphabet we compute phis of the reached state (succp1 and succp2)
     for (auto label : gAlphabet) {
