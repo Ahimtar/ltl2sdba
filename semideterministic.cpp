@@ -381,8 +381,6 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
         if (debug == "1"){std::cout << " NO! Check another: \n";}
         createDetPart(vwaa, ci, Conf, remaining, R, isqmay, isqmust, sdba, Rname, phi1, phi2, debug);
     }
-
-    return;
 }
 
 void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
@@ -593,17 +591,22 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
     for (auto label : gAlphabet) {
 
         succp1 = bdd_true(); // todo fix these to be EMPTY
-        succp1 = bdd_true();
+        succp2 = bdd_true();
 
         if (debug == "1") { if (debug == "1") { std::cout << "\nWe check label: " << label; }
         }
 
-        if (debug == "1") { std::cout << "\nFor all q states of p1: "; }
-        // Go through all states q of p1. For each, if edge under label is a correct m.t., add its follower to succp1
-        for (auto q : p1){ // todo fix
-            if (q < gnc){ // Only check states from Q
-                if (debug == "1") { std::cout << "\nChecking q: " << q << ". "; }
-                // To deal with phi1, q either needs to not be in R, or see below *
+        if (debug == "1") { std::cout << "\nFor all q states: "; }
+
+        // We are checking all states of q that are in phi1 or phi2
+        for (unsigned q = 0; q < gnc; q++){
+            if (debug == "1") { std::cout << "\nChecking q: " << q << ". "; }
+            if ((bdd_implies(bdd_ithvar(q), p1)) || (bdd_implies(bdd_ithvar(q), p2))){
+                if (debug == "1") { std::cout << " It implies p1 or p2.\n"; }
+
+                // If edge under label is a correct m.t., add its follower to succp1 and/or succp2
+
+                // To deal with phis, q either needs to not be in R, or see below *
                 if ((R.find(std::to_string(q)) == R.end())) {
                     if (debug == "1") { std::cout << "It's not in R. \n"; }
                     // Find the edge under "label"
@@ -616,92 +619,51 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                             // If t.cond contains this label as one of the conjunctions
                             if (bdd_implies(label, t.cond)) {
                                 if (debug == "1") { std::cout << "<-the label is right. "; }
-                                if (R.find(std::to_string(tdst)) == R.end()) {
-                                    if (debug == "1") { std::cout << "adding tdst (" << tdst << ") to succphi1\n"; }
-                                    succp1.bdd_and(succp1, bdd_ithvar(tdst));
-                                } else {
-                                    succp1.bdd_and(succp1, bdd_true());
+
+                                // Add the successors of p1 and p2
+                                if (bdd_implies(bdd_ithvar(q), p1)) {
+                                    if (R.find(std::to_string(tdst)) == R.end()) {
+                                        if (debug == "1") { std::cout << "adding tdst (" << tdst << ") to succphi1\n"; }
+                                        succp1.bdd_and(succp1, bdd_ithvar(tdst));
+                                    } else {
+                                        succp1.bdd_and(succp1, bdd_true());
+                                    }
+                                }
+
+                                if (bdd_implies(bdd_ithvar(q), p2)) {
+                                        succp2.bdd_and(succp2, bdd_true());
                                 }
                             }
                         }
                     }
-                } else { // * or q must be in C && edge must not be accepting
+                } else { // * or q must be in Conf && edge must not be accepting
                     if (debug == "1") { std::cout << "It's in R. \n"; }
                     if (Conf.find(std::to_string(q)) != Conf.end()) {
                         for (auto &t: vwaa->out(q)) {
                             for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                                 if (debug == "1") {
-                                    std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
+                                    std::cout << "Q is in Conf. E " << t.src << "-" << tdst << " t.cond:" << t.cond
                                               << " label: " << label << ". \n";
                                 }
                                 if (t.acc == 0) {
                                     // If t.cond contains this label as one of the conjunctions
                                     if (bdd_implies(label, t.cond)) {
                                         if (debug == "1") { std::cout << "<- not accepting and the label is right. "; }
-                                        if (R.find(std::to_string(tdst)) == R.end()) {
-                                            if (debug == "1") {
-                                                std::cout << "adding tdst (" << tdst << ") to succphi1\n";
-                                            }
-                                            succp1.bdd_and(succp1, bdd_ithvar(tdst));
-                                        } else {
-                                            succp1.bdd_and(succp1, bdd_true());
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
-        if (debug == "1") { std::cout << "\nFor all q states of p2: "; }
-        // Go through all states q of p2. For each, if edge under label is correct m.t., add its follower to succp2
-        for (auto q : p2){ // todo fix
-            if (q < gnc) {
-                if (debug == "1") { std::cout << "\nChecking q: " << q << ". "; }
-                // To deal with phi1, q either needs to not be in R, or see below *
-                if ((R.find(std::to_string(q)) == R.end())) {
-                    if (debug == "1") { std::cout << "It's not in R. \n"; }
-                    // Find the edge under "label"
-                    for (auto &t: vwaa->out(q)) {
-                        for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                            if (debug == "1") {
-                                std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
-                                          << " label: " << label << ". \n";
-                            }
-                            // If t.cond contains this label as one of the conjunctions
-                            if (bdd_implies(label, t.cond)) {
-                                if (debug == "1") { std::cout << " added tdst (" << tdst << ") to succphi2. \n"; }
-                                succp2.bdd_and(succp2, bdd_ithvar(tdst));
-                            } else {
-                                succp2.bdd_and(succp2, bdd_true());
-                            }
-                        }
-                    }
-                } else { // * or q must be in C && edge must not be accepting
-                    if (debug == "1") { std::cout << "It's in R. \n"; }
-                    if (Conf.find(std::to_string(q)) != Conf.end()) {
-                        for (auto &t: vwaa->out(q)) {
-                            for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                                if (debug == "1") {
-                                    std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
-                                              << " label: " << label << ". \n";
-                                }
-                                if (t.acc == 0) {
-                                    if (debug == "1") {
-                                        std::cout << "q is in Conf and e is not acc. Tcond " << t.cond
-                                                  << "(the label we check), bddlabel we are looking for: "
-                                                  << label << ".\n";
-                                    }
-                                    // If t.cond contains this label as one of the conjunctions
-                                    if (bdd_implies(label, t.cond)) {
-                                        if (debug == "1") {
-                                            std::cout << " added tdst (" << tdst << ")  to succphi2. \n";
+                                        // Add the successors of p1 and p2
+                                        if (bdd_implies(bdd_ithvar(q), p1)) {
+                                            if (R.find(std::to_string(tdst)) == R.end()) {
+                                                if (debug == "1") {std::cout << "adding tdst (" << tdst << ") to succphi1\n"; }
+                                                succp1.bdd_and(succp1, bdd_ithvar(tdst));
+                                            } else {
+                                                succp1.bdd_and(succp1, bdd_true());
+                                            }
                                         }
-                                        succp2.bdd_and(succp2, bdd_ithvar(tdst));
-                                    } else {
-                                        succp2.bdd_and(succp2, bdd_true());
+
+                                        if (bdd_implies(bdd_ithvar(q), p2)) {
+                                            if (debug == "1") { std::cout << " added tdst (" << tdst << ")  to succphi2. \n"; }
+                                            succp2.bdd_and(succp2, bdd_ithvar(tdst));
+                                        }
                                     }
                                 }
                             }
