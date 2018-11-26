@@ -50,7 +50,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     }
     auto pvwaa = pvwaaptr->aut;
 
-
     // We have VWAA parsed. Now, we assign Qmays and Qmusts and remove acceptance marks
 
     int nq = pvwaa->num_states();
@@ -123,10 +122,10 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
                     if (debug == "1") { std::cout << "We set acc to " << t.acc << ". "; }
                 }
             }
+            if (debug == "1") { std::cout << "So it is " << t.acc << ". "; }
         }
         if (debug == "1"){std::cout << "\n\n";}
     }
-
 
     // In gAlphabet variable, we store the set of all edge labels
     // (not only "a", "b", but also "and"-formulae: "a&b". not "a|b".)
@@ -163,25 +162,26 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     sdba->prop_state_acc(spot::trival(false));
 
     // First, we check whether this automaton is not already semideterministic
-    // Since our VWAA uses co-Buchi acceptation, we need to negate the edges first
+    /* Since our VWAA uses co-Buchi acceptation, we need to negate the edges first
     spot::twa_graph_ptr negsdba = sdba;
 
     if (debug == "1"){ std::cout << "Testing if automaton is not semideterministic already.\n"; }
     for (auto& nedge : negsdba->edges())
     {
-        if (debug == "1"){ std::cout << "Edge" << nedge.src << "-" << nedge.dst << ", acc: " << nedge.acc; }
+        if (debug == "1"){ std::cout << "Edge " << nedge.src << "-" << nedge.dst << ", label: " << nedge.cond
+                                     << ", acc: " << nedge.acc; }
         if (nedge.acc != 0){
             nedge.acc = 0;
         } else {
             nedge.acc = 1;
         }
-        if (debug == "1"){ std::cout << ", new acc: " << nedge.acc << "\n"; }
+        if (debug == "1"){ std::cout << ", neg acc: " << nedge.acc << "\n"; }
     }
     if (negsdba->prop_semi_deterministic())
     {
         if (debug == "1"){ std::cout << "Automaton is already semideterministic. Continuing only because of debug mode.\n"; }
         else { return negsdba; }
-    }
+    }*/
 
     // Number of configurations C (states in the nondeterministic part)
     gnc = sdba->num_states();
@@ -608,7 +608,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         for (auto x : Rname[statenum]){
             std::cout << x << ", ";
         }
-        std::cout << "phi1: " << phi1[statenum] << "phi2: " << phi2[statenum] << ".)\n";
+        std::cout << "phi1: " << phi1[statenum] << ", phi2: " << phi2[statenum] << ")\n";
     }
 
     // The R and phis of the state we are adding successors of
@@ -626,14 +626,14 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         succp1 = bdd_false();
         succp2 = bdd_false();
 
-        if (debug == "1") { std::cout << "\nWe check label: " << label << " for all q states: "; }
+        if (debug == "1") { std::cout << "\n(State " << statenum << ") We check label: " << label << " for all q states: "; }
 
         // We are checking all states of q that are in phi1 or phi2
         for (unsigned q = 0; q < gnc; q++){
 
-            if (debug == "1") { std::cout << "\nChecking q: " << q << ". "; }
+            if (debug == "1") { std::cout << "\nChecking q: " << q << ". Is it in p1/p2?\n"; }
             if ((bdd_implies(bdd_ithvar(q), p1)) || (bdd_implies(bdd_ithvar(q), p2))){
-                if (debug == "1") { std::cout << " It implies (is in) p1 (" << p1 << ") or p2 (" << p2 << ") .\n"; }
+                if (debug == "1") { std::cout << "Yes, q implies (= is in) p1 (" << p1 << ") or p2 (" << p2 << ").\n"; }
 
                 // If edge under label is a correct m.t., add its follower to succp1 and/or succp2
 
@@ -738,7 +738,30 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
         }
 
-        if (debug == "1") { std::cout << " Done foralling. \n"; }
+        // We also add the states of Phis which do not belong to Qs
+        if (debug == "1") { std::cout << "Adding non-q states.\n"; }
+        for (unsigned q = gnc; q < sdba->num_states(); q++){
+            if (debug == "1") { std::cout << "State: " << q << "?\n"; }
+            if (bdd_implies(bdd_ithvar(q), p1)) {
+                if (succp1 == bdd_false()){
+                    succp1 = bdd_ithvar(q);
+                } else {
+                    succp1 = bdd_and(succp1, bdd_ithvar(q));
+                }
+                if (debug == "1") { std::cout << "Added to succphi1 (now: " << succp1 << "). "; }
+            }
+
+            if (bdd_implies(bdd_ithvar(q), p2)) {
+                if (succp2 == bdd_false()){
+                    succp2 = bdd_ithvar(q);
+                } else {
+                    succp2 = bdd_and(succp2, bdd_ithvar(q));
+                }
+                if (debug == "1") { std::cout << "Added to succphi2 (now: " << succp2 << "). "; }
+            }
+        }
+
+        if (debug == "1") { std::cout << "Done foralling. \n"; }
         bool accepting = false;
 
         if (succp1 == bdd_true()) {
@@ -797,7 +820,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 for (auto x : Rname[c]) {
                     std::cout << x << ", ";
                 }
-                std::cout << "phi1: " << phi1[c] << "phi2: " << phi2[c];
+                std::cout << "phi1: " << phi1[c] << ", phi2: " << phi2[c];
             }
             if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2) {
                 succStateNum = c;
