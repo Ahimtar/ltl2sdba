@@ -634,6 +634,15 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         succp1 = bdd_false();
         succp2 = bdd_false();
 
+        if (p1 == bdd_true()){ // todo FIX THIS. These should not automatically remain true, instead, phi1 = true means all states are in.
+            if (debug == "1") { std::cout << "Succphi1 remains true here.\n"; }
+            succp1 = bdd_true();
+        }
+        if (p2 == bdd_true()){
+            if (debug == "1") { std::cout << "Succphi2 remains true here.\n"; }
+            succp2 = bdd_true();
+        }
+
         if (debug == "1") { std::cout << "\n(State " << statenum << ") We check label: " << label << " for all q states: "; }
 
         // We are checking all states of q that are in phi1 or phi2
@@ -779,7 +788,8 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             succp1 = bdd_false();
 
             for (unsigned q = 0; q < gnc; q++){
-                if (bdd_implies(bdd_ithvar(q), succp2)) {
+                // If q is in succp2
+                if (bdd_implies(succp2, bdd_ithvar(q))) {
                     if (R.find(std::to_string(q)) == R.end()) {
                         if (debug == "1") { std::cout << "Adding q: " << q << " to succphi1\n"; }
 
@@ -801,8 +811,9 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
             succp2 = bdd_false();
 
+            if (debug == "1") { std::cout << "Also changing succp2 to all states of R.\n"; }
+            // Adding all states of R to succp2
             for (auto qs : R) {
-
                 if (succp2 == bdd_false()){
                     succp2 = bdd_ithvar(stoi(qs));
                 } else {
@@ -810,10 +821,6 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 }
             }
             accepting = true;
-
-            if (debug == "1") {
-                std::cout << "New values: succphi1: " << succp1 << "succphi2: " << succp2;
-            }
         }
 
         // We need to check if this R-component state exists already
@@ -824,24 +831,24 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         bool existsAlready = false;
 
         // If Phi1 is false, we do not need to add the state/edge unless this edge is accepting
-        if ((accepting) && (succp1 != bdd_false())) {
+        if ((accepting) || (succp1 != bdd_false())) {
 
-        for (unsigned c = 0; c < sdba->num_states(); ++c) {
-            if (debug == "1") {
-                std::cout << "\nTry c: " << c << " Rname: ";
-                for (auto x : Rname[c]) {
-                    std::cout << x << ", ";
+            for (unsigned c = 0; c < sdba->num_states(); ++c) {
+                if (debug == "1") {
+                    std::cout << "\nTry c: " << c << " Rname: ";
+                    for (auto x : Rname[c]) {
+                        std::cout << x << ", ";
+                    }
+                    std::cout << "phi1: " << phi1[c] << ", phi2: " << phi2[c];
                 }
-                std::cout << "phi1: " << phi1[c] << ", phi2: " << phi2[c];
+                if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2) {
+                    succStateNum = c;
+                    existsAlready = true;
+                    if (debug == "1") { std::cout << " < this!"; }
+                    break;
+                }
             }
-            if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2) {
-                succStateNum = c;
-                existsAlready = true;
-                if (debug == "1") { std::cout << " < this!"; }
-                break;
-            }
-        }
-        if (debug == "1") { std::cout << "\nSuccstatenum: " << succStateNum << "\n"; }
+            if (debug == "1") { std::cout << "\nSuccstatenum: " << succStateNum << "\n"; }
 
             // If the state doesn't exist yet, we create it with "sdba->num_states()-1" becoming its new number
             if (succStateNum == sdba->num_states()) {   // the same as "if !existsAlready"
@@ -880,7 +887,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                     if (t.dst == succStateNum && (((t.acc != 0 && accepting) || (t.acc == 0 && !accepting)))) {
                         if (debug == "1") {
                             std::cout << "Adding new label to the edge under OR: " << t.src << "-" << t.dst
-                                      << " bdd:" << t.cond << " bddithvarlabel" << label << ". \n";
+                                      << ", bdd:" << t.cond << ", bddithvarlabel" << label << ", acc " << t.acc << "\n";
                         }
                         connected = true;
                         t.cond = bdd_or(t.cond, label);
