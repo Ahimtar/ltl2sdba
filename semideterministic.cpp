@@ -738,7 +738,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
         }
 
-        // We also add the states of Phis which do not belong to Qs
+        /* We also add the states of Phis which do not belong to Qs
         if (debug == "1") { std::cout << "Adding non-q states.\n"; }
         for (unsigned q = gnc; q < sdba->num_states(); q++){
             if (debug == "1") { std::cout << "State: " << q << "?\n"; }
@@ -759,7 +759,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 }
                 if (debug == "1") { std::cout << "Added to succphi2 (now: " << succp2 << "). "; }
             }
-        }
+        }*/
 
         if (debug == "1") { std::cout << "Done foralling. \n"; }
         bool accepting = false;
