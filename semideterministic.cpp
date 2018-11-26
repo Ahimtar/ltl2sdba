@@ -632,8 +632,8 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         for (unsigned q = 0; q < gnc; q++){
 
             if (debug == "1") { std::cout << "\nChecking q: " << q << ". Is it in p1/p2?\n"; }
-            if ((bdd_implies(bdd_ithvar(q), p1)) || (bdd_implies(bdd_ithvar(q), p2))){
-                if (debug == "1") { std::cout << "Yes, q implies (= is in) p1 (" << p1 << ") or p2 (" << p2 << ").\n"; }
+            if ((bdd_implies(p1, bdd_ithvar(q))) || (bdd_implies(p2, bdd_ithvar(q)))){
+                if (debug == "1") { std::cout << "Yes, q is implied by (= is in) p1 (" << p1 << ") or p2 (" << p2 << ").\n"; }
 
                 // If edge under label is a correct m.t., add its follower to succp1 and/or succp2
 
@@ -652,7 +652,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                 if (debug == "1") { std::cout << "<-the label is right. "; }
 
                                 // Add the successors of p1 and p2
-                                if (bdd_implies(bdd_ithvar(q), p1)) {
+                                if (bdd_implies(p1, bdd_ithvar(q))) {
                                     if (R.find(std::to_string(tdst)) == R.end()) {
                                         if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi1\n"; }
 
@@ -672,7 +672,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                     }
                                 }
 
-                                if (bdd_implies(bdd_ithvar(q), p2)) {
+                                if (bdd_implies(p2, bdd_ithvar(q))) {
                                     if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi2. \n"; }
 
                                     if (succp2 == bdd_false()) {
@@ -700,7 +700,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                         if (debug == "1") { std::cout << "<- not accepting and the label is right. "; }
 
                                         // Add the successors of p1 and p2
-                                        if (bdd_implies(bdd_ithvar(q), p1)) {
+                                        if (bdd_implies(p1, bdd_ithvar(q))) {
                                             if (R.find(std::to_string(tdst)) == R.end()) {
                                                 if (debug == "1") {std::cout << "Adding tdst (" << tdst << ") to succphi1\n"; }
 
@@ -720,7 +720,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                             }
                                         }
 
-                                        if (bdd_implies(bdd_ithvar(q), p2)) {
+                                        if (bdd_implies(p2, bdd_ithvar(q))) {
                                             if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi2. \n"; }
 
                                             if (succp2 == bdd_false()) {
