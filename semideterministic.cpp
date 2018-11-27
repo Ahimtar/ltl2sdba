@@ -402,8 +402,6 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         std::cout << " Go:\n";
     }
 
-    // Note: "vwaa->num_states()-1" is the last state of the vwaa, which is always the TT state.
-
     // The phis of this state
     bdd p1 = bdd_false();
     bdd p2 = bdd_false();
@@ -757,29 +755,6 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 }
             }
         }
-
-        /* We also add the states of Phis which do not belong to Qs
-        if (debug == "1") { std::cout << "Adding non-q states.\n"; }
-        for (unsigned q = gnc; q < sdba->num_states(); q++){
-            if (debug == "1") { std::cout << "State: " << q << "?\n"; }
-            if (bdd_implies(bdd_ithvar(q), p1)) {
-                if (succp1 == bdd_false()){
-                    succp1 = bdd_ithvar(q);
-                } else {
-                    succp1 = bdd_and(succp1, bdd_ithvar(q));
-                }
-                if (debug == "1") { std::cout << "Added to succphi1 (now: " << succp1 << "). "; }
-            }
-
-            if (bdd_implies(bdd_ithvar(q), p2)) {
-                if (succp2 == bdd_false()){
-                    succp2 = bdd_ithvar(q);
-                } else {
-                    succp2 = bdd_and(succp2, bdd_ithvar(q));
-                }
-                if (debug == "1") { std::cout << "Added to succphi2 (now: " << succp2 << "). "; }
-            }
-        }*/
 
         if (debug == "1") { std::cout << "Done foralling. \n"; }
         bool accepting = false;
