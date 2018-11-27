@@ -634,12 +634,13 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         succp1 = bdd_false();
         succp2 = bdd_false();
 
-        if (p1 == bdd_true()){ // todo FIX THIS. These should not automatically remain true, instead, phi1 = true means all states are in.
-            if (debug == "1") { std::cout << "Succphi1 remains true here.\n"; }
+        if (debug == "1") { std::cout << "\nCompute phi's for label: " << label << "\n"; }
+        if (p1 == bdd_true()){
+            if (debug == "1") { std::cout << "Succphi1 remains true here."; }
             succp1 = bdd_true();
         }
         if (p2 == bdd_true()){
-            if (debug == "1") { std::cout << "Succphi2 remains true here.\n"; }
+            if (debug == "1") { std::cout << "Succphi2 remains true here."; }
             succp2 = bdd_true();
         }
 
@@ -649,7 +650,9 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         for (unsigned q = 0; q < gnc; q++){
 
             if (debug == "1") { std::cout << "\nChecking q: " << q << ". Is it in p1/p2?\n"; }
-            if ((bdd_implies(p1, bdd_ithvar(q))) || (bdd_implies(p2, bdd_ithvar(q)))){
+            if ((p1 != bdd_false() && (bdd_implies(p1, bdd_ithvar(q))))
+                || ((p2 != bdd_false()) && (bdd_implies(p2, bdd_ithvar(q))))){
+
                 if (debug == "1") { std::cout << "Yes, q is implied by (= is in) p1 (" << p1 << ") or p2 (" << p2 << ").\n"; }
 
                 // If edge under label is a correct m.t., add its follower to succp1 and/or succp2
@@ -669,7 +672,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                 if (debug == "1") { std::cout << "<-the label is right. "; }
 
                                 // Add the successors of p1 and p2
-                                if (bdd_implies(p1, bdd_ithvar(q))) {
+                                if ((p1 != bdd_false()) && (bdd_implies(p1, bdd_ithvar(q)))) {
                                     if (R.find(std::to_string(tdst)) == R.end()) {
                                         if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi1\n"; }
 
@@ -689,7 +692,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                     }
                                 }
 
-                                if (bdd_implies(p2, bdd_ithvar(q))) {
+                                if ((p2 != bdd_false()) && (bdd_implies(p2, bdd_ithvar(q)))) {
                                     if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi2. \n"; }
 
                                     if (succp2 == bdd_false()) {
@@ -717,7 +720,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                         if (debug == "1") { std::cout << "<- not accepting and the label is right. "; }
 
                                         // Add the successors of p1 and p2
-                                        if (bdd_implies(p1, bdd_ithvar(q))) {
+                                        if ((p1 != bdd_false()) && (bdd_implies(p1, bdd_ithvar(q)))) {
                                             if (R.find(std::to_string(tdst)) == R.end()) {
                                                 if (debug == "1") {std::cout << "Adding tdst (" << tdst << ") to succphi1\n"; }
 
@@ -737,7 +740,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                             }
                                         }
 
-                                        if (bdd_implies(p2, bdd_ithvar(q))) {
+                                        if ((p2 != bdd_false()) && (bdd_implies(p2, bdd_ithvar(q)))) {
                                             if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi2. \n"; }
 
                                             if (succp2 == bdd_false()) {
@@ -783,13 +786,13 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
         if (succp1 == bdd_true()) {
             // We make this the breakpoint and change succp1 and succp2 completely
-            if (debug == "1") { std::cout << "Succphi1 is true, changing succp1 and 2 a lot\n"; }
+            if (debug == "1") { std::cout << "Succphi1 is true, succphi2 is " << succp2 << ", changing both a lot\n"; }
 
             succp1 = bdd_false();
 
             for (unsigned q = 0; q < gnc; q++){
                 // If q is in succp2
-                if (bdd_implies(succp2, bdd_ithvar(q))) {
+                if ((succp2 != bdd_false()) && (bdd_implies(succp2, bdd_ithvar(q)))) {
                     if (R.find(std::to_string(q)) == R.end()) {
                         if (debug == "1") { std::cout << "Adding q: " << q << " to succphi1\n"; }
 
