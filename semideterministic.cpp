@@ -17,6 +17,8 @@
     along with LTL3TELA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// todo fix copyrights
+
 #include <cstring>
 #include "semideterministic.hpp"
 
@@ -593,7 +595,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                     }
                 }
                 std::cout << "\nlaststatenum:" << sdba->num_states() - 1 << ", phi1: " << phi1[sdba->num_states() - 1]
-                          << "phi2: " << phi2[sdba->num_states() - 1];
+                          << ", phi2: " << phi2[sdba->num_states() - 1];
                 std::cout << "\nEnd of run of function createRComp for this label.\n";
             }
         } else {
@@ -761,9 +763,10 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
         if (succp1 == bdd_true()) {
             // We make this the breakpoint and change succp1 and succp2 completely
-            if (debug == "1") { std::cout << "Succphi1 is true, succphi2 is " << succp2 << ", changing both a lot\n"; }
+            if (debug == "1") { std::cout << "Succphi1 is T, succphi2 is " << succp2 << ", changing both a lot\n"; }
 
             succp1 = bdd_false();
+            if (debug == "1") { std::cout << "Succphi1 set to F (empty).\n"; }
 
             for (unsigned q = 0; q < gnc; q++){
                 // If q is in succp2
@@ -777,7 +780,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                             succp1 = bdd_and(succp1, bdd_ithvar(q));
                         }
                     } else {
-                        if (debug == "1") {std::cout << "Not adding q: " << q << ", but true to succphi1\n"; }
+                        if (debug == "1") {std::cout << "Not adding q: " << q << ", but T to succphi1\n"; }
 
                         if (succp1 == bdd_false()){
                             succp1 = bdd_true();
@@ -809,7 +812,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         bool existsAlready = false;
 
         // If Phi1 is false, we do not need to add the state/edge unless this edge is accepting
-        if ((accepting) || (succp1 != bdd_false())) {
+        if (succp1 != bdd_false()) {
 
             for (unsigned c = 0; c < sdba->num_states(); ++c) {
                 if (debug == "1") {
@@ -903,7 +906,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 }
             }
         } else {
-            if (debug == "1") { std::cout << "\nPhi1 is false and edge is not accepting, not adding succstate.\n"; }
+            if (debug == "1") { std::cout << "\nPhi1 is false, not adding succstate.\n"; }
         }
 
     }
