@@ -405,8 +405,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
     }
 
     // The phis of this state
-    bdd p1 = bdd_false();
-    bdd p2 = bdd_false();
+    bdd p1;
+    bdd p2;
 
     // First we construct the edges from C into the R component by getting the correct phi1 and phi2
 
@@ -414,6 +414,9 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
     // For each edge label ("a,b,c", "a,b,!c", "a,!b,c"...) of the alphabet
     for (auto label : gAlphabet){
+
+        p1 = bdd_false();
+        p2 = bdd_false();
 
         for (unsigned q = 0; q < gnvwaa; ++q) {
             if (debug == "1") { std::cout << "\nFor label: " << label << ", checking q: " << q << ". "; }
@@ -434,8 +437,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
                                 // Replace the edges ending in R with TT
                                 if (R.find(std::to_string(tdst)) == R.end()) { // If tdst was in R, we'd add TT
-                                    if (debug == "1") { std::cout << "t.dst is not in R - adding " << tdst << " to phi1\n";
-                                    std::cout << "phi1 before: " << p1; }
+                                    if (debug == "1") { std::cout << "t.dst is not in R - adding " << tdst << " to phi1\n"; }
 
                                     if (p1 == bdd_false()){
                                         p1 = bdd_ithvar(tdst);
