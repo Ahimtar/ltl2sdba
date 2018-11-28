@@ -215,7 +215,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
         }
     }
 
-    if (debug == "1") { std::cout << "ND part edge acceptation correction. (Checking for edges with acceptation {1})"; }
+    if (debug == "1") { std::cout << "ND part edge acceptation correction. (Checking for edges with acceptation not {} or {0})"; }
+    spot::acc_cond::mark_t CorrectAccMark = 1;
     for (unsigned ci = 0; ci < gnc; ++ci) {
         for (auto& t: sdba->out(ci))
         {
@@ -226,10 +227,14 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
                     if (debug == "1") {
                         std::cout << "\nEdge " << t.src << "-" << d << " acceptation: " << t.acc << ". ";
                     }
-                    if (t.acc == 2) {
+                    // Fix to the {1} acceptations
+                    // If the correct acceptation mark (1 = {0}) is included, then this is called
+                    if (CorrectAccMark.subset(t.acc)) {
+                        t.acc = 1;
+                    } else {
                         t.acc = 0;
-                        if (debug == "1") { std::cout << "We set acc to " << t.acc << ". "; }
                     }
+                    if (debug == "1") { std::cout << "We set acc to " << t.acc << ". "; }
                 }
             }
         }
