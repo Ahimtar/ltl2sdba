@@ -241,12 +241,16 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
         for (auto& t: sdba->out(ci))
         {
             for (unsigned d: pvwaa->univ_dests(t.dst)) {
-                if (debug == "1") {
-                    std::cout << "\nEdge " << t.src << "-" << d << " acceptation: " << t.acc << ". ";
-                }
-                if (t.acc == 2) {
-                    t.acc = 0;
-                    if (debug == "1") { std::cout << "We set acc to " << t.acc << ". "; }
+
+                // The target of the {1} edge can never be a deterministic-part state
+                if (d < gnc) {
+                    if (debug == "1") {
+                        std::cout << "\nEdge " << t.src << "-" << d << " acceptation: " << t.acc << ". ";
+                    }
+                    if (t.acc == 2) {
+                        t.acc = 0;
+                        if (debug == "1") { std::cout << "We set acc to " << t.acc << ". "; }
+                    }
                 }
             }
         }
@@ -591,7 +595,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                 std::cout << "\nAll edges of Conf after adding successors: (back in function createRComp)\n";
                 for (unsigned c = 0; c < sdba->num_states(); ++c) {
                     for (auto i: sdba->succ(sdba->state_from_number(c))) {
-                        std::cout << " t.cond: " << i->cond() << " from " << c << " to " << i->dst();
+                        std::cout << " t.cond: " << i->cond() << " from " << c << " to " << i->dst() << ", acc: " << i->acc();
                         if (sdba->state_from_number(c) == i->dst()) { std::cout << " (loop)"; }
                         std::cout << ".\n";
                     }
