@@ -64,12 +64,19 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
     auto snvwaa = pvwaa->get_named_prop<std::vector<std::string>>("state-names");
 
+    int tnum;
+
     // We iterate over all states of the VWAA
     for (unsigned q = 0; q < gnvwaa; ++q)
     {
         if (debug == "1"){std::cout << "State: " << (*snvwaa)[q] << " (" << q << ").\n";}
+        if ((*snvwaa)[q].compare("t") == 0){
+            tnum = q;
+            if (debug == "1"){std::cout << "This is the {} state.\n";}
+        }
         // Renaming state to its number instead of the LTL formula for later use
         (*snvwaa)[q] = std::to_string(q);
+
 
         isqmay[q] = false;
         bool thereIsALoop = false;
@@ -198,6 +205,12 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             }
         } else {
             std::cout << "Wrong C state name."; // todo better error message
+        }
+        if (((*sn)[ci]).compare("{}") == 0){
+            if (debug == "1") { std::cout << "\nStarting check of state {}, renaming to: " << std::to_string(tnum); }
+            ((*sn)[ci]) = std::to_string(tnum);
+            C[ci].clear();
+            C[ci].insert(std::to_string(tnum));
         }
 
         std::set<std::string> R;
