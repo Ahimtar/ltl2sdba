@@ -80,12 +80,15 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             {
                 if (t.src == d && t.acc.id == 0) {
                     isqmay[q] = true;
-                    if (debug == "1"){std::cout << "It's Qmay. ";} // It also may be Qmust
+                    if (debug == "1"){std::cout << "Qmay. ";} // It also may be Qmust
                     thereIsALoop = true;
                     break;
                 }
             }
             if (thereIsALoop){ break; }
+        }
+        if (!isqmay[q]){
+            if (debug == "1"){std::cout << "Not Qmay. ";}
         }
 
         isqmust[q] = true;
@@ -101,9 +104,12 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             }
             if (!thereIsALoop){
                 isqmust[q] = false;
-                if (debug == "1"){std::cout << "It's not Qmust. ";} // If this is not printed, it is Qmust
+                if (debug == "1"){std::cout << "Not Qmust. ";}
                 break;
             }
+        }
+        if (isqmust[q]) {
+            if (debug == "1"){std::cout << "Qmust. ";}
         }
         if (debug == "1"){std::cout << "\n\n";}
     }
