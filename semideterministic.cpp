@@ -233,6 +233,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                              std::set<std::string> Valid, bool isqmay[]){
 
+
     // We check each state whether it is Qmay. If it is, we add it to Valid with all successors
     for (auto q : Conf)
     {
@@ -241,7 +242,8 @@ bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std
                 std::cout << "We are in BADSTATE: " << q << ". "; // todo Better error message
             }
             else {
-                // This state is {} and hence is Qmust // todo Is this right?
+                // This state is {} and hence is Qmust and has no followers
+                Valid.insert(q);
             }
         } else {
             if (isqmay[std::stoi(q)]) {
