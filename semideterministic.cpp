@@ -160,31 +160,10 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
+    //spot::twa_graph_ptr sdba = spot::remove_alternation(spot::make_twa_graph(pvwaa, {false, false, false, false, false, false}));
 
     sdba->set_buchi();
     sdba->prop_state_acc(spot::trival(false));
-
-    // First, we check whether this automaton is not already semideterministic
-    /* Since our VWAA uses co-Buchi acceptation, we need to negate the edges first
-    spot::twa_graph_ptr negsdba = sdba;
-
-    if (debug == "1"){ std::cout << "Testing if automaton is not semideterministic already.\n"; }
-    for (auto& nedge : negsdba->edges())
-    {
-        if (debug == "1"){ std::cout << "Edge " << nedge.src << "-" << nedge.dst << ", label: " << nedge.cond
-                                     << ", acc: " << nedge.acc; }
-        if (nedge.acc != 0){
-            nedge.acc = 0;
-        } else {
-            nedge.acc = 1;
-        }
-        if (debug == "1"){ std::cout << ", neg acc: " << nedge.acc << "\n"; }
-    }
-    if (negsdba->prop_semi_deterministic())
-    {
-        if (debug == "1"){ std::cout << "Automaton is already semideterministic. Continuing only because of debug mode.\n"; }
-        else { return negsdba; }
-    }*/
 
     // Number of configurations C (states in the nondeterministic part)
     gnc = sdba->num_states();
