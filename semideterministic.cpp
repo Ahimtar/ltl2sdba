@@ -125,7 +125,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
                     if (debug == "1") { std::cout << "We set acc to " << t.acc << ". "; }
                 }
             }
-            if (debug == "1") { std::cout << "So it is " << t.acc << ". "; }
+            if (debug == "1") { std::cout << "End of dsts of this edge. It is " << t.acc << ". "; }
         }
         if (debug == "1"){std::cout << "\n\n";}
     }
@@ -205,7 +205,13 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
         std::set<std::string> R;
 
-        if (debug == "1"){std::cout << "\nChecking if this configuration contains only valid states: " << ci << "\n";}
+        if (debug == "1"){
+            std::cout << "\nChecking if configuration " << ci << " = {";
+            for (auto x : C[ci]){
+                std::cout << " " << x;
+            }
+            std::cout << " } contains only valid states.\n";
+        }
         // Check if only states reachable from Qmays are in C. If not, this configuration can not contain an R.
         if (checkMayReachableStates(pvwaa, C[ci], R, isqmay)){  // We are using R just as a placeholder empty set here
             R.clear();
