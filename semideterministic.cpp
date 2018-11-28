@@ -257,13 +257,7 @@ bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std
     for (auto q : Conf)
     {
         if (q.empty() || !isdigit(q.at(0))){
-            if (q != "{}") {
-                std::cout << "We are in BADSTATE: " << q << ". "; // todo Better error message
-            }
-            else {
-                // This state is {} and hence is Qmust and has no followers
-                Valid.insert(q);
-            }
+            std::cout << "We are in BADSTATE: " << q << ". "; // todo Better error message
         } else {
             if (isqmay[std::stoi(q)]) {
                 addToValid(vwaa, q, Valid);
@@ -311,16 +305,7 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
 
     // Checking state correctness
     if (q.empty() || !isdigit(q.at(0))){
-        if (q != "{}") {
-            std::cout << "We are in BADSTATE: " << q << ". "; // todo Better error message
-        }
-        else {
-            //If the state is {}, we know it is Qmust.
-            if (debug == "1"){std::cout << "q is {} (which is Qmust), adding to R. ";}
-            if (R.count(q) == 0) {
-                R.insert(q);
-            }
-        }
+        std::cout << "We are in BADSTATE: " << q << ". "; // todo Better error message
     } else {
         // If this state is Qmust, we add it (and don't have to check Qmay)
         if (isqmust[std::stoi(q)]){
