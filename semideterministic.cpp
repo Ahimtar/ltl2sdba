@@ -105,28 +105,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
                 break;
             }
         }
-
-        if (debug == "1"){ std::cout << "Setting acceptance."; }
-        // Setting acceptance
-
-        // Since we only work with "yes / no" (Buchi) acceptance, we can use the numbers differently:
-        //  {} = 0 Means edge is not accepting
-        // {0} = 1 Means edge is accepting
-        // {1} = 2 Means edge was accepting in vwaa, but will not be accepting in SDBA
-        // We remove acceptance marks from all the edges, since no edge in the nondeterministic part is accepting
-        for (auto& t: pvwaa->out(q))
-        {
-            for (unsigned d: pvwaa->univ_dests(t.dst)) {
-                if (debug == "1") {
-                    std::cout << "\nEdge " << t.src << "-" << d << " label: " << t.cond << " acceptance: " << t.acc << ". ";
-                }
-                if (t.acc != 0) {
-                    t.acc = 2;
-                    if (debug == "1") { std::cout << "We set acc to " << t.acc << ". "; }
-                }
-            }
-            if (debug == "1") { std::cout << "End of dsts of this edge. It is " << t.acc << ". "; }
-        }
         if (debug == "1"){std::cout << "\n\n";}
     }
 
@@ -178,8 +156,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
 
     // We mark the Rs of the states of ND part so we differ them from D part states with empty R, phi1 and phi2 later on
-    // We also set all the edges in ND part of SDBA as not-accepting (to fix behavior of remove_alternation)
-    if (debug == "1") { std::cout << "\nCorrection of newly appearing edges from removing alternation.\n"; }
+    // We also set all the edges in ND part of SDBA as not-accepting (also to fix odd behavior of remove_alternation)
+    if (debug == "1") { std::cout << "\nRemoving acceptation from all edges in ND part"; }
 
     for (unsigned ci = 0; ci < gnc; ++ci) {
         Rname[ci] = {"ND-part state"};
@@ -192,6 +170,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             }
         }
     }
+    if (debug == "1") { std::cout << "\n"; }
 
     // Choosing the R
 
@@ -230,31 +209,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             if (debug == "1"){std::cout << "Yes! \n";}
             // We call this function to judge Q-s of this C and create R-s and R-components based on them
             createDetPart(pvwaa, ci, C[ci], C[ci], R, isqmay, isqmust, sdba, Rname, phi1, phi2, debug);
-        }
-    }
-
-    if (debug == "1") { std::cout << "\nND part edge acceptation correction. (Checking for edges with acceptation not {} or {0})"; }
-    spot::acc_cond::mark_t CorrectAccMark = 1;
-    for (unsigned ci = 0; ci < gnc; ++ci) {
-        for (auto& t: sdba->out(ci))
-        {
-            for (unsigned d: pvwaa->univ_dests(t.dst)) {
-
-                // The target of the {1} edge can never be a deterministic-part state
-                if (d < gnc) {
-                    if (debug == "1") {
-                        std::cout << "\nEdge " << t.src << "-" << d << " acceptation: " << t.acc << ". ";
-                    }
-                    // Fix to the {1} acceptations
-                    // If the correct acceptation mark (1 = {0}) is included, then this is called
-                    if (CorrectAccMark.subset(t.acc)) {
-                        t.acc = 1;
-                    } else {
-                        t.acc = 0;
-                    }
-                    if (debug == "1") { std::cout << "We set acc to " << t.acc << ". "; }
-                }
-            }
         }
     }
 
