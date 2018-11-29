@@ -596,6 +596,23 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
     bdd succp1;
     bdd succp2;
 
+
+    // todo create a function getSuccs(q, label) that returns bdd of successors of q under label
+    // todo call veccompose on bdd of states Phi under label using getSuccs(q, label)
+
+    // todo recreate the structure to the following:
+    //  for each label:
+    //      set succp1 and succp2 to phi1 and phi2
+    //      veccompose succp1 with label
+    //      veccompose succp2 with label
+    //      check states of succp1, if there is a state of R, replace succp1 with 'true'
+    //      if succp1 is 'true', change:
+    //            succp1 = succp2
+    //            check states of succp1, if there is a state of R, replace sucpp1 with 'true'
+    //            succp2 = false
+    //            succp2 add states of R in the classic way
+    //
+
     // For each edge label of the alphabet we compute phis of the reached state (succp1 and succp2)
     for (auto label : gAlphabet) {
 
@@ -681,6 +698,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                 if (debug == "1") {
                                     std::cout << "Q is in Conf. E " << t.src << "-" << tdst << " t.cond:" << t.cond
                                               << " label: " << label << ". \n";
+                                    // todo phi2 check it doesnt work in our formula, it is false for some reason!
                                 }
                                 if (t.acc == 0) {
                                     // If t.cond contains this label as one of the conjunctions and t.dst is still a vwaa state ( todo this is not needed if vwaa getting more state gets fixed)
