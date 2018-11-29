@@ -596,8 +596,6 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
     bdd succp1;
     bdd succp2;
 
-
-    // todo create a function getSuccs(q, label) that returns bdd of successors of q under label
     // todo call veccompose on bdd of states Phi under label using getSuccs(q, label)
 
     // todo recreate the structure to the following:
@@ -897,4 +895,68 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
     }
     if (debug == "1") { std::cout << "\n<<<<<<   End of function addRCompStateSuccs of state " << statenum << "\n"; }
+}
+
+
+// todo create a function getSuccs(q, label) that returns bdd of successors of q under label under m.t.
+bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba, unsigned statenum,
+               std::set<std::string> Conf, std::set<std::string> R, unsigned q, bdd label, std::string debug){
+
+    bdd succbdd;
+
+    // If edge under label is a correct m.t., add its follower to succp1 and/or succp2
+
+    // To deal with phis, q either needs to not be in R, or see below *
+    if ((R.find(std::to_string(q)) == R.end())) {
+        if (debug == "1") { std::cout << "It's not in R. \n"; }
+        // Find the edge under "label"
+        for (auto &t: vwaa->out(q)) {
+            for (unsigned tdst: vwaa->univ_dests(t.dst)) {
+                if (debug == "1") {
+                    std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
+                              << " label: " << label << ". \n";
+                }
+                // If t.cond contains this label as one of the conjunctions and t.dst is still a vwaa state ( todo this is not needed if vwaa getting more states gets fixed)
+                if (bdd_implies(label, t.cond) && (t.dst < gnvwaa)) {
+                    if (debug == "1") { std::cout << "<-the label is right. "; }
+
+                    // Add the successors of q
+                    if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi1\n"; }
+
+                    if (succbdd == bdd_false()){
+                        succbdd = bdd_ithvar(tdst);
+                    } else {
+                        succbdd = bdd_and(succbdd, bdd_ithvar(tdst));
+                    }
+                }
+            }
+        }
+    } else { // * or q must be in Conf && edge must not be accepting
+        if (debug == "1") { std::cout << "It's in R. \n"; }
+        if (Conf.find(std::to_string(q)) != Conf.end()) {
+            // Find the edge under "label"
+            for (auto &t: vwaa->out(q)) {
+                for (unsigned tdst: vwaa->univ_dests(t.dst)) {
+                    if (debug == "1") {
+                        std::cout << "Q is in Conf. E " << t.src << "-" << tdst << " t.cond:" << t.cond
+                                  << " label: " << label << ". \n";
+                    }
+                    if (t.acc == 0) {
+                        // If t.cond contains this label as one of the conjunctions and t.dst is still a vwaa state ( todo this is not needed if vwaa getting more states gets fixed)
+                        if (bdd_implies(label, t.cond) && (t.dst < gnvwaa)) {
+                            if (debug == "1") { std::cout << "<- not accepting and the label is right. "; }
+
+                            if (succbdd == bdd_false()){
+                                succbdd = bdd_ithvar(tdst);
+                            } else {
+                                succbdd = bdd_and(succbdd, bdd_ithvar(tdst));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return succbdd;
 }
