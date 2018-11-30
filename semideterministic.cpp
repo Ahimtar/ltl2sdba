@@ -598,185 +598,59 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
     bdd succp1;
     bdd succp2;
 
-    // todo recreate the structure to the following:
-    //  for each label:
-    //      set succp1 and succp2 to phi1 and phi2
-    //      veccompose succp1 with label
-    //      veccompose succp2 with label
-    //      check states of succp1, if there is a state of R, replace succp1 with 'true'
-    //      if succp1 is 'true', change:
-    //            succp1 = succp2
-    //            check states of succp1, if there is a state of R, replace sucpp1 with 'true'
-    //            succp2 = false
-    //            succp2 add states of R in the classic way
-    //
 
     // For each edge label of the alphabet we compute phis of the reached state (succp1 and succp2)
     for (auto label : gAlphabet) {
 
-        succp1 = bdd_false();
-        succp2 = bdd_false();
-
         if (debug == "1") { std::cout << "\n\n   addRCompStateSuccs for state " << statenum << ", checking label: " << label << "\n"; }
-        if (p1 == bdd_true()){
-            if (debug == "1") { std::cout << "Succphi1 remains true here."; }
-            succp1 = bdd_true();
-        }
-        if (p2 == bdd_true()){
-            if (debug == "1") { std::cout << "Succphi2 remains true here."; }
-            succp2 = bdd_true();
-        }
+        succp1 = p1;
+        succp2 = p2;
 
-        if (debug == "1") { std::cout << "\n(State " << statenum << ") We check label: " << label << " for all q states: \n"; }
+        if (debug == "1") { std::cout << "Replacing all states of succp1 (" << succp1 << ") with their successors:\n"; }
+        // todo veccompose succp1+label
+        if (debug == "1") { std::cout << "\nNew succp1:" << succp1 << "\n"; }
 
-        // We are checking all states of q that are in phi1 or phi2
+        if (debug == "1") { std::cout << "Replacing all states of succp2 (" << succp2 << ") with their successors:\n"; }
+        // todo veccompose succp2+label
+        if (debug == "1") { std::cout << "\nNew succp2:" << succp2 << "\n"; }
+
+
+        if (debug == "1") { std::cout << "Checking all states of succp1 for states of R to replace with true."; }
         for (unsigned q = 0; q < gnc; q++){
-
-            if (debug == "1") { std::cout << "\nChecking q: " << q << ". Is it in p1/p2?\n"; }
-            if ((p1 != bdd_false() && (bdd_implies(p1, bdd_ithvar(q))))
-                || ((p2 != bdd_false()) && (bdd_implies(p2, bdd_ithvar(q))))){
-
-                if (debug == "1") { std::cout << "Yes, q is implied by (= is in) p1 (" << p1 << ") or p2 (" << p2 << ").\n"; }
-
-                // If edge under label is a correct m.t., add its follower to succp1 and/or succp2
-
-                // To deal with phis, q either needs to not be in R, or see below *
+            if (debug == "1") { std::cout << "\nChecking q:" << q << ". "; }
+            if (succp1 != bdd_false() && (bdd_implies(succp1, bdd_ithvar(q)))){
+                if (debug == "1") { std::cout << "It's in succp1. "; }
                 if ((R.find(std::to_string(q)) == R.end())) {
-                    if (debug == "1") { std::cout << "It's not in R. \n"; }
-                    // Find the edge under "label"
-                    for (auto &t: vwaa->out(q)) {
-                        for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                            if (debug == "1") {
-                                std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
-                                          << " label: " << label << ". \n";
-                            }
-                            // If t.cond contains this label as one of the conjunctions and t.dst is still a vwaa state ( todo this is not needed if vwaa getting more state gets fixed)
-                            if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
-                                if (debug == "1") { std::cout << "<-the label is right. "; }
-
-                                // Add the successors of p1 and p2
-                                if ((p1 != bdd_false()) && (bdd_implies(p1, bdd_ithvar(q)))) {
-                                    if (R.find(std::to_string(tdst)) == R.end()) {
-                                        if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi1\n"; }
-
-                                        if (succp1 == bdd_false()){
-                                            succp1 = bdd_ithvar(tdst);
-                                        } else {
-                                            succp1 = bdd_and(succp1, bdd_ithvar(tdst));
-                                        }
-                                    } else {
-                                        if (debug == "1") {std::cout << "Adding true to succphi1\n"; }
-
-                                        if (succp1 == bdd_false()){
-                                            succp1 = bdd_true();
-                                        } else {
-                                            succp1 = bdd_and(succp1, bdd_true());
-                                        }
-                                    }
-                                }
-
-                                if ((p2 != bdd_false()) && (bdd_implies(p2, bdd_ithvar(q)))) {
-                                    if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi2. \n"; }
-
-                                    if (succp2 == bdd_false()) {
-                                        succp2 = bdd_ithvar(tdst);
-                                    } else {
-                                        succp2 = bdd_and(succp2, bdd_ithvar(tdst));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else { // * or q must be in Conf && edge must not be accepting
-                    if (debug == "1") { std::cout << "It's in R. \n"; }
-                    if (Conf.find(std::to_string(q)) != Conf.end()) {
-                        // Find the edge under "label"
-                        for (auto &t: vwaa->out(q)) {
-                            for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                                if (debug == "1") {
-                                    std::cout << "Q is in Conf. E " << t.src << "-" << tdst << " t.cond:" << t.cond
-                                              << " label: " << label << ". \n";
-                                }
-                                if (t.acc == 0) {
-                                    // If t.cond contains this label as one of the conjunctions and t.dst is still a vwaa state ( todo this is not needed if vwaa getting more state gets fixed)
-                                    if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
-                                        if (debug == "1") { std::cout << "<- not accepting and the label is right. "; }
-
-                                        // Add the successors of p1 and p2
-                                        if ((p1 != bdd_false()) && (bdd_implies(p1, bdd_ithvar(q)))) {
-                                            if (R.find(std::to_string(tdst)) == R.end()) {
-                                                if (debug == "1") {std::cout << "Adding tdst (" << tdst << ") to succphi1\n"; }
-
-                                                if (succp1 == bdd_false()){
-                                                    succp1 = bdd_ithvar(tdst);
-                                                } else {
-                                                    succp1 = bdd_and(succp1, bdd_ithvar(tdst));
-                                                }
-                                            } else {
-                                                if (debug == "1") {std::cout << "Adding true to succphi1\n"; }
-
-                                                if (succp1 == bdd_false()){
-                                                    succp1 = bdd_true();
-                                                } else {
-                                                    succp1 = bdd_and(succp1, bdd_true());
-                                                }
-                                            }
-                                        }
-
-                                        if ((p2 != bdd_false()) && (bdd_implies(p2, bdd_ithvar(q)))) {
-                                            if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi2. \n"; }
-
-                                            if (succp2 == bdd_false()) {
-                                                succp2 = bdd_ithvar(tdst);
-                                            } else {
-                                                succp2 = bdd_and(succp2, bdd_ithvar(tdst));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    if (debug == "1") { std::cout << "It's in R. Changing succp1 to true."; }
+                    succp1 = bdd_true(); // todo compose q with true is better.
                 }
             }
         }
 
-        if (debug == "1") { std::cout << "Done checking states of q under label " << label << " for state " << statenum << "\n"; }
+        if (debug == "1") { std::cout << "\nDone creating succphis for state " << statenum << " under label " << label
+                                      << ". Succphi1: " << succp1 << ", succphi2 : " << succp2 << "\n"; }
         bool accepting = false;
 
         if (succp1 == bdd_true()) {
             // We make this the breakpoint and change succp1 and succp2 completely
-            if (debug == "1") { std::cout << "Succphi1 is T, succphi2 is " << succp2 << ", changing both a lot\n"; }
+            if (debug == "1") { std::cout << "Succphi1 is true, making a breakpoint!\n"; }
 
-            succp1 = bdd_false();
-            if (debug == "1") { std::cout << "Succphi1 set to F (empty).\n"; }
-
+            succp1 = succp2;
+            if (debug == "1") { std::cout << "Succphi1 set to succphi2. Checking all states of new succphi1 for states "
+                                             << "of R to replace with true.\n"; }
             for (unsigned q = 0; q < gnc; q++){
-                // If q is in succp2
-                if ((succp2 != bdd_false()) && (bdd_implies(succp2, bdd_ithvar(q)))) {
-                    if (R.find(std::to_string(q)) == R.end()) {
-                        if (debug == "1") { std::cout << "Adding q: " << q << " to succphi1\n"; }
-
-                        if (succp1 == bdd_false()){
-                            succp1 = bdd_ithvar(q);
-                        } else {
-                            succp1 = bdd_and(succp1, bdd_ithvar(q));
-                        }
-                    } else {
-                        if (debug == "1") {std::cout << "Not adding q: " << q << ", but T to succphi1\n"; }
-
-                        if (succp1 == bdd_false()){
-                            succp1 = bdd_true();
-                        } else {
-                            succp1 = bdd_and(succp1, bdd_true());
-                        }
+                if (debug == "1") { std::cout << "Checking q:" << q << "\n"; }
+                if (succp1 != bdd_false() && (bdd_implies(succp1, bdd_ithvar(q)))){
+                    if (debug == "1") { std::cout << "It's in succp1.\n"; }
+                    if ((R.find(std::to_string(q)) == R.end())) {
+                        if (debug == "1") { std::cout << "It's in R. Changing succp1 to true.\n"; }
+                        succp1 = bdd_true(); // todo compose q with true is better.
                     }
                 }
             }
-            succp2 = bdd_false();
 
             if (debug == "1") { std::cout << "Also changing succp2 to all states of R.\n"; }
-            // Adding all states of R to succp2
+            succp2 = bdd_false();
             for (auto qs : R) {
                 if (succp2 == bdd_false()){
                     succp2 = bdd_ithvar(stoi(qs));
@@ -787,19 +661,22 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             accepting = true;
         }
 
+
+        // We finished constructing succphi1 and succphi2, we can start creating the R-component based on them
+        if (debug == "1") { std::cout << "We constructed succphi1: " << succp1 << ", succphi2: " << succp2 << "\n"; }
+
         // We need to check if this R-component state exists already
         // succStateNum is the number of the state if it exists, else value remains as a "new state" number:
         unsigned succStateNum = sdba->num_states();
-        if (debug == "1") { std::cout << "Succstatenum ( = number of SDBA states): " << succStateNum
-                                      << ". This state succphi1: " << succp1 << ", succphi2: " << succp2; }
+
         bool existsAlready = false;
 
-        // If Phi1 is false, we do not need to add the state/edge unless this edge is accepting
+        // If succp1 is false, we do not add the state/edge, as this branch would never accept anyway
         if (succp1 != bdd_false()) {
 
             for (unsigned c = 0; c < sdba->num_states(); ++c) {
                 if (debug == "1") {
-                    std::cout << "\nTry c: " << c << " Rname: ";
+                    std::cout << "\nChecking c: " << c << " Rname: ";
                     for (auto x : Rname[c]) {
                         std::cout << x << ", ";
                     }
@@ -808,11 +685,11 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2) {
                     succStateNum = c;
                     existsAlready = true;
-                    if (debug == "1") { std::cout << " < this!"; }
+                    if (debug == "1") { std::cout << " < this is it!"; }
                     break;
                 }
             }
-            if (debug == "1") { std::cout << "\nSuccstatenum: " << succStateNum << "\n"; }
+            if (debug == "1") { std::cout << "\nOur fitting successor state is state: " << succStateNum << "\n"; }
 
             // If the state doesn't exist yet, we create it with "sdba->num_states()-1" becoming its new number
             if (succStateNum == sdba->num_states()) {   // the same as "if !existsAlready"
@@ -850,8 +727,8 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                     // If there is such an edge, we add it as OR to the existing edge instead of creating a new edge
                     if (t.dst == succStateNum && (((t.acc != 0 && accepting) || (t.acc == 0 && !accepting)))) {
                         if (debug == "1") {
-                            std::cout << "Adding new label to the edge under OR: " << t.src << "-" << t.dst
-                                      << ", bdd:" << t.cond << ", bddithvarlabel" << label << ", acc " << t.acc << "\n";
+                            std::cout << "Adding new label to the edge " << t.src << "-" << t.dst
+                                      << " under OR. Adding " << label << " to " << t.cond << ", acc " << t.acc << "\n";
                         }
                         connected = true;
                         t.cond = bdd_or(t.cond, label);
@@ -875,21 +752,25 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 }
             }
 
-            // If the state is new and phi1 is not false, add all further successors of this succ to SDBA and connect them
+            // If the state is new and phi1 is not false, add all further successors of this state to SDBA and connect them
             if (!existsAlready) {
                 if (succp1 != bdd_false()) {
                     if (debug == "1") {
-                        std::cout << "As this state is new and phi1 != false, we are adding it's succs.\n";
+                        std::cout << "This state is new and its Phi1 != false, we are adding its succs.\n";
                     }
                     addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
                 } else {
                     if (debug == "1") {
-                        std::cout << "Succphi1 (" << succp1 << ") is false, so we do not add succs. \n";
+                        std::cout << "Phi1 (" << succp1 << ") of this state is false, so we do not add succs. \n";
                     }
+                }
+            } else {
+                if (debug == "1") {
+                    std::cout << "This state already exists, not adding its succs. \n";
                 }
             }
         } else {
-            if (debug == "1") { std::cout << "\nPhi1 is false, not adding succstate.\n"; }
+            if (debug == "1") { std::cout << "\nPhi1 is false, not adding this succstate.\n"; }
         }
 
     }
