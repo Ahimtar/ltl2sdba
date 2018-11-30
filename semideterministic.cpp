@@ -596,8 +596,6 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
     bdd succp1;
     bdd succp2;
 
-    // todo call veccompose on bdd of states Phi under label using getSuccs(q, label)
-
     // todo recreate the structure to the following:
     //  for each label:
     //      set succp1 and succp2 to phi1 and phi2

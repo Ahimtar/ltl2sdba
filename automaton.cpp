@@ -597,7 +597,7 @@ void VWAA::print_hoaf() {
 
     std::cout << "HOA: v1\n";
     std::cout << "tool: \"LTL2SDBA\"\n";
-    std::cout << "name: \"SDBA for " << spot::unabbreviate(simp.simplify(phi), "WM") << "\"\n";
+    std::cout << "name: \"VWAA for " << spot::unabbreviate(simp.simplify(phi), "WM") << "\"\n";
     std::cout << "States: " << (sink_state_needed ? state_counter + 1 : state_counter) << '\n'; // + 1 is for sink state
 
     auto bdd_dict = spot_aut->ap();
