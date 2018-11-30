@@ -1,7 +1,7 @@
 Overview
 ========
 
-LTL2SDBA is a tool that translates LTL formulae to semi-deterministic automata.
+LTL2SDBA is a tool that translates LTL formulae to semi-deterministic automata via very weak alternating automata and is based on the LTL3TELA tool.
 
 Requirements
 ============
@@ -10,9 +10,9 @@ The Spot library <https://spot.lrde.epita.fr/> has to be installed. Version 2.4 
 
 Installation
 ============
-`make` should be enough to compile LTL2SDBA.
+Use the `make` command to compile LTL2SDBA.
 
 Usage
 =====
 Use `./ltl2sdba -f 'formula to translate'`, for example `./ltl2sdba -f "F(b | GFa)"`  
-See `./ltl2sdba -h` for more information.
+See `./ltl2sdba -h` for options and more information.
