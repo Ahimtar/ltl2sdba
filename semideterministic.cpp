@@ -649,7 +649,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                           << " label: " << label << ". \n";
                             }
                             // If t.cond contains this label as one of the conjunctions and t.dst is still a vwaa state ( todo this is not needed if vwaa getting more state gets fixed)
-                            if (bdd_implies(label, t.cond) && (t.dst < gnvwaa)) {
+                            if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
                                 if (debug == "1") { std::cout << "<-the label is right. "; }
 
                                 // Add the successors of p1 and p2
@@ -697,9 +697,10 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                     // todo phi2 check it doesnt work in our formula, it is false for some reason!
                                 }
                                 if (t.acc == 0) {
+                                    if (debug == "1") { std::cout << "<- not accepting " << "tdst" << tdst << "gnvwaa" << gnvwaa; }
                                     // If t.cond contains this label as one of the conjunctions and t.dst is still a vwaa state ( todo this is not needed if vwaa getting more state gets fixed)
-                                    if (bdd_implies(label, t.cond) && (t.dst < gnvwaa)) {
-                                        if (debug == "1") { std::cout << "<- not accepting and the label is right. "; }
+                                    if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
+                                        if (debug == "1") { std::cout << " and the label is right. "; }
 
                                         // Add the successors of p1 and p2
                                         if ((p1 != bdd_false()) && (bdd_implies(p1, bdd_ithvar(q)))) {
@@ -916,8 +917,8 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                     std::cout << "E " << t.src << "-" << tdst << " t.cond:" << t.cond
                               << " label: " << label << ". \n";
                 }
-                // If t.cond contains this label as one of the conjunctions and t.dst is still a vwaa state ( todo this is not needed if vwaa getting more states gets fixed)
-                if (bdd_implies(label, t.cond) && (t.dst < gnvwaa)) {
+                // If t.cond contains this label as one of the conjunctions and tdst is still a vwaa state ( todo this is not needed if vwaa getting more states gets fixed)
+                if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
                     if (debug == "1") { std::cout << "<-the label is right. "; }
 
                     // Add the successors of q
@@ -943,8 +944,8 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                                   << " label: " << label << ". \n";
                     }
                     if (t.acc == 0) {
-                        // If t.cond contains this label as one of the conjunctions and t.dst is still a vwaa state ( todo this is not needed if vwaa getting more states gets fixed)
-                        if (bdd_implies(label, t.cond) && (t.dst < gnvwaa)) {
+                        // If t.cond contains this label as one of the conjunctions and tdst is still a vwaa state ( todo this is not needed if vwaa getting more states gets fixed)
+                        if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
                             if (debug == "1") { std::cout << "<- not accepting and the label is right. "; }
 
                             if (succbdd == bdd_false()){
