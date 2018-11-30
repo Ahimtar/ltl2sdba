@@ -617,7 +617,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         succp1 = bdd_false();
         succp2 = bdd_false();
 
-        if (debug == "1") { std::cout << "\n\n   Adding Rcomps, checking label: " << label << "\n"; }
+        if (debug == "1") { std::cout << "\n\n   addRCompStateSuccs for state " << statenum << ", checking label: " << label << "\n"; }
         if (p1 == bdd_true()){
             if (debug == "1") { std::cout << "Succphi1 remains true here."; }
             succp1 = bdd_true();
@@ -627,12 +627,12 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             succp2 = bdd_true();
         }
 
-        if (debug == "1") { std::cout << "\n(State " << statenum << ") We check label: " << label << " for all q states: "; }
+        if (debug == "1") { std::cout << "\n(State " << statenum << ") We check label: " << label << " for all q states: \n"; }
 
         // We are checking all states of q that are in phi1 or phi2
         for (unsigned q = 0; q < gnc; q++){
 
-            if (debug == "1") { std::cout << "\n\nChecking q: " << q << ". Is it in p1/p2?\n"; }
+            if (debug == "1") { std::cout << "\nChecking q: " << q << ". Is it in p1/p2?\n"; }
             if ((p1 != bdd_false() && (bdd_implies(p1, bdd_ithvar(q))))
                 || ((p2 != bdd_false()) && (bdd_implies(p2, bdd_ithvar(q))))){
 
@@ -698,10 +698,9 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                                               << " label: " << label << ". \n";
                                 }
                                 if (t.acc == 0) {
-                                    if (debug == "1") { std::cout << "<- not accepting "; }
                                     // If t.cond contains this label as one of the conjunctions and t.dst is still a vwaa state ( todo this is not needed if vwaa getting more state gets fixed)
                                     if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
-                                        if (debug == "1") { std::cout << "and the label is right. "; }
+                                        if (debug == "1") { std::cout << "<- not accepting and the label is right. "; }
 
                                         // Add the successors of p1 and p2
                                         if ((p1 != bdd_false()) && (bdd_implies(p1, bdd_ithvar(q)))) {
@@ -742,7 +741,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
         }
 
-        if (debug == "1") { std::cout << "Done foralling. \n"; }
+        if (debug == "1") { std::cout << "Done checking states of q under label " << label << " for state " << statenum << "\n"; }
         bool accepting = false;
 
         if (succp1 == bdd_true()) {
