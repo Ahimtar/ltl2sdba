@@ -898,15 +898,17 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 }
 
 
-// todo create a function getSuccs(q, label) that returns bdd of successors of q under label under m.t.
-bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba, unsigned statenum,
-               std::set<std::string> Conf, std::set<std::string> R, unsigned q, bdd label, std::string debug){
+// Gets the bdd of successors of q under label belonging to m.t. relation
+bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> R, unsigned q,
+              bdd label, std::string debug){
+
+    if (debug == "1") { std::cout << "Getting succs of state " << q << " under label " << label << "\n"; }
 
     bdd succbdd;
 
-    // If edge under label is a correct m.t., add its follower to succp1 and/or succp2
+    // If edge under label is a correct m.t., add its follower to succbdd
 
-    // To deal with phis, q either needs to not be in R, or see below *
+    // For the transition to be a correct m.t., q either needs to not be in R, or see below *
     if ((R.find(std::to_string(q)) == R.end())) {
         if (debug == "1") { std::cout << "It's not in R. \n"; }
         // Find the edge under "label"
@@ -921,11 +923,12 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba, 
                     if (debug == "1") { std::cout << "<-the label is right. "; }
 
                     // Add the successors of q
-                    if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succphi1\n"; }
 
                     if (succbdd == bdd_false()){
                         succbdd = bdd_ithvar(tdst);
+                        if (debug == "1") { std::cout << "Creating succbdd as tdst (" << tdst << ")\n"; }
                     } else {
+                        if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succbdd\n"; }
                         succbdd = bdd_and(succbdd, bdd_ithvar(tdst));
                     }
                 }
@@ -948,8 +951,10 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba, 
 
                             if (succbdd == bdd_false()){
                                 succbdd = bdd_ithvar(tdst);
+                                if (debug == "1") { std::cout << "Creating succbdd as tdst (" << tdst << ")\n"; }
                             } else {
                                 succbdd = bdd_and(succbdd, bdd_ithvar(tdst));
+                                if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succbdd\n"; }
                             }
                         }
                     }
@@ -957,6 +962,7 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba, 
             }
         }
     }
+    if (debug == "1") { std::cout << "Added all succs of " << q << " under " << label << ", got: " << succbdd << "\n"; }
 
     return succbdd;
 }

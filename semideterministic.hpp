@@ -75,4 +75,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                         std::map<unsigned, bdd> &phi1, std::map<unsigned, bdd> &phi2,
                         std::string debug);
 
+bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> R, unsigned q,
+              bdd label, std::string debug);
+
 #endif
