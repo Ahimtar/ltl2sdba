@@ -381,11 +381,13 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
     // For each edge label ("a,b,c", "a,b,!c", "a,!b,c"...) of the alphabet
     for (auto label : gAlphabet){
 
+        if (debug == "1") { std::cout << "\n\n---Starting the createRcomp loop for label: " << label << "\n"; }
+
         p1 = bdd_false();
         p2 = bdd_false();
 
         for (unsigned q = 0; q < gnvwaa; ++q) {
-            if (debug == "1") { std::cout << "\nFor label: " << label << ", checking q: " << q << ". "; }
+            if (debug == "1") { std::cout << "\n   For label: " << label << ", checking q: " << q << ". "; }
 
             // To deal with phi1, q either needs to not be in R, or see below *
             if (R.find(std::to_string(q)) == R.end()) {
@@ -615,7 +617,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         succp1 = bdd_false();
         succp2 = bdd_false();
 
-        if (debug == "1") { std::cout << "\nCompute phi's for label: " << label << "\n"; }
+        if (debug == "1") { std::cout << "\n\n   Adding Rcomps, checking label: " << label << "\n"; }
         if (p1 == bdd_true()){
             if (debug == "1") { std::cout << "Succphi1 remains true here."; }
             succp1 = bdd_true();
@@ -630,7 +632,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         // We are checking all states of q that are in phi1 or phi2
         for (unsigned q = 0; q < gnc; q++){
 
-            if (debug == "1") { std::cout << "\nChecking q: " << q << ". Is it in p1/p2?\n"; }
+            if (debug == "1") { std::cout << "\n\nChecking q: " << q << ". Is it in p1/p2?\n"; }
             if ((p1 != bdd_false() && (bdd_implies(p1, bdd_ithvar(q))))
                 || ((p2 != bdd_false()) && (bdd_implies(p2, bdd_ithvar(q))))){
 
