@@ -408,6 +408,13 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
             }
         }
 
+        if (debug == "1") {
+            std::cout << "\nTo be sure, states of R: ";
+            for (auto y : R) {
+                std::cout << y << ", ";
+            }
+        }
+
         // We now substitute all states succp1 of R with true
         if (debug == "1") {  std::cout << "Replacing all states of phi1 (" << p1 << ") in R with true.\n"; }
         p1 = subStatesOfRWithTrue(p1, R, debug);
@@ -810,10 +817,10 @@ bdd subStatesOfRWithTrue(bdd phi, std::set<std::string> R, std::string debug){
                 // xz maybe this caused errors?
                 if (debug == "1") { std::cout << "It's in " << phi; }
 
-                if ((R.find(std::to_string(q)) == R.end())) {
+                if ((R.find(std::to_string(q)) != R.end())) {
                     if (debug == "1") { std::cout << ". It's in R. Recomposing it as true."; }
                     // Replace q with true
-                    bdd_compose(phi, bdd_true(), q);
+                    phi = bdd_compose(phi, bdd_true(), q);
                 }
             }
         }
