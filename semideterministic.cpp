@@ -298,7 +298,7 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
     std::string q;
     if (it != remaining.end()) q = *it;
 
-    if (debug == "1"){std::cout << "\nFunction createDetPart\nWe chose q: " << q << ". ";}
+    if (debug == "1"){std::cout << "\nFunction createDetPart.\nWe chose q: " << q << ". ";}
     // Erase it from remaining as we are checking it now
     remaining.erase(q);
 
@@ -331,7 +331,6 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
                     // If this was the last state, we have one R complete. Let's build an R-component from it.
                     if (debug == "1"){std::cout << " and this was lastx state!\n----------> \nCreate Rx comp: \n";}
                     createRComp(vwaa, ci, Conf, Rx, sdba, Rname, phi1, phi2, debug);
-                    if (debug == "1"){std::cout << " \n<---------- \n";}
                 }
                 // We also continue this run without adding this state to R - representing the second branch
                 if (debug == "1"){std::cout<< "Also continuing for not adding q to R - ";}
@@ -345,7 +344,6 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
     if (remaining.empty()){
         if (debug == "1"){std::cout << " YES!  \n----------> \nCreate R comp: \n";}
         createRComp(vwaa, ci, Conf, R, sdba, Rname, phi1, phi2, debug);
-        if (debug == "1"){std::cout << " \n<---------- \n";}
     } else{
         if (debug == "1"){std::cout << " NO! Check another: \n";}
         createDetPart(vwaa, ci, Conf, remaining, R, isqmay, isqmust, sdba, Rname, phi1, phi2, debug);
@@ -357,7 +355,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                  std::map<unsigned, bdd> &phi1, std::map<unsigned, bdd> &phi2,
                  std::string debug){
     if (debug == "1"){
-        std::cout << "\nFunction createRComp\nStates of Conf: ";
+        std::cout << "\n~~~~~~Function createRComp\nStates of Conf: ";
         for (auto x : Conf){
             std::cout << x << ", ";
         }
@@ -423,20 +421,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         // We now substitute all states succp1 of R with true
         if (debug == "1") {  std::cout << "Replacing all states of phi1 (" << p1 << ") in R with true.\n"; }
         p1 = subStatesOfRWithTrue(p1, R, debug);
-        if (debug == "1") {  std::cout << "Edited phi1: " << p1 << "\n"; }
-
-
-        // xz maybe this caused errors?
         if (debug == "1") {
             std::cout << "\nThe phis we just made: phi1: " << p1 << ", phi2: " << p2;
-            std::cout << "\nAll edges of Conf before: \n";
-            for (unsigned c = 0; c < sdba->num_states(); ++c) {
-                for (auto i: sdba->succ(sdba->state_from_number(c))) {
-                    std::cout << " Bdd of edges-label: " << i->cond() << " from " << c << " to " << i->dst();
-                    if (sdba->state_from_number(c) == i->dst()) { std::cout << " (loop)"; }
-                    std::cout << ".\n";
-                }
-            }
         }
 
 
@@ -510,19 +496,6 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                 addRCompStateSuccs(vwaa, sdba, addedStateNum, Conf, Rname, phi1, phi2, debug);
             }
 
-            if (debug == "1") {
-                std::cout << "\nAll edges of Conf after adding successors: (back in function createRComp)\n";
-                for (unsigned c = 0; c < sdba->num_states(); ++c) {
-                    for (auto i: sdba->succ(sdba->state_from_number(c))) {
-                        std::cout << " t.cond: " << i->cond() << " from " << c << " to " << i->dst() << ", acc: " << i->acc();
-                        if (sdba->state_from_number(c) == i->dst()) { std::cout << " (loop)"; }
-                        std::cout << ".\n";
-                    }
-                }
-                std::cout << "\nlaststatenum:" << sdba->num_states() - 1 << ", phi1: " << phi1[sdba->num_states() - 1]
-                          << ", phi2: " << phi2[sdba->num_states() - 1];
-                std::cout << "\nEnd of run of function createRComp for this label.\n";
-            }
         } else {
             if (debug == "1") { std::cout << "\nPhi1 is false, so we are not adding this state.\n";}
         }
@@ -561,7 +534,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         succp1 = p1;
         succp2 = p2;
 
-        if (debug == "1") { std::cout << ">>>Replacing all states of succphi1 (" << succp1 << ") with their successors:\n"; }
+        if (debug == "1") { std::cout << ">Replacing all states of succphi1 (" << succp1 << ") with their successors:\n"; }
         s_bddPair* pair = bdd_newpair();
         for (unsigned q = 0; q < gnc; q++){
             // For each state q in succphi1
@@ -573,12 +546,12 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         }
         // Replace all first parts of pairs with the second (replacing all q-s with their successors)
         succp1 = bdd_veccompose(succp1, pair);
-        if (debug == "1") { std::cout << ">>>New succphi1:" << succp1 << "\n"; }
+        if (debug == "1") { std::cout << ">New succphi1:" << succp1 << "\n"; }
 
         // Substitute states succp1 of R with true
         succp1 = subStatesOfRWithTrue(succp1, R, debug);
 
-        if (debug == "1") { std::cout << ">>>Edited succphi1:" << succp1 << "\n"; }
+        if (debug == "1") { std::cout << ">Edited succphi1:" << succp1 << "\n"; }
 
         // The same for succphi2 (except substituting states of R with true)
         if (debug == "1") { std::cout << "Replacing all states of succphi2 (" << succp2 << ") with their successors:\n"; }
@@ -831,15 +804,16 @@ bdd subStatesOfRWithTrue(bdd phi, std::set<std::string> R, std::string debug){
     // If this phi is false, we return false or we'd get weird results (as implication from false is true)
     if (phi != bdd_false()) {
         // For all states of Q, find those that are in Phi
+        if (debug == "1") { std::cout << "\nChecking q-s"; }
         for (unsigned q = 0; q < gnc; q++) {
-            if (debug == "1") { std::cout << "\nChecking q:" << q << ". "; }
+            if (debug == "1") { std::cout << ". " << q; }
 
             if (bdd_implies(phi, bdd_ithvar(q))) {
                 // xz maybe this caused errors?
-                if (debug == "1") { std::cout << "It's in " << phi; }
+                if (debug == "1") { std::cout << " - it's in " << phi; }
 
                 if ((R.find(std::to_string(q)) != R.end())) {
-                    if (debug == "1") { std::cout << ". It's in R. Recomposing it as true."; }
+                    if (debug == "1") { std::cout << ". It's in R. Recomposing it as true"; }
                     // Replace q with true
                     phi = bdd_compose(phi, bdd_true(), q);
                 }
