@@ -414,19 +414,18 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         if (debug == "1") {  std::cout << "Edited phi1: " << p1 << "\n"; }
 
 
-//        if (debug == "1") {
-//            std::cout << "\nThe phis we just made: phi1: " << p1 << ", phi2: " << p2;
-//            std::cout << "\nAll edges of Conf before: \n";
-//            std::cout << "xxxxxxxxxxxxxxxnumstates is " << sdba->num_states() << "\n";
-//            for (unsigned c = 0; c < sdba->num_states(); ++c) {
-//                for (auto i: sdba->succ(sdba->state_from_number(c))) {
-//                    std::cout << " Bdd of edges-label: " << i->cond() << " from " << c
-//                              << " to " << i->dst();
-//                    if (sdba->state_from_number(c) == i->dst()) { std::cout << " (loop)"; }
-//                    std::cout << ".\n";
-//                }
-//            }
-//        }
+        // xz maybe this caused errors?
+        if (debug == "1") {
+            std::cout << "\nThe phis we just made: phi1: " << p1 << ", phi2: " << p2;
+            std::cout << "\nAll edges of Conf before: \n";
+            for (unsigned c = 0; c < sdba->num_states(); ++c) {
+                for (auto i: sdba->succ(sdba->state_from_number(c))) {
+                    std::cout << " Bdd of edges-label: " << i->cond() << " from " << c << " to " << i->dst();
+                    if (sdba->state_from_number(c) == i->dst()) { std::cout << " (loop)"; }
+                    std::cout << ".\n";
+                }
+            }
+        }
 
 
         // We need to check if this R-component state exists already
@@ -586,10 +585,10 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             }
         }
         succp2 = bdd_veccompose(succp2, pair);
-//        if (debug == "1") { std::cout << "\nNew succphi2:" << succp2 << "\n"; }
-//
-//        if (debug == "1") { std::cout << "\nDone creating succphis for state " << statenum << " under label " << label
-//                                      << ". Succphi1: " << succp1 << ", succphi2 : " << succp2 << "\n"; }
+
+        // xz maybe this caused errors?
+        if (debug == "1") { std::cout << "\nDone creating succphis for state " << statenum << " under label " << label
+                                      << ". Succphi1: " << succp1 << ", succphi2 : " << succp2 << "\n"; }
 
 
 
@@ -615,8 +614,9 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         }
 
 
+        // xz maybe this caused errors?
         // We finished constructing succphi1 and succphi2, we can start creating the R-component based on them
-//        if (debug == "1") { std::cout << "We constructed succphi1: " << succp1 << ", succphi2: " << succp2 << "\n"; }
+        if (debug == "1") { std::cout << "We constructed succphi1: " << succp1 << ", succphi2: " << succp2 << "\n"; }
 
         // We need to check if this R-component state exists already
         // succStateNum is the number of the state if it exists, else value remains as a "new state" number:
@@ -628,13 +628,13 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         if (succp1 != bdd_false()) {
 
             for (unsigned c = 0; c < sdba->num_states(); ++c) {
-//                if (debug == "1") {
-//                    std::cout << "\nChecking c: " << c << " Rname: ";
-//                    for (auto x : Rname[c]) {
-//                        std::cout << x << ", ";
-//                    }
+                if (debug == "1") {
+                    std::cout << "\nChecking c: " << c << " Rname: ";
+                    for (auto x : Rname[c]) {
+                        std::cout << x << ", ";
+                    }
 //                    std::cout << "phi1: " << phi1[c] << ", phi2: " << phi2[c];
-//                }
+                }
                 if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2) {
                     succStateNum = c;
                     existsAlready = true;
@@ -651,16 +651,18 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 phi1[succStateNum] = succp1;
                 phi2[succStateNum] = succp2;
                 bdd_setvarnum(sdba->num_states());
-//                if (debug == "1") {
-//                    std::cout << "This state is new. State num: " << succStateNum << ", R: ";
-//                    for (auto x : R) {
-//                        std::cout << x << ", ";
-//                    }
-//                    std::cout << "succp1: " << succp1 << ", succp2: " << succp2 << ", SDBA num states: "
-//                              << sdba->num_states() << "\n";
-//                    std::cout << "Also creating edge from C" << statenum << " to C"
-//                              << succStateNum << " labeled " << label;
-//                }
+
+                // xz maybe this caused errors?
+                if (debug == "1") {
+                    std::cout << "This state is new. State num: " << succStateNum << ", R: ";
+                    for (auto x : R) {
+                        std::cout << x << ", ";
+                    }
+                    std::cout << "succp1: " << succp1 << ", succp2: " << succp2 << ", SDBA num states: "
+                              << sdba->num_states() << "\n";
+                    std::cout << "Also creating edge from C" << statenum << " to C"
+                              << succStateNum << " labeled " << label;
+                }
                 // (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; todo name states?
                 if (accepting) {
                     sdba->new_edge(statenum, succStateNum, label, {0});
@@ -709,7 +711,8 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                     if (debug == "1") { std::cout << "This state is new and its Phi1 != false, we are adding its succs.\n"; }
                     addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
                 } else {
-//                    if (debug == "1") { std::cout << "Phi1 (" << succp1 << ") of this state is false, so we do not add succs. \n"; }
+                    // xz maybe this caused errors?
+                    if (debug == "1") { std::cout << "Phi1 (" << succp1 << ") of this state is false, so we do not add succs. \n"; }
                 }
             } else {
                 if (debug == "1") { std::cout << "This state already exists, not adding its succs. \n"; }
@@ -735,7 +738,7 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
 
     // For the transition to be a correct m.t., q either needs to not be in R, or see below *
     if ((R.find(std::to_string(q)) == R.end())) {
-        //if (debug == "1") { std::cout << "Q is not in R."; }
+        if (debug == "1") { std::cout << "Q is not in R."; }
         // Find the edge under "label"
         for (auto &t: vwaa->out(q)) {
             for (unsigned tdst: vwaa->univ_dests(t.dst)) {
@@ -804,7 +807,8 @@ bdd subStatesOfRWithTrue(bdd phi, std::set<std::string> R, std::string debug){
             if (debug == "1") { std::cout << "\nChecking q:" << q << ". "; }
 
             if (bdd_implies(phi, bdd_ithvar(q))) {
-//                if (debug == "1") { std::cout << "It's in " << phi; }
+                // xz maybe this caused errors?
+                if (debug == "1") { std::cout << "It's in " << phi; }
 
                 if ((R.find(std::to_string(q)) == R.end())) {
                     if (debug == "1") { std::cout << ". It's in R. Recomposing it as true."; }
