@@ -386,14 +386,20 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         p2 = bdd_false();
 
         for (unsigned q = 0; q < gnvwaa; ++q) {
+
             if (debug == "1") { std::cout << "\n   For label: " << label << ", checking q: " << q << ". "; }
 
             // We check all states of Conf
             if (Conf.find(std::to_string(q)) != Conf.end()){
 
-                // For each such state, we add its successors through m.t. to phi1
+                // For each such state, we add its successors through m.t. to phi1 using and
                 if (debug == "1") { std::cout << "\nIt is in conf. Adding its m.t.-successors under this label to phi1."; }
-                p1 = getqSuccs(vwaa, Conf, R, q, label, debug);
+                if (p1 == bdd_false()) {
+                    p1 = getqSuccs(vwaa, Conf, R, q, label, debug);
+                } else {
+                    p1 = bdd_and(p1, getqSuccs(vwaa, Conf, R, q, label, debug));
+                }
+                if (debug == "1") { std::cout << "Added all m.t.-successors under this label to phi1.\n\n"; }
             }
 
             // We add all q-s of R to phi2
@@ -561,15 +567,8 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             // For each state q in succphi1
             if (bdd_implies(succp1, bdd_ithvar(q))) {
                 s_bddPair* newPair = bdd_newpair();
-                // Pair up q with bdd of its successors
-                //std::cout << "The problem? getqsuccs: " << getqSuccs(vwaa, Conf, R, q, label, debug) << "\n";
-                //std::cout << "Setting it as pair with q: " << q << "\n";
                 bdd_setbddpair(newPair, q, getqSuccs(vwaa, Conf, R, q, label, debug));
-                //std::cout << "Now we have it in newpair: " << newPair << " result: " << newPair->result << "\n";
-                //std::cout << "We merge it with pair: " << pair << " result: " << pair->result << "\n";
-                // Add this pair to the group of pairs
                 pair = bdd_mergepairs(pair, newPair);
-                //std::cout << "\nResulting pair: " << pair << "\n";
             }
         }
         // Replace all first parts of pairs with the second (replacing all q-s with their successors)
@@ -751,8 +750,7 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
         for (auto &t: vwaa->out(q)) {
             for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                 if (debug == "1") {
-                    std::cout << "\nE " << t.src << "-" << tdst << " t.cond:" << t.cond
-                              << " label: " << label << ". \n";
+                    std::cout << "\nEdge " << t.src << "-" << tdst << " t.cond: " << t.cond << ", label: " << label << ". \n";
                 }
                 // If t.cond contains this label as one of the conjunctions and tdst is still a vwaa state ( todo this is not needed if vwaa getting more states gets fixed)
                 if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
@@ -784,12 +782,12 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
     } else { // * or q must be in Conf && edge must not be accepting
         if (debug == "1") { std::cout << "\nQ is in R."; }
         if (Conf.find(std::to_string(q)) != Conf.end()) {
+            if (debug == "1") { std::cout << "\nQ is in Conf."; }
             // Find the edge under "label"
             for (auto &t: vwaa->out(q)) {
                 for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                     if (debug == "1") {
-                        std::cout << "\nQ is in Conf. E " << t.src << "-" << tdst << " t.cond:" << t.cond
-                                  << " label: " << label << ".";
+                        std::cout << "\n Edge " << t.src << "-" << tdst << " t.cond: " << t.cond << ", label: " << label << ".";
                     }
                     // If t.cond contains this label as one of the conjunctions and tdst is still a vwaa state ( todo this is not needed if vwaa getting more states gets fixed)
                     if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
