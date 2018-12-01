@@ -360,6 +360,10 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
     bdd p1;
     bdd p2;
 
+    // To distinguish between an empty bdd and a bdd containing "false", we create these bools
+    bool p1empty;
+    bool p2empty;
+
     // First we construct the edges from C into the R component by getting the correct phi1 and phi2
 
     bdd_setvarnum(sdba->num_states());
@@ -382,6 +386,10 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         p1 = bdd_false();
         p2 = bdd_false();
 
+        // We mark both phis as empty
+        p1empty = true;
+        p2empty = true;
+
         for (unsigned q = 0; q < gnvwaa; ++q) {
 
             if (debug == "1") { std::cout << "\n   For label: " << label << ", checking q: " << q << ". "; }
@@ -391,19 +399,30 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
                 // For each such state, we add its successors through m.t. to phi1 using and
                 if (debug == "1") { std::cout << "\nIt is in conf. Adding its m.t.-successors under this label to phi1."; }
+
                 if (p1 == bdd_false()) {
-                    p1 = getqSuccs(vwaa, Conf, R, q, label, debug);
+                    // If the bdd is false, we only add if it's empty
+                    if (p1empty){
+                        if (debug == "1") { std::cout << "\nP1 is empty. Adding succs to p1 even though it is false currently."; }
+                        p1empty = false;
+                        p1 = getqSuccs(vwaa, Conf, R, q, label, debug);
+                    }
                 } else {
                     p1 = bdd_and(p1, getqSuccs(vwaa, Conf, R, q, label, debug));
                 }
-                if (debug == "1") { std::cout << "Added all m.t.-successors under this label to phi1.\n\n"; }
+                if (debug == "1") { std::cout << "Added all m.t.-successors under this label to phi1. Got: " << p1 << "\n\n"; }
             }
 
             // We add all q-s of R to phi2
             if (R.find(std::to_string(q)) != R.end()) {
                 if (debug == "1") { std::cout << "q is in R, adding q to phi2. \n"; }
                 if (p2 == bdd_false()) {
-                    p2 = bdd_ithvar(q);
+                    // If the bdd is false, we only add if it's empty
+                    if (p2empty){
+                        if (debug == "1") { std::cout << "\nP2 is empty. Adding succs to p2 even though it is false currently."; }
+                        p2empty = false;
+                        p2 = bdd_ithvar(q);
+                    }
                 } else {
                     p2 = bdd_and(p2, bdd_ithvar(q));
                 }
@@ -756,7 +775,7 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
             }
         }
     } else { // * or q must be in Conf && edge must not be accepting
-        if (debug == "1") { std::cout << "\nQ is in R."; }
+        if (debug == "1") { std::cout << "Q is in R."; }
         if (Conf.find(std::to_string(q)) != Conf.end()) {
             if (debug == "1") { std::cout << "\nQ is in Conf."; }
             // Find the edge under "label"
