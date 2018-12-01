@@ -606,23 +606,47 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         succp1 = p1;
         succp2 = p2;
 
-        if (debug == "1") { std::cout << "Replacing all states of succp1 (" << succp1 << ") with their successors:\n"; }
-        // todo veccompose succp1+label
-        if (debug == "1") { std::cout << "\nNew succp1:" << succp1 << "\n"; }
+        if (debug == "1") { std::cout << ">>>Replacing all states of succphi1 (" << succp1 << ") with their successors:\n"; }
+        s_bddPair* pair = bdd_newpair();
+        for (unsigned q = 0; q < gnc; q++){
+            // For each state q in succphi1
+            if (bdd_implies(succp1, bdd_ithvar(q))) {
+                s_bddPair* newPair = bdd_newpair();
+                // Pair up q with bdd of its successors
+                bdd_setbddpair(newPair, q, getqSuccs(vwaa, Conf, R, q, label, debug));
+                // Add this pair to the group of pairs
+                pair = bdd_mergepairs(pair, newPair);
+            }
+        }
+        // Replace all first parts of pairs with the second (all q-s with their successors)
+        succp1 = bdd_veccompose(succp1, pair);
+        if (debug == "1") { std::cout << ">>>New succphi1:" << succp1 << "\n"; }
 
-        if (debug == "1") { std::cout << "Replacing all states of succp2 (" << succp2 << ") with their successors:\n"; }
-        // todo veccompose succp2+label
-        if (debug == "1") { std::cout << "\nNew succp2:" << succp2 << "\n"; }
+        // The same for succphi2
+        if (debug == "1") { std::cout << "Replacing all states of succphi2 (" << succp2 << ") with their successors:\n"; }
+        pair = bdd_newpair();
+        for (unsigned q = 0; q < gnc; q++){
+            if (bdd_implies(succp2, bdd_ithvar(q))) {
+                s_bddPair* newPair = bdd_newpair();
+                bdd_setbddpair(newPair, q, getqSuccs(vwaa, Conf, R, q, label, debug));
+                pair = bdd_mergepairs(pair, newPair);
+            }
+        }
+        succp2 = bdd_veccompose(succp2, pair);
+        if (debug == "1") { std::cout << "\nNew succphi2:" << succp2 << "\n"; }
 
 
-        if (debug == "1") { std::cout << "Checking all states of succp1 for states of R to replace with true."; }
+        // Substitute states of R with true
+        if (debug == "1") { std::cout << "Checking all states of succphi1 for states of R to replace with true."; }
         for (unsigned q = 0; q < gnc; q++){
             if (debug == "1") { std::cout << "\nChecking q:" << q << ". "; }
             if (succp1 != bdd_false() && (bdd_implies(succp1, bdd_ithvar(q)))){
-                if (debug == "1") { std::cout << "It's in succp1. "; }
+                if (debug == "1") { std::cout << "It's in succphi1. "; }
                 if ((R.find(std::to_string(q)) == R.end())) {
-                    if (debug == "1") { std::cout << "It's in R. Changing succp1 to true."; }
-                    succp1 = bdd_true(); // todo compose q with true is better.
+                    if (debug == "1") { std::cout << "It's in R. Changing succphi1 to true."; }
+                    // Replace q with true
+                    bdd_compose(succp1, bdd_true(), q);
+
                 }
             }
         }
@@ -644,7 +668,8 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                     if (debug == "1") { std::cout << "It's in succp1.\n"; }
                     if ((R.find(std::to_string(q)) == R.end())) {
                         if (debug == "1") { std::cout << "It's in R. Changing succp1 to true.\n"; }
-                        succp1 = bdd_true(); // todo compose q with true is better.
+                        // Replace q with true
+                        bdd_compose(succp1, bdd_true(), q);
                     }
                 }
             }
