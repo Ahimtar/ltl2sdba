@@ -38,7 +38,7 @@
 
 // turns the given VWAA into an equivalent semideterministic
 // automaton in the Spot's structure
-spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug);
+spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debug);
 
 
 // Conf = States Q we need to check
@@ -58,30 +58,27 @@ void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<s
 void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
              std::set<std::string> remaining, std::set<std::string> R,  bool isqmay[], bool isqmust[],
              spot::twa_graph_ptr &sdba, std::map<unsigned, std::set<std::string>> &Rname,
-             std::map<unsigned, bdd> &phi1, std::map<unsigned, bdd> &phi2,
-             std::string debug);
+             std::map<unsigned, bdd> &phi1, std::map<unsigned, bdd> &phi2);
 
 
 // creates r-components from a given R
 void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
                  std::set<std::string> R, spot::twa_graph_ptr &sdba, std::map<unsigned, std::set<std::string>> &Rname,
-                 std::map<unsigned, bdd> &phi1, std::map<unsigned, bdd> &phi2,
-                 std::string debug);
+                 std::map<unsigned, bdd> &phi1, std::map<unsigned, bdd> &phi2);
 
 
 // adds r-component states that are successors of a given (R, phi1, phi2)
 void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba,  unsigned statenum,
                         std::set<std::string> Conf, std::map<unsigned, std::set<std::string>> &Rname,
-                        std::map<unsigned, bdd> &phi1, std::map<unsigned, bdd> &phi2,
-                        std::string debug);
+                        std::map<unsigned, bdd> &phi1, std::map<unsigned, bdd> &phi2);
 
 
 // gets the bdd of successors of q under label belonging to modified transition (m.t.) relation
 bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> R, unsigned q,
-              bdd label, std::string debug);
+              bdd label);
 
 
 // gets the bdd of phi with all states in R replaced by true
-bdd subStatesOfRWithTrue(bdd phi, std::set<std::string> R, std::string debug);
+bdd subStatesOfRWithTrue(bdd phi, std::set<std::string> R);
 
 #endif

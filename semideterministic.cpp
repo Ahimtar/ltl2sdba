@@ -26,9 +26,12 @@ std::vector<bdd> gAlphabet; // All the combinations of atomic propositions
 unsigned gnc; // Number of states of non-deterministic part of SDBA
 unsigned gnvwaa; // Number of states of the original VWAA
 unsigned gtnum; // Number of the state t
+unsigned debug;
 
 // Converts a given VWAA to SDBA;
-spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
+spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debuginput) {
+    
+    debug = debuginput;
 
     // We first transform the VWAA into spot format
 
@@ -68,10 +71,10 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
     // We iterate over all states of the VWAA
     for (unsigned q = 0; q < gnvwaa; ++q)
     {
-        if (debug == "1"){std::cout << "State: " << (*snvwaa)[q] << " (" << q << ").\n";}
+        if (debug == 1){std::cout << "State: " << (*snvwaa)[q] << " (" << q << ").\n";}
         if ((*snvwaa)[q].compare("t") == 0){
             gtnum = q;
-            if (debug == "1"){std::cout << "This is the {} state.\n";}
+            if (debug == 1){std::cout << "This is the {} state.\n";}
         }
         // Renaming state to its number instead of the LTL formula for later use
         (*snvwaa)[q] = std::to_string(q);
@@ -86,7 +89,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             {
                 if (t.src == d && t.acc.id == 0) {
                     isqmay[q] = true;
-                    if (debug == "1"){std::cout << "Qmay. ";} // It also may be Qmust
+                    if (debug == 1){std::cout << "Qmay. ";} // It also may be Qmust
                     thereIsALoop = true;
                     break;
                 }
@@ -94,7 +97,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             if (thereIsALoop){ break; }
         }
         if (!isqmay[q]){
-            if (debug == "1"){std::cout << "Not Qmay. ";}
+            if (debug == 1){std::cout << "Not Qmay. ";}
         }
 
         isqmust[q] = true;
@@ -110,20 +113,20 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             }
             if (!thereIsALoop){
                 isqmust[q] = false;
-                if (debug == "1"){std::cout << "Not Qmust. ";}
+                if (debug == 1){std::cout << "Not Qmust. ";}
                 break;
             }
         }
         if (isqmust[q]) {
-            if (debug == "1"){std::cout << "Qmust. ";}
+            if (debug == 1){std::cout << "Qmust. ";}
         }
-        if (debug == "1"){std::cout << "\n\n";}
+        if (debug == 1){std::cout << "\n\n";}
     }
 
     // In gAlphabet variable, we store the set of all edge labels
     // (not only "a", "b", but also "and"-formulae: "a&b". not "a|b".)
     // Here, we create the alphabet by adding all possible labels using power-set construction
-    if (debug == "1"){ std::cout << "Setting the alphabet. "; }
+    if (debug == 1){ std::cout << "Setting the alphabet. "; }
 
     // pow(2, pvwaa->ap().size()) is the amount of all combinations of labels = num of letters in the final alphabet
     for (int i = 0; i < pow(2, pvwaa->ap().size()); i++){
@@ -140,7 +143,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
         gAlphabet.push_back(thisbdd);
     }
 
-    if (debug == "1"){
+    if (debug == 1){
         std::cout << "It is: ";
         for (auto letter : gAlphabet){
             std::cout << letter;
@@ -169,20 +172,20 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
     // We mark the Rs of the states of ND part so we differ them from D part states with empty R, phi1 and phi2 later on
     // We also set all the edges in ND part of SDBA as not-accepting (also to fix odd behavior of remove_alternation)
-    if (debug == "1") { std::cout << "\nRemoving acceptation from all edges in ND part"; }
+    if (debug == 1) { std::cout << "\nRemoving acceptation from all edges in ND part"; }
 
     for (unsigned ci = 0; ci < gnc; ++ci) {
         Rname[ci] = {"ND-part state"};
 
         for (auto &t: sdba->out(ci)) {
             for (unsigned d: pvwaa->univ_dests(t.dst)) {
-                if (debug == "1") {std::cout << "\nEdge of sdba: " << t.src << "-" << d << " acceptation: " << t.acc << ". "; }
+                if (debug == 1) {std::cout << "\nEdge of sdba: " << t.src << "-" << d << " acceptation: " << t.acc << ". "; }
                 t.acc = 0;
-                if (debug == "1") { std::cout << "We set acc to " << t.acc << ". "; }
+                if (debug == 1) { std::cout << "We set acc to " << t.acc << ". "; }
             }
         }
     }
-    if (debug == "1") { std::cout << "\n"; }
+    if (debug == 1) { std::cout << "\n"; }
 
     // Choosing the R
 
@@ -206,7 +209,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             std::cout << "Wrong C state name."; // todo better error message
         }
         if (((*sn)[ci]).compare("{}") == 0){
-            if (debug == "1") { std::cout << "\nStarting check of state {}, renaming to: " << std::to_string(gtnum); }
+            if (debug == 1) { std::cout << "\nStarting check of state {}, renaming to: " << std::to_string(gtnum); }
             ((*sn)[ci]) = std::to_string(gtnum);
             C[ci].clear();
             C[ci].insert(std::to_string(gtnum));
@@ -214,7 +217,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
         std::set<std::string> R;
 
-        if (debug == "1"){
+        if (debug == 1){
             std::cout << "\nChecking if configuration " << ci << " = {";
             for (auto x : C[ci]){
                 std::cout << " " << x;
@@ -224,13 +227,13 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
         // Check if only states reachable from Qmays are in C. If not, this configuration can not contain an R.
         if (checkMayReachableStates(pvwaa, C[ci], R, isqmay)){  // We are using R just as a placeholder empty set here
             R.clear();
-            if (debug == "1"){std::cout << "Yes! \n";}
+            if (debug == 1){std::cout << "Yes! \n";}
             // We call this function to judge Q-s of this C and create R-s and R-components based on them
-            createDetPart(pvwaa, ci, C[ci], C[ci], R, isqmay, isqmust, sdba, Rname, phi1, phi2, debug);
+            createDetPart(pvwaa, ci, C[ci], C[ci], R, isqmay, isqmust, sdba, Rname, phi1, phi2);
         }
     }
 
-    if (debug == "1") { std::cout << "\n\n"; }
+    if (debug == 1) { std::cout << "\n\n"; }
 
     // Call spot's merge edges function
     sdba->merge_edges();
@@ -290,15 +293,14 @@ void addToValid(std::shared_ptr<spot::twa_graph> vwaa, std::string q, std::set<s
 void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
                    std::set<std::string> remaining, std::set<std::string> R, bool isqmay[], bool isqmust[],
                    spot::twa_graph_ptr &sdba, std::map<unsigned, std::set<std::string>> &Rname,
-                   std::map<unsigned, bdd> &phi1, std::map<unsigned, bdd> &phi2,
-                   std::string debug){
+                   std::map<unsigned, bdd> &phi1, std::map<unsigned, bdd> &phi2){
 
     // We choose first q that comes into way
     auto it = remaining.begin();
     std::string q;
     if (it != remaining.end()) q = *it;
 
-    if (debug == "1"){std::cout << "\nFunction createDetPart.\nWe chose q: " << q << ". ";}
+    if (debug == 1){std::cout << "\nFunction createDetPart.\nWe chose q: " << q << ". ";}
     // Erase it from remaining as we are checking it now
     remaining.erase(q);
 
@@ -308,14 +310,14 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
     } else {
         // If this state is Qmust, we add it (and don't have to check Qmay)
         if (isqmust[std::stoi(q)]){
-            if (debug == "1"){std::cout << "It is Qmust, adding to R. ";}
+            if (debug == 1){std::cout << "It is Qmust, adding to R. ";}
             if (R.count(q) == 0) {
                 R.insert(q);
             }
         } else {
             // If it is Qmay, we recursively call the function and try both adding it and not
             if (isqmay[std::stoi(q)]){
-                if (debug == "1"){std::cout << "It is Qmay (and not Qmust!), adding to R";}
+                if (debug == 1){std::cout << "It is Qmay (and not Qmust!), adding to R";}
 
                 // We create a new branch with new R and add the state q to this R
                 std::set<std::string> Rx = R;
@@ -325,36 +327,35 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
 
                 if (!remaining.empty()){
                     // We run the branch that builds the R where this state is added
-                    if (debug == "1"){std::cout << " and creating branch including: " << q << ".\n";}
-                    createDetPart(vwaa, ci, Conf, remaining, Rx, isqmay, isqmust, sdba, Rname, phi1, phi2, debug);
+                    if (debug == 1){std::cout << " and creating branch including: " << q << ".\n";}
+                    createDetPart(vwaa, ci, Conf, remaining, Rx, isqmay, isqmust, sdba, Rname, phi1, phi2);
                 } else{
                     // If this was the last state, we have one R complete. Let's build an R-component from it.
-                    if (debug == "1"){std::cout << " and this was lastx state!\n----------> \nCreate Rx comp: \n";}
-                    createRComp(vwaa, ci, Conf, Rx, sdba, Rname, phi1, phi2, debug);
+                    if (debug == 1){std::cout << " and this was lastx state!\n----------> \nCreate Rx comp: \n";}
+                    createRComp(vwaa, ci, Conf, Rx, sdba, Rname, phi1, phi2);
                 }
                 // We also continue this run without adding this state to R - representing the second branch
-                if (debug == "1"){std::cout<< "Also continuing for not adding q to R - ";}
+                if (debug == 1){std::cout<< "Also continuing for not adding q to R - ";}
             }
         }
-        if (debug == "1"){std::cout << "Done checking for q: " << q;}
+        if (debug == 1){std::cout << "Done checking for q: " << q;}
 
     }
-    if (debug == "1"){std::cout << "\n Is this last state? ";}
+    if (debug == 1){std::cout << "\n Is this last state? ";}
     // If this was the last state, we have this R complete. Let's build an R-component from it.
     if (remaining.empty()){
-        if (debug == "1"){std::cout << " YES!  \n----------> \nCreate R comp: \n";}
-        createRComp(vwaa, ci, Conf, R, sdba, Rname, phi1, phi2, debug);
+        if (debug == 1){std::cout << " YES!  \n----------> \nCreate R comp: \n";}
+        createRComp(vwaa, ci, Conf, R, sdba, Rname, phi1, phi2);
     } else{
-        if (debug == "1"){std::cout << " NO! Check another: \n";}
-        createDetPart(vwaa, ci, Conf, remaining, R, isqmay, isqmust, sdba, Rname, phi1, phi2, debug);
+        if (debug == 1){std::cout << " NO! Check another: \n";}
+        createDetPart(vwaa, ci, Conf, remaining, R, isqmay, isqmust, sdba, Rname, phi1, phi2);
     }
 }
 
 void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<std::string> Conf,
                  std::set<std::string> R, spot::twa_graph_ptr &sdba, std::map<unsigned, std::set<std::string>> &Rname,
-                 std::map<unsigned, bdd> &phi1, std::map<unsigned, bdd> &phi2,
-                 std::string debug){
-    if (debug == "1"){ std::cout << "\n~~~~~~Beginning of function createRComp:"; }
+                 std::map<unsigned, bdd> &phi1, std::map<unsigned, bdd> &phi2){
+    if (debug == 1){ std::cout << "\n~~~~~~Beginning of function createRComp:"; }
 
     // The phis of this state
     bdd p1;
@@ -371,7 +372,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
     // For each edge label ("a,b,c", "a,b,!c", "a,!b,c"...) of the alphabet
     for (auto label : gAlphabet){
 
-        if (debug == "1") {
+        if (debug == 1) {
             std::cout << "\n\n---For Conf: ";
             for (auto x : Conf){
                 std::cout << x << ",";
@@ -392,34 +393,34 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
         for (unsigned q = 0; q < gnvwaa; ++q) {
 
-            if (debug == "1") { std::cout << "\n   For label: " << label << ", checking q: " << q << ". "; }
+            if (debug == 1) { std::cout << "\n   For label: " << label << ", checking q: " << q << ". "; }
 
             // We check all states of Conf
             if (Conf.find(std::to_string(q)) != Conf.end()){
 
                 // For each such state, we add its successors through m.t. to phi1 using and
-                if (debug == "1") { std::cout << "\nIt is in conf. Adding its m.t.-successors under this label to phi1."; }
+                if (debug == 1) { std::cout << "\nIt is in conf. Adding its m.t.-successors under this label to phi1."; }
 
                 if (p1 == bdd_false()) {
                     // If the bdd is false, we only add if it's empty
                     if (p1empty){
-                        if (debug == "1") { std::cout << "\nP1 is empty. Adding succs to p1 even though it is false currently."; }
+                        if (debug == 1) { std::cout << "\nP1 is empty. Adding succs to p1 even though it is false currently."; }
                         p1empty = false;
-                        p1 = getqSuccs(vwaa, Conf, R, q, label, debug);
+                        p1 = getqSuccs(vwaa, Conf, R, q, label);
                     }
                 } else {
-                    p1 = bdd_and(p1, getqSuccs(vwaa, Conf, R, q, label, debug));
+                    p1 = bdd_and(p1, getqSuccs(vwaa, Conf, R, q, label));
                 }
-                if (debug == "1") { std::cout << "Added all m.t.-successors under this label to phi1. Got: " << p1 << "\n\n"; }
+                if (debug == 1) { std::cout << "Added all m.t.-successors under this label to phi1. Got: " << p1 << "\n\n"; }
             }
 
             // We add all q-s of R to phi2
             if (R.find(std::to_string(q)) != R.end()) {
-                if (debug == "1") { std::cout << "q is in R, adding q to phi2. \n"; }
+                if (debug == 1) { std::cout << "q is in R, adding q to phi2. \n"; }
                 if (p2 == bdd_false()) {
                     // If the bdd is false, we only add if it's empty
                     if (p2empty){
-                        if (debug == "1") { std::cout << "\nP2 is empty. Adding succs to p2 even though it is false currently."; }
+                        if (debug == 1) { std::cout << "\nP2 is empty. Adding succs to p2 even though it is false currently."; }
                         p2empty = false;
                         p2 = bdd_ithvar(q);
                     }
@@ -429,7 +430,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
             }
         }
 
-        if (debug == "1") {
+        if (debug == 1) {
             std::cout << "\nTo be sure, states of R: ";
             for (auto y : R) {
                 std::cout << y << ", ";
@@ -437,9 +438,9 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         }
 
         // We now substitute all states succp1 of R with true
-        if (debug == "1") {  std::cout << "Replacing all states of phi1 (" << p1 << ") in R with true.\n"; }
-        p1 = subStatesOfRWithTrue(p1, R, debug);
-        if (debug == "1") {
+        if (debug == 1) {  std::cout << "Replacing all states of phi1 (" << p1 << ") in R with true.\n"; }
+        p1 = subStatesOfRWithTrue(p1, R);
+        if (debug == 1) {
             std::cout << "\nThe phis we just made: phi1: " << p1 << ", phi2: " << p2;
         }
 
@@ -447,10 +448,10 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         // We need to check if this R-component state exists already
         // addedStateNum is the number of the state if it exists, else value remains as a "new state" number:
         unsigned addedStateNum = sdba->num_states();
-        if (debug == "1") { std::cout << "Checking if the R-comp state exists: ";}
+        if (debug == 1) { std::cout << "Checking if the R-comp state exists: ";}
 
         for (unsigned c = 0; c < sdba->num_states(); ++c) {
-            if (debug == "1") {
+            if (debug == 1) {
                 std::cout << "\nTry c: " << c << " Rname: ";
                 for (auto x : Rname[c]){
                     std::cout << x << ", ";
@@ -460,18 +461,18 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
             }
             if (Rname[c] == R && phi1[c] == p1 && phi2[c] == p2){
                 addedStateNum = c;
-                if (debug == "1") { std::cout << "<- this! it exists already.";}
+                if (debug == 1) { std::cout << "<- this! it exists already.";}
                 break;
             }
         }
 
-        if (debug == "1") { std::cout << "\nThe statenum is: " << addedStateNum << "\n";}
+        if (debug == 1) { std::cout << "\nThe statenum is: " << addedStateNum << "\n";}
 
         // If phi1 is false, all the followers will be false too and no state will be accepting, so we don't need to try.
         if (p1 != bdd_false()) {
             // If the state doesn't exist yet, we create it with "sdba->num_states()-1" becoming its new number.
             if (addedStateNum == sdba->num_states()) {
-                if (debug == "1") {
+                if (debug == 1) {
                     std::cout << "\nThis state is new, creating it, with edge from C" << ci << " to C"
                               << addedStateNum << " labeled " << label;
                 }
@@ -489,7 +490,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                 for (auto &t: sdba->out(ci)) {
                     // If there is such an edge, we add this label via "OR" to the bdd
                     if (t.dst == addedStateNum) {
-                        if (debug == "1") {
+                        if (debug == 1) {
                             std::cout << "Adding new label to the edge under OR: " << t.src << "-" << t.dst
                                       << " bdd:" << t.cond << " label: " << label << ". \n";
                         }
@@ -500,7 +501,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                 // If there isn't such an edge, we create a new one
                 if (!connected) {
                     // We connect the state to this configuration under the currently checked label
-                    if (debug == "1") {
+                    if (debug == 1) {
                         std::cout << "New edge from C" << ci << " to C" << addedStateNum << " labeled "
                                   << label;
                     }
@@ -510,12 +511,12 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
             // If the state is new, add all successors of this state to the SDBA and connect them
             if (addedStateNum == sdba->num_states() - 1) {
-                if (debug == "1") { std::cout << "\nAs the state is new, adding all succs"; }
-                addRCompStateSuccs(vwaa, sdba, addedStateNum, Conf, Rname, phi1, phi2, debug);
+                if (debug == 1) { std::cout << "\nAs the state is new, adding all succs"; }
+                addRCompStateSuccs(vwaa, sdba, addedStateNum, Conf, Rname, phi1, phi2);
             }
 
         } else {
-            if (debug == "1") { std::cout << "\nPhi1 is false, so we are not adding this state.\n";}
+            if (debug == 1) { std::cout << "\nPhi1 is false, so we are not adding this state.\n";}
         }
     }
 }
@@ -524,10 +525,9 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 // Adds successors of state statenum (and their successors, recursively)
 void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_ptr &sdba, unsigned statenum,
                         std::set<std::string> Conf, std::map<unsigned, std::set<std::string>> &Rname,
-                        std::map<unsigned, bdd> &phi1, std::map<unsigned, bdd> &phi2,
-                        std::string debug){
+                        std::map<unsigned, bdd> &phi1, std::map<unsigned, bdd> &phi2){
 
-    if (debug == "1"){
+    if (debug == 1){
         std::cout << "\n\n__Beginning addRCompStateSuccs for Conf: ";
         for (auto x : Conf){
             std::cout << x << ", ";
@@ -552,43 +552,43 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
     // For each edge label of the alphabet we compute phis of the reached state (succp1 and succp2)
     for (auto label : gAlphabet) {
 
-        if (debug == "1") { std::cout << "\n\n   In addRCompStateSuccs loop for state " << statenum << ", checking label: " << label << "\n"; }
+        if (debug == 1) { std::cout << "\n\n   In addRCompStateSuccs loop for state " << statenum << ", checking label: " << label << "\n"; }
         succp1 = p1;
         succp2 = p2;
 
-        if (debug == "1") { std::cout << ">Replacing all states of succphi1 (" << succp1 << ") with their successors:\n"; }
+        if (debug == 1) { std::cout << ">Replacing all states of succphi1 (" << succp1 << ") with their successors:\n"; }
         s_bddPair* pair = bdd_newpair();
         for (unsigned q = 0; q < gnc; q++){
             // For each state q in succphi1
             if (bdd_implies(succp1, bdd_ithvar(q))) {
                 s_bddPair* newPair = bdd_newpair();
-                bdd_setbddpair(newPair, q, getqSuccs(vwaa, Conf, R, q, label, debug));
+                bdd_setbddpair(newPair, q, getqSuccs(vwaa, Conf, R, q, label));
                 pair = bdd_mergepairs(pair, newPair);
             }
         }
         // Replace all first parts of pairs with the second (replacing all q-s with their successors)
         succp1 = bdd_veccompose(succp1, pair);
-        if (debug == "1") { std::cout << ">New succphi1:" << succp1 << "\n"; }
+        if (debug == 1) { std::cout << ">New succphi1:" << succp1 << "\n"; }
 
         // Substitute states succp1 of R with true
-        succp1 = subStatesOfRWithTrue(succp1, R, debug);
+        succp1 = subStatesOfRWithTrue(succp1, R);
 
-        if (debug == "1") { std::cout << ">Edited succphi1:" << succp1 << "\n"; }
+        if (debug == 1) { std::cout << ">Edited succphi1:" << succp1 << "\n"; }
 
         // The same for succphi2 (except substituting states of R with true)
-        if (debug == "1") { std::cout << "Replacing all states of succphi2 (" << succp2 << ") with their successors:\n"; }
+        if (debug == 1) { std::cout << "Replacing all states of succphi2 (" << succp2 << ") with their successors:\n"; }
         pair = bdd_newpair();
         for (unsigned q = 0; q < gnc; q++){
             if (bdd_implies(succp2, bdd_ithvar(q))) {
                 s_bddPair* newPair = bdd_newpair();
-                bdd_setbddpair(newPair, q, getqSuccs(vwaa, Conf, R, q, label, debug));
+                bdd_setbddpair(newPair, q, getqSuccs(vwaa, Conf, R, q, label));
                 pair = bdd_mergepairs(pair, newPair);
             }
         }
         succp2 = bdd_veccompose(succp2, pair);
 
         // xz maybe this caused errors?
-        if (debug == "1") { std::cout << "\nDone creating succphis for state " << statenum << " under label " << label
+        if (debug == 1) { std::cout << "\nDone creating succphis for state " << statenum << " under label " << label
                                       << ". Succphi1: " << succp1 << ", succphi2 : " << succp2 << "\n"; }
 
 
@@ -597,12 +597,12 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
         if (succp1 == bdd_true()) {
             // We make this the breakpoint and change succp1 and succp2 completely
-            if (debug == "1") { std::cout << "Succphi1 is true, making a breakpoint, setting Succphi1 to Succphi2.\n"; }
+            if (debug == 1) { std::cout << "Succphi1 is true, making a breakpoint, setting Succphi1 to Succphi2.\n"; }
 
             succp1 = succp2;
-            succp1 = subStatesOfRWithTrue(succp1, R, debug);
+            succp1 = subStatesOfRWithTrue(succp1, R);
 
-            if (debug == "1") { std::cout << "Also changing succphi2 to all states of R.\n"; }
+            if (debug == 1) { std::cout << "Also changing succphi2 to all states of R.\n"; }
             succp2 = bdd_false();
             for (auto qs : R) {
                 if (succp2 == bdd_false()){
@@ -617,7 +617,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
         // xz maybe this caused errors?
         // We finished constructing succphi1 and succphi2, we can start creating the R-component based on them
-        if (debug == "1") { std::cout << "We constructed succphi1: " << succp1 << ", succphi2: " << succp2 << "\n"; }
+        if (debug == 1) { std::cout << "We constructed succphi1: " << succp1 << ", succphi2: " << succp2 << "\n"; }
 
         // We need to check if this R-component state exists already
         // succStateNum is the number of the state if it exists, else value remains as a "new state" number:
@@ -629,7 +629,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         if (succp1 != bdd_false()) {
 
             for (unsigned c = 0; c < sdba->num_states(); ++c) {
-                if (debug == "1") {
+                if (debug == 1) {
                     std::cout << "\nChecking c: " << c << " Rname: ";
                     for (auto x : Rname[c]) {
                         std::cout << x << ", ";
@@ -640,11 +640,11 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2) {
                     succStateNum = c;
                     existsAlready = true;
-                    if (debug == "1") { std::cout << " < this is it!"; }
+                    if (debug == 1) { std::cout << " < this is it!"; }
                     break;
                 }
             }
-            if (debug == "1") { std::cout << "\nOur fitting successor state is state: " << succStateNum << "\n"; }
+            if (debug == 1) { std::cout << "\nOur fitting successor state is state: " << succStateNum << "\n"; }
 
             // If the state doesn't exist yet, we create it with "sdba->num_states()-1" becoming its new number
             if (succStateNum == sdba->num_states()) {   // the same as "if !existsAlready"
@@ -655,7 +655,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 bdd_setvarnum(sdba->num_states());
 
                 // xz maybe this caused errors?
-                if (debug == "1") {
+                if (debug == 1) {
                     std::cout << "This state is new. State num: " << succStateNum << ", R: ";
                     for (auto x : R) {
                         std::cout << x << ", ";
@@ -668,20 +668,20 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 // (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; todo name states?
                 if (accepting) {
                     sdba->new_edge(statenum, succStateNum, label, {0});
-                    if (debug == "1") { std::cout << ", acc {0}. "; }
+                    if (debug == 1) { std::cout << ", acc {0}. "; }
                 } else {
                     sdba->new_edge(statenum, succStateNum, label, {});
-                    if (debug == "1") { std::cout << ", acc {}. "; }
+                    if (debug == 1) { std::cout << ", acc {}. "; }
                 }
-                if (debug == "1") { std::cout << "\n"; }
+                if (debug == 1) { std::cout << "\n"; }
             } else {
                 bool connected = false;
-                if (debug == "1") { std::cout << "This state exists, checking if this edge is new\n"; }
+                if (debug == 1) { std::cout << "This state exists, checking if this edge is new\n"; }
                 // If the state already exists, we check if there is a same-acc edge leading there from the current state
                 for (auto &t: sdba->out(statenum)) {
                     // If there is such an edge, we add it as OR to the existing edge instead of creating a new edge
                     if (t.dst == succStateNum && (((t.acc != 0 && accepting) || (t.acc == 0 && !accepting)))) {
-                        if (debug == "1") {
+                        if (debug == 1) {
                             std::cout << "Adding new label to the edge " << t.src << "-" << t.dst
                                       << " under OR. Adding " << label << " to " << t.cond << ", acc " << t.acc << "\n";
                         }
@@ -692,13 +692,13 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 // If there isn't such an edge, we create a new one
                 if (!connected) {
                     if (accepting) {
-                        if (debug == "1") {
+                        if (debug == 1) {
                             std::cout << "There is not an edge " << statenum << "-" << succStateNum
                                       << " under label " << label << ", acc {0}. Creating it.\n";
                         }
                         sdba->new_edge(statenum, succStateNum, label, {0});
                     } else {
-                        if (debug == "1") {
+                        if (debug == 1) {
                             std::cout << "There is not an edge " << statenum << "-" << succStateNum
                                       << " under label " << label << ", acc {}. Creating it.\n";
                         }
@@ -710,29 +710,29 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             // If the state is new and phi1 is not false, add all further successors of this state to SDBA and connect them
             if (!existsAlready) {
                 if (succp1 != bdd_false()) {
-                    if (debug == "1") { std::cout << "This state is new and its Phi1 != false, we are adding its succs.\n"; }
-                    addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2, debug);
+                    if (debug == 1) { std::cout << "This state is new and its Phi1 != false, we are adding its succs.\n"; }
+                    addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2);
                 } else {
                     // xz maybe this caused errors?
-                    if (debug == "1") { std::cout << "Phi1 (" << succp1 << ") of this state is false, so we do not add succs. \n"; }
+                    if (debug == 1) { std::cout << "Phi1 (" << succp1 << ") of this state is false, so we do not add succs. \n"; }
                 }
             } else {
-                if (debug == "1") { std::cout << "This state already exists, not adding its succs. \n"; }
+                if (debug == 1) { std::cout << "This state already exists, not adding its succs. \n"; }
             }
         } else {
-            if (debug == "1") { std::cout << "\nPhi1 is false, not adding this succstate.\n"; }
+            if (debug == 1) { std::cout << "\nPhi1 is false, not adding this succstate.\n"; }
         }
 
     }
-    if (debug == "1") { std::cout << "\n<<<<<<   End of function addRCompStateSuccs of state " << statenum << "\n"; }
+    if (debug == 1) { std::cout << "\n<<<<<<   End of function addRCompStateSuccs of state " << statenum << "\n"; }
 }
 
 
 // Gets the bdd of successors of q under label belonging to m.t. relation
 bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> R, unsigned q,
-              bdd label, std::string debug){
+              bdd label){
 
-    if (debug == "1") { std::cout << "\nGetting succs of state " << q << " under label " << label << "\n"; }
+    if (debug == 1) { std::cout << "\nGetting succs of state " << q << " under label " << label << "\n"; }
 
     bdd succbdd = bdd_false();
 
@@ -740,34 +740,34 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
 
     // For the transition to be a correct m.t., q either needs to not be in R, or see below *
     if ((R.find(std::to_string(q)) == R.end())) {
-        if (debug == "1") { std::cout << "Q is not in R."; }
+        if (debug == 1) { std::cout << "Q is not in R."; }
         // Find the edge under "label"
         for (auto &t: vwaa->out(q)) {
             for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                if (debug == "1") {
+                if (debug == 1) {
                     std::cout << "\nEdge " << t.src << "-" << tdst << " t.cond: " << t.cond << ", label: " << label << ". \n";
                 }
                 // If t.cond contains this label as one of the conjunctions and tdst is still a vwaa state ( todo this is not needed if vwaa getting more states gets fixed)
                 if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
-                    if (debug == "1") { std::cout << "<- the label is right. "; }
+                    if (debug == 1) { std::cout << "<- the label is right. "; }
 
                     // Add this successor of q
                     // If this state is {}, add bdd_true instead
 
                     if (succbdd == bdd_false()){
                         if (tdst == gtnum){
-                            if (debug == "1") { std::cout << "This is the {} state, creating succbdd as true"; }
+                            if (debug == 1) { std::cout << "This is the {} state, creating succbdd as true"; }
                             succbdd = bdd_true();
                         } else {
-                            if (debug == "1") { std::cout << "Creating succbdd as tdst (" << tdst << ")"; }
+                            if (debug == 1) { std::cout << "Creating succbdd as tdst (" << tdst << ")"; }
                             succbdd = bdd_ithvar(tdst);
                         }
                     } else {
                         if (tdst == gtnum){
-                            if (debug == "1") { std::cout << "This is the {} state, adding true to succbdd"; }
+                            if (debug == 1) { std::cout << "This is the {} state, adding true to succbdd"; }
                             succbdd = bdd_true();
                         } else {
-                            if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succbdd"; }
+                            if (debug == 1) { std::cout << "Adding tdst (" << tdst << ") to succbdd"; }
                             succbdd = bdd_and(succbdd, bdd_ithvar(tdst));
                         }
                     }
@@ -775,36 +775,36 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
             }
         }
     } else { // * or q must be in Conf && edge must not be accepting
-        if (debug == "1") { std::cout << "Q is in R."; }
+        if (debug == 1) { std::cout << "Q is in R."; }
         if (Conf.find(std::to_string(q)) != Conf.end()) {
-            if (debug == "1") { std::cout << "\nQ is in Conf."; }
+            if (debug == 1) { std::cout << "\nQ is in Conf."; }
             // Find the edge under "label"
             for (auto &t: vwaa->out(q)) {
                 for (unsigned tdst: vwaa->univ_dests(t.dst)) {
-                    if (debug == "1") {
+                    if (debug == 1) {
                         std::cout << "\n Edge " << t.src << "-" << tdst << " t.cond: " << t.cond << ", label: " << label << ".";
                     }
                     // If t.cond contains this label as one of the conjunctions and tdst is still a vwaa state ( todo this is not needed if vwaa getting more states gets fixed)
                     if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
-                        if (debug == "1") { std::cout << "\n  <- the label is right "; }
+                        if (debug == 1) { std::cout << "\n  <- the label is right "; }
 
                         if (t.acc == 0) {
-                            if (debug == "1") { std::cout << "and it is not accepting. "; }
+                            if (debug == 1) { std::cout << "and it is not accepting. "; }
 
                             if (succbdd == bdd_false()){
                                 if (tdst == gtnum){
-                                    if (debug == "1") { std::cout << "This is the {} state, creating succbdd as true"; }
+                                    if (debug == 1) { std::cout << "This is the {} state, creating succbdd as true"; }
                                     succbdd = bdd_true();
                                 } else {
-                                    if (debug == "1") { std::cout << "Creating succbdd as tdst (" << tdst << ")"; }
+                                    if (debug == 1) { std::cout << "Creating succbdd as tdst (" << tdst << ")"; }
                                     succbdd = bdd_ithvar(tdst);
                                 }
                             } else {
                                 if (tdst == gtnum){
-                                    if (debug == "1") { std::cout << "This is the {} state, adding true to succbdd"; }
+                                    if (debug == 1) { std::cout << "This is the {} state, adding true to succbdd"; }
                                     succbdd = bdd_true();
                                 } else {
-                                    if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succbdd"; }
+                                    if (debug == 1) { std::cout << "Adding tdst (" << tdst << ") to succbdd"; }
                                     succbdd = bdd_and(succbdd, bdd_ithvar(tdst));
                                 }
                             }
@@ -814,34 +814,34 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
             }
         }
     }
-    if (debug == "1") { std::cout << "\nAdded all succs of " << q << " under " << label << ", got: " << succbdd << "\n"; }
+    if (debug == 1) { std::cout << "\nAdded all succs of " << q << " under " << label << ", got: " << succbdd << "\n"; }
 
     return succbdd;
 }
 
-bdd subStatesOfRWithTrue(bdd phi, std::set<std::string> R, std::string debug){
+bdd subStatesOfRWithTrue(bdd phi, std::set<std::string> R){
 
-    if (debug == "1") { std::cout << "\nReplacing all states of R with true in " << phi; }
+    if (debug == 1) { std::cout << "\nReplacing all states of R with true in " << phi; }
 
     // If this phi is false, we return false or we'd get weird results (as implication from false is true)
     if (phi != bdd_false()) {
         // For all states of Q, find those that are in Phi
-        if (debug == "1") { std::cout << "\nChecking q-s"; }
+        if (debug == 1) { std::cout << "\nChecking q-s"; }
         for (unsigned q = 0; q < gnc; q++) {
-            if (debug == "1") { std::cout << ". " << q; }
+            if (debug == 1) { std::cout << ". " << q; }
 
             if (bdd_implies(phi, bdd_ithvar(q))) {
                 // xz maybe this caused errors?
-                if (debug == "1") { std::cout << " - it's in " << phi; }
+                if (debug == 1) { std::cout << " - it's in " << phi; }
 
                 if ((R.find(std::to_string(q)) != R.end())) {
-                    if (debug == "1") { std::cout << ". It's in R. Recomposing it as true"; }
+                    if (debug == 1) { std::cout << ". It's in R. Recomposing it as true"; }
                     // Replace q with true
                     phi = bdd_compose(phi, bdd_true(), q);
                 }
             }
         }
     }
-    if (debug == "1") { std::cout << "\n"; }
+    if (debug == 1) { std::cout << "\n"; }
     return phi;
 }

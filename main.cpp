@@ -38,6 +38,7 @@
 bool o_single_init_state;	// -i
 bool o_vwaa_determ;			// -d
 unsigned o_eq_level;		// -e
+unsigned o_debug_mode;		// -g
 bool o_mergeable_info;		// -m
 bool o_ac_filter_fin;		// -t
 bool o_spot_simulation;		// -u
@@ -107,10 +108,12 @@ int main(int argc, char* argv[])
 
 	o_vwaa_determ = std::stoi(args["d"]);
 	o_eq_level = std::stoi(args["e"]);
+	o_debug_mode = std::stoi(args["g"]);
 	o_mergeable_info = std::stoi(args["m"]);
 	o_ac_filter_fin = std::stoi(args["t"]);
 	o_spot_simulation = std::stoi(args["u"]);
 	o_spot_scc_filter = std::stoi(args["z"]);
+
 
 	o_x_single_succ = std::stoi(args["X"]);
 
@@ -164,7 +167,7 @@ int main(int argc, char* argv[])
 					vwaa->remove_unnecessary_marks();
 				}
 
-				auto sdba_temp = make_semideterministic(vwaa, args["g"]);
+				auto sdba_temp = make_semideterministic(vwaa, o_debug_mode);
 				sdba = sdba_temp;
 
 			}
