@@ -80,4 +80,8 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> R, unsigned q,
               bdd label, std::string debug);
 
+
+// gets the bdd of phi with all states in R replaced by true
+bdd subStatesOfRWithTrue(bdd phi, std::set<std::string> R, std::string debug);
+
 #endif
