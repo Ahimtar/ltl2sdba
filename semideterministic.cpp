@@ -25,6 +25,7 @@
 std::vector<bdd> gAlphabet; // All the combinations of atomic propositions
 unsigned gnc; // Number of states of non-deterministic part of SDBA
 unsigned gnvwaa; // Number of states of the original VWAA
+unsigned gtnum; // Number of the state t
 
 // Converts a given VWAA to SDBA;
 spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
@@ -64,14 +65,12 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
 
     auto snvwaa = pvwaa->get_named_prop<std::vector<std::string>>("state-names");
 
-    int tnum;
-
     // We iterate over all states of the VWAA
     for (unsigned q = 0; q < gnvwaa; ++q)
     {
         if (debug == "1"){std::cout << "State: " << (*snvwaa)[q] << " (" << q << ").\n";}
         if ((*snvwaa)[q].compare("t") == 0){
-            tnum = q;
+            gtnum = q;
             if (debug == "1"){std::cout << "This is the {} state.\n";}
         }
         // Renaming state to its number instead of the LTL formula for later use
@@ -207,10 +206,10 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, std::string debug) {
             std::cout << "Wrong C state name."; // todo better error message
         }
         if (((*sn)[ci]).compare("{}") == 0){
-            if (debug == "1") { std::cout << "\nStarting check of state {}, renaming to: " << std::to_string(tnum); }
-            ((*sn)[ci]) = std::to_string(tnum);
+            if (debug == "1") { std::cout << "\nStarting check of state {}, renaming to: " << std::to_string(gtnum); }
+            ((*sn)[ci]) = std::to_string(gtnum);
             C[ci].clear();
-            C[ci].insert(std::to_string(tnum));
+            C[ci].insert(std::to_string(gtnum));
         }
 
         std::set<std::string> R;
@@ -446,7 +445,8 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                 for (auto x : Rname[c]){
                     std::cout << x << ", ";
                 }
-//              std::cout << "phi1: " << phi1[c] << ", phi2: " << phi2[c];
+                // xz maybe this caused errors?
+                std::cout << "phi1: " << (bdd)phi1[c] << ", phi2: " << (bdd)phi2[c];
             }
             if (Rname[c] == R && phi1[c] == p1 && phi2[c] == p2){
                 addedStateNum = c;
@@ -640,7 +640,8 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                     for (auto x : Rname[c]) {
                         std::cout << x << ", ";
                     }
-//                    std::cout << "phi1: " << phi1[c] << ", phi2: " << phi2[c];
+                    // xz maybe this caused errors?
+                    std::cout << "phi1: " << (bdd)phi1[c] << ", phi2: " << (bdd)phi2[c];
                 }
                 if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2) {
                     succStateNum = c;
@@ -737,7 +738,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf, std::set<std::string> R, unsigned q,
               bdd label, std::string debug){
 
-    if (debug == "1") { std::cout << "Getting succs of state " << q << " under label " << label << "\n"; }
+    if (debug == "1") { std::cout << "\nGetting succs of state " << q << " under label " << label << "\n"; }
 
     bdd succbdd = bdd_false();
 
@@ -757,14 +758,25 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                 if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
                     if (debug == "1") { std::cout << "<- the label is right. "; }
 
-                    // Add the successors of q
+                    // Add this successor of q
+                    // If this state is {}, add bdd_true instead
 
                     if (succbdd == bdd_false()){
-                        succbdd = bdd_ithvar(tdst);
-                        if (debug == "1") { std::cout << "Creating succbdd as tdst (" << tdst << ")"; }
+                        if (tdst == gtnum){
+                            if (debug == "1") { std::cout << "This is the {} state, creating succbdd as true"; }
+                            succbdd = bdd_true();
+                        } else {
+                            if (debug == "1") { std::cout << "Creating succbdd as tdst (" << tdst << ")"; }
+                            succbdd = bdd_ithvar(tdst);
+                        }
                     } else {
-                        if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succbdd"; }
-                        succbdd = bdd_and(succbdd, bdd_ithvar(tdst));
+                        if (tdst == gtnum){
+                            if (debug == "1") { std::cout << "This is the {} state, adding true to succbdd"; }
+                            succbdd = bdd_true();
+                        } else {
+                            if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succbdd"; }
+                            succbdd = bdd_and(succbdd, bdd_ithvar(tdst));
+                        }
                     }
                 }
             }
@@ -777,20 +789,31 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                 for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                     if (debug == "1") {
                         std::cout << "\nQ is in Conf. E " << t.src << "-" << tdst << " t.cond:" << t.cond
-                                  << " label: " << label << ". \n";
+                                  << " label: " << label << ".";
                     }
-                    if (t.acc == 0) {
-                        if (debug == "1") { std::cout << "<- not accepting "; }
-                        // If t.cond contains this label as one of the conjunctions and tdst is still a vwaa state ( todo this is not needed if vwaa getting more states gets fixed)
-                        if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
-                            if (debug == "1") { std::cout << "and the label is right. "; }
+                    // If t.cond contains this label as one of the conjunctions and tdst is still a vwaa state ( todo this is not needed if vwaa getting more states gets fixed)
+                    if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
+                        if (debug == "1") { std::cout << "\n  <- the label is right "; }
+
+                        if (t.acc == 0) {
+                            if (debug == "1") { std::cout << "and it is not accepting. "; }
 
                             if (succbdd == bdd_false()){
-                                succbdd = bdd_ithvar(tdst);
-                                if (debug == "1") { std::cout << "Creating succbdd as tdst (" << tdst << ")"; }
+                                if (tdst == gtnum){
+                                    if (debug == "1") { std::cout << "This is the {} state, creating succbdd as true"; }
+                                    succbdd = bdd_true();
+                                } else {
+                                    if (debug == "1") { std::cout << "Creating succbdd as tdst (" << tdst << ")"; }
+                                    succbdd = bdd_ithvar(tdst);
+                                }
                             } else {
-                                succbdd = bdd_and(succbdd, bdd_ithvar(tdst));
-                                if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succbdd"; }
+                                if (tdst == gtnum){
+                                    if (debug == "1") { std::cout << "This is the {} state, adding true to succbdd"; }
+                                    succbdd = bdd_true();
+                                } else {
+                                    if (debug == "1") { std::cout << "Adding tdst (" << tdst << ") to succbdd"; }
+                                    succbdd = bdd_and(succbdd, bdd_ithvar(tdst));
+                                }
                             }
                         }
                     }
@@ -825,5 +848,6 @@ bdd subStatesOfRWithTrue(bdd phi, std::set<std::string> R, std::string debug){
             }
         }
     }
+    if (debug == "1") { std::cout << "\n"; }
     return phi;
 }
