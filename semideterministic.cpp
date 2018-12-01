@@ -354,18 +354,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                  std::set<std::string> R, spot::twa_graph_ptr &sdba, std::map<unsigned, std::set<std::string>> &Rname,
                  std::map<unsigned, bdd> &phi1, std::map<unsigned, bdd> &phi2,
                  std::string debug){
-    if (debug == "1"){
-        std::cout << "\n~~~~~~Function createRComp\nStates of Conf: ";
-        for (auto x : Conf){
-            std::cout << x << ", ";
-        }
-        std::cout << " States of R: ";
-        for (auto y : R){
-            std::cout << y << ", ";
-        }
-        std::cout << " Num of states of SDBA: " << sdba->num_states();
-        std::cout << " Go:\n";
-    }
+    if (debug == "1"){ std::cout << "\n~~~~~~Beginning of function createRComp:"; }
 
     // The phis of this state
     bdd p1;
@@ -378,7 +367,17 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
     // For each edge label ("a,b,c", "a,b,!c", "a,!b,c"...) of the alphabet
     for (auto label : gAlphabet){
 
-        if (debug == "1") { std::cout << "\n\n---Starting the createRcomp loop for label: " << label << "\n"; }
+        if (debug == "1") {
+            std::cout << "\n\n---For Conf: ";
+            for (auto x : Conf){
+                std::cout << x << ",";
+            }
+            std::cout << " R: ";
+            for (auto y : R){
+                std::cout << y << ",";
+            }
+            std::cout << " starting createRcomp loop under label: " << label << "\n";
+        }
 
         p1 = bdd_false();
         p2 = bdd_false();
@@ -510,7 +509,11 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                         std::string debug){
 
     if (debug == "1"){
-        std::cout << "\n\n>>>>>>  Function addRCompStateSuccs for state " << statenum << "  (Rname: ";
+        std::cout << "\n\n__Beginning addRCompStateSuccs for Conf: ";
+        for (auto x : Conf){
+            std::cout << x << ", ";
+        }
+        std::cout << ". Checking succs of " << statenum << " - R: ";
         for (auto x : Rname[statenum]){
             std::cout << x << ", ";
         }
@@ -530,7 +533,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
     // For each edge label of the alphabet we compute phis of the reached state (succp1 and succp2)
     for (auto label : gAlphabet) {
 
-        if (debug == "1") { std::cout << "\n\n   addRCompStateSuccs for state " << statenum << ", checking label: " << label << "\n"; }
+        if (debug == "1") { std::cout << "\n\n   In addRCompStateSuccs loop for state " << statenum << ", checking label: " << label << "\n"; }
         succp1 = p1;
         succp2 = p2;
 
