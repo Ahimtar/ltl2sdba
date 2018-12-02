@@ -462,27 +462,23 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
         if (debug == 1) {  std::cout << "Replacing all states of phi1 (" << p1 << ") in R with true.\n"; }
         p1 = subStatesOfRWithTrue(p1, R);
         if (debug == 1) {
-            std::cout << "\nThe phis we just made: phi1: " << p1 << ", phi2: " << p2;
+            std::cout << "\nThe phis we just made: phi1: " << p1 << ", phi2: " << p2 << " (for R: ";
+            for (auto x : R){
+                std::cout << x << ", ";
+            }
+            std::cout << ")\n";
         }
 
 
         // We need to check if this R-component state exists already
         // addedStateNum is the number of the state if it exists, else value remains as a "new state" number:
         unsigned addedStateNum = sdba->num_states();
-        if (debug == 1) { std::cout << "Checking if the R-comp state exists: ";}
+        if (debug == 1) { std::cout << "Checking if the R-comp with same R, phi1 and phi2 exists. ";}
 
         for (unsigned c = 0; c < sdba->num_states(); ++c) {
-            if (debug == 1) {
-                std::cout << "\nTry c: " << c << " Rname: ";
-                for (auto x : Rname[c]){
-                    std::cout << x << ", ";
-                }
-                // xz maybe this caused errors?
-                std::cout << "phi1: " << (bdd)phi1[c] << ", phi2: " << (bdd)phi2[c];
-            }
             if (Rname[c] == R && phi1[c] == p1 && phi2[c] == p2){
                 addedStateNum = c;
-                if (debug == 1) { std::cout << "<- this! it exists already.";}
+                if (debug == 1) { std::cout << " It exists!"; }
                 break;
             }
         }
@@ -635,10 +631,15 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             accepting = true;
         }
 
-
         // xz maybe this caused errors?
         // We finished constructing succphi1 and succphi2, we can start creating the R-component based on them
-        if (debug == 1) { std::cout << "We constructed succphi1: " << succp1 << ", succphi2: " << succp2 << "\n"; }
+        if (debug == 1) {
+            std::cout << "We constructed succphi1: " << succp1 << ", succphi2: " << succp2 << " (under R: ";
+            for (auto x : R) {
+                std::cout << x << ", ";
+            }
+            std::cout << ")\n";
+        }
 
         // We need to check if this R-component state exists already
         // succStateNum is the number of the state if it exists, else value remains as a "new state" number:
@@ -649,19 +650,12 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         // If succp1 is false, we do not add the state/edge, as this branch would never accept anyway
         if (succp1 != bdd_false()) {
 
+            if (debug == 1) { std::cout << "\nChecking configurations to find one with same Rname, phi1 and phi2."; }
             for (unsigned c = 0; c < sdba->num_states(); ++c) {
-                if (debug == 1) {
-                    std::cout << "\nChecking c: " << c << " Rname: ";
-                    for (auto x : Rname[c]) {
-                        std::cout << x << ", ";
-                    }
-                    // xz maybe this caused errors?
-                    std::cout << "phi1: " << (bdd)phi1[c] << ", phi2: " << (bdd)phi2[c];
-                }
                 if (Rname[c] == R && phi1[c] == succp1 && phi2[c] == succp2) {
                     succStateNum = c;
                     existsAlready = true;
-                    if (debug == 1) { std::cout << " < this is it!"; }
+                    if (debug == 1) { std::cout << " It exists!"; }
                     break;
                 }
             }
