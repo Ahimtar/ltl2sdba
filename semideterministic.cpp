@@ -234,7 +234,20 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debuginput) {
         }
     }
 
-    if (debug == 1) { std::cout << "\n\n"; }
+
+    if (debug == 1) {
+        std::cout << "\nRECAPITULATION of states and phis";
+        for (unsigned c = 0; c < sdba->num_states(); ++c) {
+            std::cout << "\nC: " << c << " Rname: ";
+            for (auto x : Rname[c]) {
+                std::cout << x << ", ";
+            }
+            // xz maybe this caused errors?
+            std::cout << "phi1: " << (bdd)phi1[c] << ", phi2: " << (bdd)phi2[c];
+        }
+        std::cout << "\n\n";
+    }
+
 
     // Call spot's merge edges function
     sdba->merge_edges();
@@ -787,7 +800,7 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
             // Find the edge under "label"
             for (auto &t: vwaa->out(q)) {
                 if (debug == 1) {
-                    std::cout << "\nEdge from " << t.src << "xx";
+                    std::cout << "\nEdge from " << t.src;
                 }
                 for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                     if (debug == 1) {
@@ -823,7 +836,7 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
 
                 // We connect the destinations of this edge to the bdd under OR
                 succbdd = bdd_or(succbdd, edgebdd);
-                if (debug == 1) { std::cout << "Adding edgebdd to succbdd under OR, getting succbdd " << succbdd << "\n"; }
+                if (debug == 1) { std::cout << "\nAdding edgebdd to succbdd under OR, getting succbdd " << succbdd << "\n"; }
             }
         }
     }
@@ -839,8 +852,8 @@ bdd subStatesOfRWithTrue(bdd phi, std::set<std::string> R){
     // If this phi is false, we return false or we'd get weird results (as implication from false is true)
     if (phi != bdd_false()) {
         // For all states of Q, find those that are in Phi
-        if (debug == 1) { std::cout << "\nChecking q-s"; }
-        for (unsigned q = 0; q < gnc; q++) {
+        if (debug == 1) { std::cout << "\nChecking q-s, num of states of vwaa " << gnc; }
+        for (unsigned q = 0; q < gnvwaa; q++) {
             if (debug == 1) { std::cout << ". " << q; }
 
             if (bdd_implies(phi, bdd_ithvar(q))) {
