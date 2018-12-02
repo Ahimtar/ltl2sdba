@@ -64,10 +64,10 @@ std::map<std::string, std::string> parse_arguments(int argc, char * argv[]) {
 	// the first value in a vector is the default one
 	std::map<std::string, std::vector<std::string>> allowed_values = {
 		{"a", { "0", "2", "3" }},
+		{"b", { "0", "1" }},
 		{"d", { "1", "0" }},
 		{"e", { "2", "0", "1" }},
 		{"i", { "0", "1" }},
-		{"g", { "0", "1" }},
 		{"m", { "0", "1" }},
 		{"n", { "1", "0" }},
 		{"o", { "hoa", "dot" }},

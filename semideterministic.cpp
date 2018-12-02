@@ -154,6 +154,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debuginput) {
     // We now start building the SDBA by removing alternation, which gives us the final nondeterministic part
     spot::twa_graph_ptr sdba = spot::remove_alternation(pvwaa, true);
     //spot::twa_graph_ptr sdba = spot::remove_alternation(spot::make_twa_graph(pvwaa, {false, false, false, false, false, false}));
+    bdd_extvarnum(gnvwaa);
 
     sdba->set_buchi();
     sdba->prop_state_acc(spot::trival(false));
@@ -367,8 +368,6 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
     // First we construct the edges from C into the R component by getting the correct phi1 and phi2
 
-    bdd_setvarnum(sdba->num_states());
-
     // For each edge label ("a,b,c", "a,b,!c", "a,!b,c"...) of the alphabet
     for (auto label : gAlphabet){
 
@@ -482,7 +481,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                 phi2[sdba->num_states() - 1] = p2;
                 //(*(sdba->get_named_prop(<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; //todo name states?
                 sdba->new_edge(ci, addedStateNum, label, {});
-                bdd_setvarnum(sdba->num_states());
+                //bdd_extvarnum(1);
 
             } else {
                 bool connected = false;
@@ -652,7 +651,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 Rname[succStateNum] = R;
                 phi1[succStateNum] = succp1;
                 phi2[succStateNum] = succp2;
-                bdd_setvarnum(sdba->num_states());
+                //bdd_extvarnum(1);
 
                 // xz maybe this caused errors?
                 if (debug == 1) {

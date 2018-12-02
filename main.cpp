@@ -71,12 +71,12 @@ int main(int argc, char* argv[])
 			<< "\t\t0\tdo not simulate anything (default)\n"
 			<< "\t\t2\tltl2ba (like -d0 -u0 -n0 -e1)\n"
 			<< "\t\t3\tltl3ba (like -u0 -n0 -i1 -X1)\n"
+            << "\t-b[0|1]\tprint debug messages (default off)\n"
 			<< "\t-d[0|1]\tmore deterministic VWAA construction (default on)\n"
 			<< "\t-e[0|1|2]\tequivalence check on NA\n"
 			<< "\t\t0\tno check\n"
 			<< "\t\t1\tltl2ba's simple check\n"
 			<< "\t\t2\tltl3ba's improved check (default)\n"
-			<< "\t-g[0|1]\tprint debug messages (default off)\n"
 			<< "\t-h, -?\tprint this help\n"
 			<< "\t-i[0|1]\tproduce VWAA with one initial state (default off for printing phase 1, otherwise fixed as on)\n"
 			<< "\t-m[0|1]\tcheck formula for containment of some alpha-mergeable U (default off)\n"
@@ -106,9 +106,9 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+    o_debug_mode = std::stoi(args["b"]);
 	o_vwaa_determ = std::stoi(args["d"]);
 	o_eq_level = std::stoi(args["e"]);
-	o_debug_mode = std::stoi(args["g"]);
 	o_mergeable_info = std::stoi(args["m"]);
 	o_ac_filter_fin = std::stoi(args["t"]);
 	o_spot_simulation = std::stoi(args["u"]);
