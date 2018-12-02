@@ -170,7 +170,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debuginput) {
     auto sn = sdba->get_named_prop<std::vector<std::string>>("state-names");
     std::set<std::string> C[gnc];
 
-
     // We mark the Rs of the states of ND part so we differ them from D part states with empty R, phi1 and phi2 later on
     // We also set all the edges in ND part of SDBA as not-accepting (also to fix odd behavior of remove_alternation)
     if (debug == 1) { std::cout << "\nRemoving acceptation from all edges in ND part"; }
@@ -238,12 +237,21 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debuginput) {
     if (debug == 1) {
         std::cout << "\nRECAPITULATION of states and phis";
         for (unsigned c = 0; c < sdba->num_states(); ++c) {
-            std::cout << "\nC: " << c << " Rname: ";
-            for (auto x : Rname[c]) {
-                std::cout << x << ", ";
+            std::cout << "\nC: " << c;
+            if (c < gnvwaa){
+                std::cout << " = {";
+                for (auto x : C[c]){
+                    std::cout << " " << x;
+                }
+                std::cout << " }";
+            } else {
+                std::cout << " Rname: ";
+                for (auto x : Rname[c]) {
+                    std::cout << x << ", ";
+                }
+                // xz maybe this caused errors?
+                std::cout << "phi1: " << (bdd) phi1[c] << ", phi2: " << (bdd) phi2[c];
             }
-            // xz maybe this caused errors?
-            std::cout << "phi1: " << (bdd)phi1[c] << ", phi2: " << (bdd)phi2[c];
         }
         std::cout << "\n\n";
     }
