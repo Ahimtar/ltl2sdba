@@ -413,34 +413,34 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
 
         for (unsigned q = 0; q < gnvwaa; ++q) {
 
-            if (debug == 1) { std::cout << "\n   For label: " << label << ", checking q: " << q << ". "; }
+            if (debug == 1) { std::cout << "\nChecking q: " << q << " (for label: " << label << ") to add to phis: "; }
 
             // We check all states of Conf
             if (Conf.find(std::to_string(q)) != Conf.end()){
 
                 // For each such state, we add its successors through m.t. to phi1 using and
-                if (debug == 1) { std::cout << "\nIt is in conf. Adding its m.t.-successors under this label to phi1."; }
+                if (debug == 1) { std::cout << "\n  It is in conf. Adding its m.t.-successors under this label to phi1."; }
 
                 if (p1 == bdd_false()) {
                     // If the bdd is false, we only add if it's empty
                     if (p1empty){
-                        if (debug == 1) { std::cout << "\nP1 is empty. Adding succs to p1 even though it is false currently."; }
+                        if (debug == 1) { std::cout << "\n  P1 is empty. Adding succ of this q to p1 even though it is false currently."; }
                         p1empty = false;
                         p1 = getqSuccs(vwaa, Conf, R, q, label);
                     }
                 } else {
                     p1 = bdd_and(p1, getqSuccs(vwaa, Conf, R, q, label));
                 }
-                if (debug == 1) { std::cout << "Added all m.t.-successors under this label to phi1. Got: " << p1 << "\n\n"; }
+                if (debug == 1) { std::cout << "\n  Added all m.t.-successors under this label to phi1. Got: " << p1; }
             }
 
             // We add all q-s of R to phi2
             if (R.find(std::to_string(q)) != R.end()) {
-                if (debug == 1) { std::cout << "q is in R, adding q to phi2. \n"; }
+                if (debug == 1) { std::cout << "\n  q is in R, adding q to phi2."; }
                 if (p2 == bdd_false()) {
                     // If the bdd is false, we only add if it's empty
                     if (p2empty){
-                        if (debug == 1) { std::cout << "\nP2 is empty. Adding succs to p2 even though it is false currently."; }
+                        if (debug == 1) { std::cout << "\n  P2 is empty. Adding q to p2 even though it is false currently."; }
                         p2empty = false;
                         p2 = bdd_ithvar(q);
                     }
@@ -448,6 +448,7 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                     p2 = bdd_and(p2, bdd_ithvar(q));
                 }
             }
+            if (debug == 1) { std::cout << "\n"; }
         }
 
         if (debug == 1) {
