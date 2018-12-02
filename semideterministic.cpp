@@ -238,19 +238,23 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debuginput) {
         std::cout << "\nRECAPITULATION of states and phis";
         for (unsigned c = 0; c < sdba->num_states(); ++c) {
             std::cout << "\nC: " << c;
-            if (c < gnvwaa){
+            if (c < gnvwaa && c != gtnum){
                 std::cout << " = {";
                 for (auto x : C[c]){
                     std::cout << " " << x;
                 }
                 std::cout << " }";
             } else {
-                std::cout << " Rname: ";
-                for (auto x : Rname[c]) {
-                    std::cout << x << ", ";
+                if (c == gtnum){
+                    std::cout << " = {}";
+                } else {
+                    std::cout << " Rname: ";
+                    for (auto x : Rname[c]) {
+                        std::cout << x << ", ";
+                    }
+                    // xz maybe this caused errors?
+                    std::cout << "phi1: " << (bdd) phi1[c] << ", phi2: " << (bdd) phi2[c];
                 }
-                // xz maybe this caused errors?
-                std::cout << "phi1: " << (bdd) phi1[c] << ", phi2: " << (bdd) phi2[c];
             }
         }
         std::cout << "\n\n";
