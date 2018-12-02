@@ -570,7 +570,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
 
         if (debug == 1) { std::cout << ">Replacing all states of succphi1 (" << succp1 << ") with their successors:\n"; }
         s_bddPair* pair = bdd_newpair();
-        for (unsigned q = 0; q < gnc; q++){
+        for (unsigned q = 0; q < gnvwaa; q++){
             // For each state q in succphi1
             if (bdd_implies(succp1, bdd_ithvar(q))) {
                 s_bddPair* newPair = bdd_newpair();
@@ -590,7 +590,7 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         // The same for succphi2 (except substituting states of R with true)
         if (debug == 1) { std::cout << "Replacing all states of succphi2 (" << succp2 << ") with their successors:\n"; }
         pair = bdd_newpair();
-        for (unsigned q = 0; q < gnc; q++){
+        for (unsigned q = 0; q < gnvwaa; q++){
             if (bdd_implies(succp2, bdd_ithvar(q))) {
                 s_bddPair* newPair = bdd_newpair();
                 bdd_setbddpair(newPair, q, getqSuccs(vwaa, Conf, R, q, label));
@@ -852,7 +852,7 @@ bdd subStatesOfRWithTrue(bdd phi, std::set<std::string> R){
     // If this phi is false, we return false or we'd get weird results (as implication from false is true)
     if (phi != bdd_false()) {
         // For all states of Q, find those that are in Phi
-        if (debug == 1) { std::cout << "\nChecking q-s, num of states of vwaa " << gnc; }
+        if (debug == 1) { std::cout << "\nChecking q-s"; }
         for (unsigned q = 0; q < gnvwaa; q++) {
             if (debug == 1) { std::cout << ". " << q; }
 
