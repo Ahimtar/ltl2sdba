@@ -734,6 +734,7 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
     if (debug == 1) { std::cout << "\nGetting succs of state " << q << " under label " << label << "\n"; }
 
     bdd succbdd = bdd_false();
+    bdd edgebdd = bdd_false();
 
     // If edge under label is a correct m.t., add its follower to succbdd
 
@@ -742,6 +743,8 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
         if (debug == 1) { std::cout << "Q is not in R."; }
         // Find the edge under "label"
         for (auto &t: vwaa->out(q)) {
+            if (debug == 1) { std::cout << "\nNew edge from " << t.src; }
+            // For each destination of an alternating edge, we connect the correct destinations under AND
             for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                 if (debug == 1) {
                     std::cout << "\nEdge " << t.src << "-" << tdst << " t.cond: " << t.cond << ", label: " << label << ". \n";
@@ -753,25 +756,29 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                     // Add this successor of q
                     // If this state is {}, add bdd_true instead
 
-                    if (succbdd == bdd_false()){
+                    if (edgebdd == bdd_false()){
                         if (tdst == gtnum){
-                            if (debug == 1) { std::cout << "This is the {} state, creating succbdd as true"; }
-                            succbdd = bdd_true();
+                            if (debug == 1) { std::cout << "This is the {} state, creating edgebdd as true"; }
+                            edgebdd = bdd_true();
                         } else {
-                            if (debug == 1) { std::cout << "Creating succbdd as tdst (" << tdst << ")"; }
-                            succbdd = bdd_ithvar(tdst);
+                            if (debug == 1) { std::cout << "Creating edgebdd as tdst (" << tdst << ")"; }
+                            edgebdd = bdd_ithvar(tdst);
                         }
                     } else {
                         if (tdst == gtnum){
-                            if (debug == 1) { std::cout << "This is the {} state, adding true to succbdd"; }
-                            succbdd = bdd_true();
+                            if (debug == 1) { std::cout << "This is the {} state, adding true to edgebdd"; }
+                            edgebdd = bdd_true();
                         } else {
-                            if (debug == 1) { std::cout << "Adding tdst (" << tdst << ") to succbdd"; }
-                            succbdd = bdd_and(succbdd, bdd_ithvar(tdst));
+                            if (debug == 1) { std::cout << "Adding tdst (" << tdst << ") to edgebdd"; }
+                            edgebdd = bdd_and(edgebdd, bdd_ithvar(tdst));
                         }
                     }
                 }
             }
+
+            // We connect the destinations of this edge to the bdd under OR
+            succbdd = bdd_or(succbdd, edgebdd);
+            if (debug == 1) { std::cout << "Adding edgebdd to succbdd under OR, getting succbdd " << succbdd << "\n"; }
         }
     } else { // * or q must be in Conf && edge must not be accepting
         if (debug == 1) { std::cout << "Q is in R."; }
@@ -779,6 +786,9 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
             if (debug == 1) { std::cout << "\nQ is in Conf."; }
             // Find the edge under "label"
             for (auto &t: vwaa->out(q)) {
+                if (debug == 1) {
+                    std::cout << "\nEdge from " << t.src << "xx";
+                }
                 for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                     if (debug == 1) {
                         std::cout << "\n Edge " << t.src << "-" << tdst << " t.cond: " << t.cond << ", label: " << label << ".";
@@ -790,26 +800,30 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                         if (t.acc == 0) {
                             if (debug == 1) { std::cout << "and it is not accepting. "; }
 
-                            if (succbdd == bdd_false()){
+                            if (edgebdd == bdd_false()){
                                 if (tdst == gtnum){
-                                    if (debug == 1) { std::cout << "This is the {} state, creating succbdd as true"; }
-                                    succbdd = bdd_true();
+                                    if (debug == 1) { std::cout << "This is the {} state, creating edgebdd as true"; }
+                                    edgebdd = bdd_true();
                                 } else {
-                                    if (debug == 1) { std::cout << "Creating succbdd as tdst (" << tdst << ")"; }
-                                    succbdd = bdd_ithvar(tdst);
+                                    if (debug == 1) { std::cout << "Creating edgebdd as tdst (" << tdst << ")"; }
+                                    edgebdd = bdd_ithvar(tdst);
                                 }
                             } else {
                                 if (tdst == gtnum){
-                                    if (debug == 1) { std::cout << "This is the {} state, adding true to succbdd"; }
-                                    succbdd = bdd_true();
+                                    if (debug == 1) { std::cout << "This is the {} state, adding true to edgebdd"; }
+                                    edgebdd = bdd_true();
                                 } else {
-                                    if (debug == 1) { std::cout << "Adding tdst (" << tdst << ") to succbdd"; }
-                                    succbdd = bdd_and(succbdd, bdd_ithvar(tdst));
+                                    if (debug == 1) { std::cout << "Adding tdst (" << tdst << ") to edgebdd"; }
+                                    edgebdd = bdd_and(edgebdd, bdd_ithvar(tdst));
                                 }
                             }
                         }
                     }
                 }
+
+                // We connect the destinations of this edge to the bdd under OR
+                succbdd = bdd_or(succbdd, edgebdd);
+                if (debug == 1) { std::cout << "Adding edgebdd to succbdd under OR, getting succbdd " << succbdd << "\n"; }
             }
         }
     }
