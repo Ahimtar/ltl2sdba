@@ -758,6 +758,8 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
     bdd succbdd = bdd_false();
     bdd edgebdd = bdd_false();
 
+    bool edgeEmpty;
+
     // If edge under label is a correct m.t., add its follower to succbdd
 
     // For the transition to be a correct m.t., q either needs to not be in R, or see below *
@@ -765,7 +767,9 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
         if (debug == 1) { std::cout << "Q is not in R."; }
         // Find the edge under "label"
         for (auto &t: vwaa->out(q)) {
-            if (debug == 1) { std::cout << "\nNew edge from " << t.src; }
+            if (debug == 1) { std::cout << "\nEdge from " << t.src; }
+            edgebdd = bdd_false();
+            bool edgeEmpty = true;
             // For each destination of an alternating edge, we connect the correct destinations under AND
             for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                 if (debug == 1) {
@@ -779,12 +783,16 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                     // If this state is {}, add bdd_true instead
 
                     if (edgebdd == bdd_false()){
-                        if (tdst == gtnum){
-                            if (debug == 1) { std::cout << "This is the {} state, creating edgebdd as true"; }
-                            edgebdd = bdd_true();
-                        } else {
-                            if (debug == 1) { std::cout << "Creating edgebdd as tdst (" << tdst << ")"; }
-                            edgebdd = bdd_ithvar(tdst);
+                        // If the bdd is false, we only add if it's empty
+                        if (edgeEmpty){
+                            edgeEmpty = false;
+                            if (tdst == gtnum){
+                                if (debug == 1) { std::cout << "This is the {} state, creating edgebdd as true"; }
+                                edgebdd = bdd_true();
+                            } else {
+                                if (debug == 1) { std::cout << "Creating edgebdd as tdst (" << tdst << ")"; }
+                                edgebdd = bdd_ithvar(tdst);
+                            }
                         }
                     } else {
                         if (tdst == gtnum){
@@ -798,9 +806,10 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                 }
             }
 
+            if (debug == 1) { std::cout << "\nAdding edgebdd " << edgebdd << " to succbdd " << succbdd << " under OR"; }
             // We connect the destinations of this edge to the bdd under OR
             succbdd = bdd_or(succbdd, edgebdd);
-            if (debug == 1) { std::cout << "Adding edgebdd to succbdd under OR, getting succbdd " << succbdd << "\n"; }
+            if (debug == 1) { std::cout << "\nGetting succbdd " << succbdd << "\n"; }
         }
     } else { // * or q must be in Conf && edge must not be accepting
         if (debug == 1) { std::cout << "Q is in R."; }
@@ -811,6 +820,8 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                 if (debug == 1) {
                     std::cout << "\nEdge from " << t.src;
                 }
+                edgebdd = bdd_false();
+                edgeEmpty = true;
                 for (unsigned tdst: vwaa->univ_dests(t.dst)) {
                     if (debug == 1) {
                         std::cout << "\n Edge " << t.src << "-" << tdst << " t.cond: " << t.cond << ", label: " << label << ".";
@@ -823,12 +834,18 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                             if (debug == 1) { std::cout << "and it is not accepting. "; }
 
                             if (edgebdd == bdd_false()){
-                                if (tdst == gtnum){
-                                    if (debug == 1) { std::cout << "This is the {} state, creating edgebdd as true"; }
-                                    edgebdd = bdd_true();
-                                } else {
-                                    if (debug == 1) { std::cout << "Creating edgebdd as tdst (" << tdst << ")"; }
-                                    edgebdd = bdd_ithvar(tdst);
+                                // If the bdd is false, we only add if it's empty
+                                if (edgeEmpty) {
+                                    edgeEmpty = false;
+                                    if (tdst == gtnum) {
+                                        if (debug == 1) {
+                                            std::cout << "This is the {} state, creating edgebdd as true";
+                                        }
+                                        edgebdd = bdd_true();
+                                    } else {
+                                        if (debug == 1) { std::cout << "Creating edgebdd as tdst (" << tdst << ")"; }
+                                        edgebdd = bdd_ithvar(tdst);
+                                    }
                                 }
                             } else {
                                 if (tdst == gtnum){
@@ -844,8 +861,9 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                 }
 
                 // We connect the destinations of this edge to the bdd under OR
+                if (debug == 1) { std::cout << "\nAdding edgebdd " << edgebdd << " to succbdd " << succbdd << " under OR"; }
                 succbdd = bdd_or(succbdd, edgebdd);
-                if (debug == 1) { std::cout << "\nAdding edgebdd to succbdd under OR, getting succbdd " << succbdd << "\n"; }
+                if (debug == 1) { std::cout << "\nGetting succbdd " << succbdd << "\n"; }
             }
         }
     }
@@ -870,7 +888,7 @@ bdd subStatesOfRWithTrue(bdd phi, std::set<std::string> R){
                 if (debug == 1) { std::cout << " - it's in " << phi; }
 
                 if ((R.find(std::to_string(q)) != R.end())) {
-                    if (debug == 1) { std::cout << ". It's in R. Recomposing it as true"; }
+                    if (debug == 1) { std::cout << ".\n It's in R. Recomposing it as true"; }
                     // Replace q with true
                     phi = bdd_compose(phi, bdd_true(), q);
                 }
