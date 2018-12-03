@@ -27,6 +27,26 @@ unsigned gnc; // Number of states of non-deterministic part of SDBA
 unsigned gnvwaa; // Number of states of the original VWAA
 unsigned gtnum; // Number of the state t
 unsigned debug;
+unsigned gLabel;
+bool gImplies;
+
+// Checks whether gLabel implies one of the varset expressions, returns in gImplies
+void allSatImpliesHandler(char* varset, int size) {
+    if (!gImplies) {
+        bdd thisbdd = bdd_true();
+        for (int v = 0; v < size; ++v) {
+            if (varset[v] == 1) {
+                thisbdd = bdd_and(thisbdd, bdd_ithvar(v));
+            }
+            if (varset[v] == 0){
+                thisbdd = bdd_and(thisbdd, bdd_nithvar(v));
+            }
+        }
+        if (bdd_implies(thisbdd, bdd_ithvar(gLabel))){
+            gImplies = true;
+        }
+    }
+}
 
 // Converts a given VWAA to SDBA;
 spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debuginput) {
@@ -581,7 +601,14 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         s_bddPair* pair = bdd_newpair();
         for (unsigned q = 0; q < gnvwaa; q++){
             // For each state q in succphi1
-            if (bdd_implies(succp1, bdd_ithvar(q))) {
+            if (debug == 1) { std::cout << "\nchecking if succp1" << succp1 << " implies q " << q << " (" << bdd_ithvar(q) << ")."; }
+
+            // "if (bdd_implies(succp1, bdd_ithvar(q)))" is not enough if succp1 contains disjunctions, so we use handlers
+            gImplies = false;
+            gLabel = q;
+            bdd_allsat(succp1, allSatImpliesHandler);
+            if (gImplies){
+                if (debug == 1) { std::cout << " yes"; }
                 s_bddPair* newPair = bdd_newpair();
                 bdd_setbddpair(newPair, q, getqSuccs(vwaa, Conf, R, q, label));
                 pair = bdd_mergepairs(pair, newPair);
@@ -600,7 +627,11 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         if (debug == 1) { std::cout << "Replacing all states of succphi2 (" << succp2 << ") with their successors:\n"; }
         pair = bdd_newpair();
         for (unsigned q = 0; q < gnvwaa; q++){
-            if (bdd_implies(succp2, bdd_ithvar(q))) {
+
+            gImplies = false;
+            gLabel = q;
+            bdd_allsat(succp2, allSatImpliesHandler);
+            if (gImplies){
                 s_bddPair* newPair = bdd_newpair();
                 bdd_setbddpair(newPair, q, getqSuccs(vwaa, Conf, R, q, label));
                 pair = bdd_mergepairs(pair, newPair);
