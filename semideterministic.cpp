@@ -258,7 +258,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debuginput) {
         std::cout << "\nRECAPITULATION of states and phis";
         for (unsigned c = 0; c < sdba->num_states(); ++c) {
             std::cout << "\nC: " << c;
-            if (c < gnvwaa && c != gtnum){
+            if (c < gnc && c != gtnum){
                 std::cout << " = {";
                 for (auto x : C[c]){
                     std::cout << " " << x;
