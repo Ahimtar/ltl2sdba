@@ -229,7 +229,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debuginput) {
             std::cout << "Wrong C state name."; // todo better error message
         }
         if (((*sn)[ci]).compare("{}") == 0){
-            if (debug == 1) { std::cout << "\nStarting check of state {}, renaming to: " << std::to_string(gtnum); }
+            if (debug == 1) { std::cout << "\nStarting check of configuration of state {}, renaming state to: " << std::to_string(gtnum); }
             ((*sn)[ci]) = std::to_string(gtnum);
             C[ci].clear();
             C[ci].insert(std::to_string(gtnum));
@@ -260,10 +260,8 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debuginput) {
             std::cout << "\nC: " << c;
             if (c < gnc){
                 std::cout << " = {";
-                if (c != gtnum) {
-                    for (auto x : C[c]) {
-                        std::cout << " " << x;
-                    }
+                for (auto x : C[c]) {
+                    std::cout << " " << x;
                 }
                 std::cout << " }";
             } else {
