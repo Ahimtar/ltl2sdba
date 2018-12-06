@@ -289,14 +289,13 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debuginput) {
     sdba->prop_universal(spot::trival());
     // automaton is complete if for each state the union of the labels of its outgoing transitions
     // is always true.
-    sdba->prop_complete(spot::trival()); // todo is this correct?
+    sdba->prop_complete(spot::trival());
 
     return sdba;
 }
 
 bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                              std::set<std::string> Valid, bool isqmay[]){
-
 
     // We check each state whether it is Qmay. If it is, we add it to Valid with all successors
     for (auto q : Conf)
