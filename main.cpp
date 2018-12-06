@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
 			<< "\t\tdot\tprint dot format\n"
 			<< "\t-p[1|2|3]\tphase of translation (default 2)\n"
 			<< "\t\t1\tprint VWAA\n"
-			<< "\t\t2\tprint NA with removed alternation\n"
+			<< "\t\t2\tprint SDBA\n"
 			<< "\t\t3\tprint both\n"
 			<< "\t-s[0|1]\tspot's formula simplifications (default on)\n"
 			<< "\t-t[0|1]\timproved construction of acceptance condition (default on)\n"
