@@ -269,7 +269,6 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debuginput) {
                 for (auto x : Rname[c]) {
                     std::cout << x << ", ";
                 }
-                // xz maybe this caused errors?
                 std::cout << "phi1: " << (bdd) phi1[c] << ", phi2: " << (bdd) phi2[c];
 
             }
@@ -635,7 +634,6 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
         }
         succp2 = bdd_veccompose(succp2, pair);
 
-        // xz maybe this caused errors?
         if (debug == 1) { std::cout << "\nDone creating succphis for state " << statenum << " under label " << label
                                       << ". Succphi1: " << succp1 << ", succphi2 : " << succp2 << "\n"; }
 
@@ -662,7 +660,6 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
             accepting = true;
         }
 
-        // xz maybe this caused errors?
         // We finished constructing succphi1 and succphi2, we can start creating the R-component based on them
         if (debug == 1) {
             std::cout << "We constructed succphi1: " << succp1 << ", succphi2: " << succp2 << " (under R: ";
@@ -700,7 +697,6 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                 phi2[succStateNum] = succp2;
                 //bdd_extvarnum(1);
 
-                // xz maybe this caused errors?
                 if (debug == 1) {
                     std::cout << "This state is new. State num: " << succStateNum << ", R: ";
                     for (auto x : R) {
@@ -759,7 +755,6 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                     if (debug == 1) { std::cout << "This state is new and its Phi1 != false, we are adding its succs.\n"; }
                     addRCompStateSuccs(vwaa, sdba, succStateNum, Conf, Rname, phi1, phi2);
                 } else {
-                    // xz maybe this caused errors?
                     if (debug == 1) { std::cout << "Phi1 (" << succp1 << ") of this state is false, so we do not add succs. \n"; }
                 }
             } else {
@@ -909,7 +904,6 @@ bdd subStatesOfRWithTrue(bdd phi, std::set<std::string> R){
             if (debug == 1) { std::cout << ". " << q; }
 
             if (bdd_implies(phi, bdd_ithvar(q))) {
-                // xz maybe this caused errors?
                 if (debug == 1) { std::cout << " - it's in " << phi; }
 
                 if ((R.find(std::to_string(q)) != R.end())) {
