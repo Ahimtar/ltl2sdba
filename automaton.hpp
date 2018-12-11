@@ -225,7 +225,7 @@ public:
 	VWAA(spot::formula f);
 };
 
-// xz mozno dat prec
+// CLion might think there are some problems with this. Do not worry, it is fine.
 class NA : public Automaton<unsigned> {
 public:
 	// merges edges with the same source and target

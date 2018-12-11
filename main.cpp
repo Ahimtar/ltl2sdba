@@ -19,7 +19,7 @@
 */
 
 #include <iostream>
-#include <fstream> //
+#include <fstream>
 #include <spot/misc/version.hh>
 #include <spot/tl/parse.hh>
 #include <spot/tl/print.hh>

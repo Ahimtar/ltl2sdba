@@ -72,7 +72,7 @@ template<typename T> T Automaton<T>::state_name(unsigned state_id) {
 	return states[state_id];
 }
 
-// xz remove this?
+// CLion might think there are some problems with this. Do not worry, it is fine.
 template<typename T> bool Automaton<T>::state_exists(T f) {
 	return find(states.begin(), states.end(), f) != states.end();
 }
@@ -279,23 +279,6 @@ template<typename T> std::set<unsigned> Automaton<T>::product(std::set<std::set<
 
 	return result;
 }
-
-
-/* returns a bdd of edges from a set
-spot::bdd_dict_ptr get_bdd_edges(std::set<std::set<unsigned>> edges_sets){
-    spot::bdd_dict_ptr dict = spot::make_bdd_dict();
-    spot::twa_graph_ptr aut = make_twa_graph(dict);
-    bdd p = bdd_ithvar(aut->register_ap(edges_sets));
-    if (!edges_sets.empty()) {
-        for(std::set<unsigned> e : edges_sets) {
-            //bdd p[e] = bdd_ithvar(aut->register_ap(e));
-
-        }
-    }
-    return dict;
-}  // xz https://spot.lrde.epita.fr/tut22.html */
-
-
 
 void VWAA::build_acc() {
 	// auto& ac = slaa->spot_aut->acc();
