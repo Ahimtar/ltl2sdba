@@ -1,36 +1,36 @@
 /*
-    Copyright (c) 2016 Juraj Major
+    Copyright (c) 2018 Michal Románek
 
-    This file is part of LTL3TELA.
+    This file is part of LTL2SDBA.
 
-    LTL3TELA is free software: you can redistribute it and/or modify
+    LTL2SDBA is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    LTL3TELA is distributed in the hope that it will be useful,
+    LTL2SDBA is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with LTL3TELA.  If not, see <http://www.gnu.org/licenses/>.
+    along with LTL2SDBA.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-// todo fix copyrights
 
 #include <cstring>
 #include "semideterministic.hpp"
 
+// These are all prefixed by "g" meaning "global" for clarity in code
 std::vector<bdd> gAlphabet; // All the combinations of atomic propositions
 unsigned gnc; // Number of states of non-deterministic part of SDBA
 unsigned gnvwaa; // Number of states of the original VWAA
 unsigned gtnum; // Number of the state t
-unsigned debug;
 unsigned gLabel;
 bool gImplies;
+// This is the only exception to remind that the value comes from function arguments directly
+unsigned debug;
 
-// Checks whether gLabel implies one of the varset expressions, returns in gImplies
+// Handler, checks whether gLabel implies one of the varset expressions, returns in gImplies
 void allSatImpliesHandler(char* varset, int size) {
     if (!gImplies) {
         bdd thisbdd = bdd_true();
@@ -48,7 +48,7 @@ void allSatImpliesHandler(char* varset, int size) {
     }
 }
 
-// Converts a given VWAA to SDBA;
+// Converts a given VWAA to SDBA, the main function of this class
 spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debuginput) {
     
     debug = debuginput;
