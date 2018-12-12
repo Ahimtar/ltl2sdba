@@ -68,12 +68,14 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debuginput) {
 
     // Parsing the helper, acquiring spot format
     spot::parsed_aut_ptr pvwaaptr = parse_aut("helper.hoa", spot::make_bdd_dict());
-    if (pvwaaptr->format_errors(std::cerr))
-        return vwaa->spot_aut;  // todo Better error message
+    if (pvwaaptr->format_errors(std::cerr)) {
+        std::cout << "\nProblems with parsing VWAA";
+        return vwaa->spot_aut;  // This should never happen since we are parsing our own VWAA
+    }
     if (pvwaaptr->aborted)
     {
         std::cerr << "--ABORT-- read\n";
-        return vwaa->spot_aut;  // todo Better error message
+        return vwaa->spot_aut;  // This should never happen since we are parsing our own VWAA
     }
     auto pvwaa = pvwaaptr->aut;
 
@@ -226,7 +228,7 @@ spot::twa_graph_ptr make_semideterministic(VWAA *vwaa, unsigned debuginput) {
                 s.erase(0, pos + delimiter.length());
             }
         } else {
-            std::cout << "Wrong C state name."; // todo better error message
+            std::cout << "Wrong C state name."; // This should never happen.
         }
         if (((*sn)[ci]).compare("{}") == 0){
             if (debug == 1) { std::cout << "\nStarting check of configuration of state {}, renaming state to: " << std::to_string(gtnum); }
@@ -300,7 +302,7 @@ bool checkMayReachableStates(std::shared_ptr<spot::twa_graph> vwaa, std::set<std
     for (auto q : Conf)
     {
         if (q.empty() || !isdigit(q.at(0))){
-            std::cout << "We are in BADSTATE: " << q << ". "; // todo Better error message
+            std::cout << "We are in BADSTATE: " << q << ". "; // This should never happen.
         } else {
             if (isqmay[std::stoi(q)]) {
                 addToValid(vwaa, q, Valid);
@@ -347,7 +349,7 @@ void createDetPart(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<
 
     // Checking state correctness
     if (q.empty() || !isdigit(q.at(0))){
-        std::cout << "We are in BADSTATE: " << q << ". "; // todo Better error message
+        std::cout << "We are in BADSTATE: " << q << ". "; // This should never happen.
     } else {
         // If this state is Qmust, we add it (and don't have to check Qmay)
         if (isqmust[std::stoi(q)]){
@@ -512,11 +514,10 @@ void createRComp(std::shared_ptr<spot::twa_graph> vwaa, unsigned ci, std::set<st
                     std::cout << "\nThis state is new, creating it, with edge from C" << ci << " to C"
                               << addedStateNum << " labeled " << label;
                 }
-                sdba->new_state(); // addedStateNum is now equal to sdba->num_states()-1 todo vwaa also adds a state for some reason
+                sdba->new_state(); // addedStateNum is now equal to sdba->num_states()-1
                 Rname[sdba->num_states() - 1] = R;
                 phi1[sdba->num_states() - 1] = p1;
                 phi2[sdba->num_states() - 1] = p2;
-                //(*(sdba->get_named_prop(<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; //todo name states?
                 sdba->new_edge(ci, addedStateNum, label, {});
                 //bdd_extvarnum(1);
 
@@ -707,7 +708,6 @@ void addRCompStateSuccs(std::shared_ptr<spot::twa_graph> vwaa, spot::twa_graph_p
                     std::cout << "Also creating edge from C" << statenum << " to C"
                               << succStateNum << " labeled " << label;
                 }
-                // (*(sdba->get_named_prop<std::vector<std::string>>("state-names")))[sdba->num_states()-1] = "New"; todo name states?
                 if (accepting) {
                     sdba->new_edge(statenum, succStateNum, label, {0});
                     if (debug == 1) { std::cout << ", acc {0}. "; }
@@ -795,7 +795,6 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                 if (debug == 1) {
                     std::cout << "\nEdge " << t.src << "-" << tdst << " t.cond: " << t.cond << ", label: " << label << ". \n";
                 }
-                // If t.cond contains this label as one of the conjunctions and tdst is still a vwaa state ( todo this is not needed if vwaa getting more states gets fixed)
                 if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
                     if (debug == 1) { std::cout << "<- the label is right. "; }
 
@@ -846,7 +845,6 @@ bdd getqSuccs(std::shared_ptr<spot::twa_graph> vwaa, std::set<std::string> Conf,
                     if (debug == 1) {
                         std::cout << "\n Edge " << t.src << "-" << tdst << " t.cond: " << t.cond << ", label: " << label << ".";
                     }
-                    // If t.cond contains this label as one of the conjunctions and tdst is still a vwaa state ( todo this is not needed if vwaa getting more states gets fixed)
                     if (bdd_implies(label, t.cond) && (tdst < gnvwaa)) {
                         if (debug == 1) { std::cout << "\n  <- the label is right "; }
 
