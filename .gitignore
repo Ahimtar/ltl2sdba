@@ -1,6 +1,5 @@
 __pycache__/
 .ipynb_checkpoints/
-Experiments/*.csv
 Experiments/*.tex
 .idea/
 cmake-build-debug/
