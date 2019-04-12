@@ -17,3 +17,6 @@ Usage
 =====
 Use `./ltl2sdba -f 'formula to translate'`, for example `./ltl2sdba -f "F(b | GFa)"`
 See `./ltl2sdba -h` for options and more information.
+
+
+If you are a developer and you aim to use this tool somehow, I recommend you to contact me directly first to help you get started faster!
